@@ -2,29 +2,61 @@ import flet as ft
 import the_shell
 import datetime
 
+font_size = 16
 def main(page: ft.Page):
+    
+    def set_font_size(e):
+        global font_size
+        font_size = int(e.control.value)
+        computer_name.text_size = font_size
+        settings_text.size = font_size
+        settings_icon.icon_size = font_size
+        delprof_text.size = font_size
+        delprof_icon.icon_size = font_size
+        printers_text.size = font_size
+        printers_icon.icon_size = font_size
+        programs_text.size = font_size
+        programs_icon.icon_size = font_size
+        commands_text.size = font_size
+        commands_icon.icon_size = font_size
+        console_output.size = font_size
+        font_size_text.size = font_size
+        font_size_num_txt.size = font_size
+        font_size_num_txt.text = font_size
+        page.update()
     
     page.window_width = 630
     page.window_height = 630
     
     # Left tab Pane
+    settings_icon = ft.IconButton(icon=ft.icons.SETTINGS, on_click=lambda _: page.go("/settings"))
+    settings_text = ft.Text("Settings", size=font_size)
+    delprof_icon = ft.IconButton(icon=ft.icons.DELETE, on_click=lambda _: page.go("/delprof"))
+    delprof_text = ft.Text("DelProf", size=font_size)
+    printers_icon = ft.IconButton(icon=ft.icons.PRINT, on_click=lambda _: page.go("/printers"))
+    printers_text = ft.Text("Printers", size=font_size)
+    programs_icon = ft.IconButton(icon=ft.icons.SAVE, on_click=lambda _: page.go("/programs"),)
+    programs_text = ft.Text("Programs", size=font_size)
+    commands_icon = ft.IconButton(icon=ft.icons.COMPUTER, on_click=lambda _: page.go("/commands"))
+    commands_text = ft.Text("Commands", size=font_size)
+    
     left_tab_pane = ft.Container(
         content=ft.Column(controls=[
-            ft.IconButton(icon=ft.icons.SETTINGS, on_click=lambda _: page.go("/settings")),
-            ft.Text("Settings"),
-            ft.IconButton(icon=ft.icons.DELETE, on_click=lambda _: page.go("/delprof")),
-            ft.Text("DelProf"),
-            ft.IconButton(icon=ft.icons.PRINT, on_click=lambda _: page.go("/printers")),
-            ft.Text("Printers"),
-            ft.IconButton(icon=ft.icons.SAVE, on_click=lambda _: page.go("/programs")),
-            ft.Text("Programs"),
-            ft.IconButton(icon=ft.icons.COMPUTER, on_click=lambda _: page.go("/commands")),
-            ft.Text("Commands"),
+            settings_icon,
+            settings_text,
+            delprof_icon,
+            delprof_text,
+            printers_icon,
+            printers_text,
+            programs_icon,
+            programs_text,
+            commands_icon,
+            commands_text,
         ])
     )
     
     # Console text output
-    console_output = ft.Text("", width=500, height=500, overflow=True, selectable=True)
+    console_output = ft.Text("", width=500, height=500, overflow=True, selectable=True, size=font_size)
     
     # Computer Text Field
     computer_name = ft.TextField(label="Computer Name")
@@ -54,7 +86,20 @@ def main(page: ft.Page):
             result = powershell.quser(computer=computer_name.value)
             update_console(result)
 
+
+    ping_btn = ft.FilledButton(text="Ping", on_click=ping)
+    quser_btn = ft.IconButton(
+                                icon=ft.icons.PERSON,
+                                icon_color="blue400",
+                                icon_size=20,
+                                tooltip="QUser",
+                                on_click=quser
+                            )
+    font_size_text = ft.Text("Font Size:")
+    font_size_num_txt = ft.Text(f"{font_size}")
     def route_change(route):
+        
+        
         page.views.clear()
         page.views.append(
             ft.View(
@@ -70,14 +115,8 @@ def main(page: ft.Page):
                         ft.Column(controls=[
                             ft.Row([
                                 ft.Column(controls=[computer_name]),
-                                ft.Column(controls=[ft.FilledButton(text="Ping", on_click=ping)]),
-                                ft.Column(controls=[ft.IconButton(
-                                        icon=ft.icons.PERSON,
-                                        icon_color="blue400",
-                                        icon_size=20,
-                                        tooltip="QUser",
-                                        on_click=quser
-                                    )])
+                                ft.Column(controls=[ping_btn]),
+                                ft.Column(controls=[quser_btn])
                                 ]
                             ),
                             # Text Output (Console)
@@ -93,6 +132,7 @@ def main(page: ft.Page):
                 ],
             )
         )
+        
         if page.route == "/settings":
             page.views.append(
                 ft.View(
@@ -100,6 +140,18 @@ def main(page: ft.Page):
                     [
                         ft.AppBar(title=ft.Text("Settings"), bgcolor=ft.colors.SURFACE_VARIANT),
                         ft.ElevatedButton("Go Home", on_click=lambda _: page.go("/")),
+                        ft.Row(
+                            [
+                                font_size_text,
+                                font_size_num_txt,
+                            ]
+                        ),
+                        ft.Row(
+                            [
+                                ft.Slider(value=font_size, min=10, max=36, divisions=26, on_change=set_font_size),
+                            ]
+                            
+                        )
                     ],
                 )
             )
