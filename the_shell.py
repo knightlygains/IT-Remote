@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import flet as ft
 
 class Power_Shell():
     def __init___(self):
