@@ -56,11 +56,12 @@ def main(page: ft.Page):
     )
     
     # Console text output
-    console_output = ft.Text("", width=500, height=500, overflow=True, selectable=True, size=font_size)
+    console_output = ft.Text("", overflow=True, selectable=True, size=font_size)
     console_container = ft.Container(
                                 content=console_output,
                                 bgcolor=ft.colors.BLUE,
-                                expand=True
+                                expand=True,
+                                alignment=ft.alignment.top_left,
                                 )
     
     # Computer Text Field
