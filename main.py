@@ -22,7 +22,7 @@ def main(page: ft.Page):
         console_output.size = font_size
         font_size_text.size = font_size
         font_size_num_txt.size = font_size
-        font_size_num_txt.text = font_size
+        font_size_num_txt.value = f"{font_size}"
         page.update()
     
     page.window_width = 630
@@ -122,13 +122,15 @@ def main(page: ft.Page):
                             # Text Output (Console)
                             ft.Row([
                                 ft.Container(
+                                expand=1,
                                 content=console_output,
                                 bgcolor=ft.colors.BLUE,
-                                padding=5,
+                                margin=10,
+                                border=ft.border.all(10)
                                 )
                             ])
                         ])
-                    ])
+                    ], expand=True)
                 ],
             )
         )
