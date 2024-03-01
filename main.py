@@ -177,14 +177,13 @@ def main(page: ft.Page):
         if op == "-":
             running_processes_count -= 1
             running_processes_count_text.value = f"{running_processes_count}"
-            running_processes_count_text.update()
+            page.update()
         else:
             running_processes_count += 1
             running_processes_count_text.value = f"{running_processes_count}"
-            running_processes_count_text.update()
+            page.update()
     
     def ping(e):
-        
         if computer_name.value == "":
             update_console("Please input a computer hostname")
         else:
@@ -200,11 +199,12 @@ def main(page: ft.Page):
         if computer_name.value == "":
             update_console("Please input a computer hostname")
         else:
-            running_processes_count_text
+            update_processes("+")
             show_message(f"Querying logged in users on {computer_name.value}")
             powershell = the_shell.Power_Shell()
             result = powershell.quser(computer=computer_name.value)
             update_console(result)
+            update_processes("-")
 
 
     ping_btn = ft.FilledButton(text="Ping", on_click=ping)
@@ -225,7 +225,7 @@ def main(page: ft.Page):
                 "/",
                 [ 
                     ft.Row([
-                        ft.Column(controls=[left_tab_pane]),
+                        ft.Column(controls=[left_tab_pane], alignment="center"),
                         ft.Column([
                             ft.Row([
                                 computer_name,

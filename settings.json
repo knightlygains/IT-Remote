@@ -1,7 +1,7 @@
 {
-    "font_size": 16,
-    "console_color": "blue",
+    "font_size": 18,
+    "console_color": "red",
     "console_text_color": "white",
-    "window_width": 685.0,
-    "window_height": 335.0
+    "window_width": 831.0,
+    "window_height": 414.0
 }
