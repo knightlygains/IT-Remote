@@ -25,8 +25,8 @@ def main(page: ft.Page):
         font_size_num_txt.value = f"{font_size}"
         page.update()
     
-    page.window_width = 630
-    page.window_height = 630
+    page.window_width = 640
+    page.window_height = 640
     
     # Left tab Pane
     settings_icon = ft.IconButton(icon=ft.icons.SETTINGS, on_click=lambda _: page.go("/settings"))
@@ -57,6 +57,11 @@ def main(page: ft.Page):
     
     # Console text output
     console_output = ft.Text("", width=500, height=500, overflow=True, selectable=True, size=font_size)
+    console_container = ft.Container(
+                                content=console_output,
+                                bgcolor=ft.colors.BLUE,
+                                expand=True
+                                )
     
     # Computer Text Field
     computer_name = ft.TextField(label="Computer Name")
@@ -99,37 +104,23 @@ def main(page: ft.Page):
     font_size_num_txt = ft.Text(f"{font_size}")
     def route_change(route):
         
-        
         page.views.clear()
         page.views.append(
             ft.View(
                 "/",
-                [
-                    # Initial row containing all children
+                [ 
                     ft.Row([
-                        
-                        # Left pane tab options
                         ft.Column(controls=[left_tab_pane]),
-                        
-                        # Column containing Main View
-                        ft.Column(controls=[
+                        ft.Column([
                             ft.Row([
-                                ft.Column(controls=[computer_name]),
-                                ft.Column(controls=[ping_btn]),
-                                ft.Column(controls=[quser_btn])
-                                ]
-                            ),
-                            # Text Output (Console)
+                                computer_name,
+                                ping_btn,
+                                quser_btn
+                            ]),
                             ft.Row([
-                                ft.Container(
-                                expand=1,
-                                content=console_output,
-                                bgcolor=ft.colors.BLUE,
-                                margin=10,
-                                border=ft.border.all(10)
-                                )
-                            ])
-                        ])
+                                console_container
+                            ], expand=True)
+                        ], expand=True)
                     ], expand=True)
                 ],
             )
