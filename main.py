@@ -112,8 +112,12 @@ def main(page: ft.Page):
         console_color_label.size = font_size
         running_processes_icon.size = font_size
         running_processes_count_text.size = font_size
+        show_running_processes.size = font_size
         page.update()
 
+    
+    # Store list of runing processes here for tooltip
+    list_of_processes = []
     
     # Left tab Pane
     settings_icon = ft.FilledButton("Settings", icon=ft.icons.SETTINGS, on_click=lambda _: page.go("/settings"))
@@ -124,8 +128,9 @@ def main(page: ft.Page):
     
     # Other controls
     settings_save_btn = ft.FilledButton("Save", icon=ft.icons.SAVE, on_click=update_settings)
-    running_processes_icon = ft.Icon(name=ft.icons.TERMINAL, size=font_size)
+    running_processes_icon = ft.Icon(name=ft.icons.TERMINAL, size=font_size, tooltip=list_of_processes)
     running_processes_count_text = ft.Text(f"{running_processes_count}", size=font_size)
+    show_running_processes = ft.Text("", size=font_size)
     
     # Settings color choice radio
     console_color_label = ft.Text("Console Color:", size=font_size)
@@ -172,39 +177,47 @@ def main(page: ft.Page):
         console_output.value = f"\n[{date_time()}]: {data}" + f"\n{console_output.value}"
         page.update()
     
-    def update_processes(op):
+    def update_processes(op, name):
         global running_processes_count
         if op == "-":
             running_processes_count -= 1
+            list_of_processes.remove(name)
             running_processes_count_text.value = f"{running_processes_count}"
-            page.update()
         else:
             running_processes_count += 1
+            list_of_processes.append(name)
             running_processes_count_text.value = f"{running_processes_count}"
-            page.update()
+        if len(list_of_processes) > 0:
+            processes = ""
+            for process in list_of_processes:
+                processes += f"{process} "
+            show_running_processes.value = processes
+        else:
+            show_running_processes.value = ""
+        page.update()
     
     def ping(e):
         if computer_name.value == "":
             update_console("Please input a computer hostname")
         else:
-            update_processes("+")
+            update_processes("+", "PING")
             show_message(f"Pinging {computer_name.value}")
             powershell = the_shell.Power_Shell()
             result = powershell.ping(computer=computer_name.value)
             update_console(result)
-            update_processes("-")
+            update_processes("-", "PING")
             
     
     def quser(e):
         if computer_name.value == "":
             update_console("Please input a computer hostname")
         else:
-            update_processes("+")
+            update_processes("+", "QUSER")
             show_message(f"Querying logged in users on {computer_name.value}")
             powershell = the_shell.Power_Shell()
             result = powershell.quser(computer=computer_name.value)
             update_console(result)
-            update_processes("-")
+            update_processes("-", "QUSER")
 
 
     ping_btn = ft.FilledButton(text="Ping", on_click=ping)
@@ -232,7 +245,12 @@ def main(page: ft.Page):
                                 ping_btn,
                                 quser_btn,
                                 running_processes_icon,
-                                running_processes_count_text
+                                running_processes_count_text,
+                                ft.Column([
+                                    ft.Row([
+                                        show_running_processes
+                                    ], scroll=True, width=200)
+                                ])
                             ]),
                             ft.Row([
                                 console_container
