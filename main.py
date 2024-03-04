@@ -2,6 +2,7 @@ import flet as ft
 import the_shell
 import datetime
 import json
+import powershell_functions
 
 # Initial settings.json values
 font_size = 16
@@ -11,6 +12,8 @@ window_width = 680
 window_height = 680
 
 running_processes_count = 0
+
+printer_wiz_target_computer = ""
 
 # Load user settings
 def load_settings(e, update):
@@ -58,8 +61,6 @@ def load_settings(e, update):
                 "window_height": 680
             }
             json.dump(data, file, indent=4)
-    
-
     
 load_settings(e=None, update=False)
 
@@ -131,6 +132,9 @@ def main(page: ft.Page):
     running_processes_icon = ft.Icon(name=ft.icons.TERMINAL, size=font_size, tooltip=list_of_processes)
     running_processes_count_text = ft.Text(f"{running_processes_count}", size=font_size)
     show_running_processes = ft.Text("", size=font_size)
+    
+    # List view for printer wizard
+    printer_wiz_listview = ft.ListView(expand=1, spacing=10, padding=20, auto_scroll=True)
     
     # Settings color choice radio
     console_color_label = ft.Text("Console Color:", size=font_size)
@@ -230,6 +234,58 @@ def main(page: ft.Page):
             result = powershell.check_printers(computer=computer_name.value)
             update_console(result)
             update_processes("-", "CHECK-PRINTERS")
+    
+    
+    def printer_wizard(e):
+        global printer_wiz_target_computer
+        if check_computer_name():
+            printer_wiz_target_computer = computer_name.value
+            update_processes("+", "PRINTER_WIZARD")
+            show_message(f"Running printer wizard on {computer_name.value}")
+            powershell = the_shell.Power_Shell()
+            result = powershell.printer_wizard(computer=computer_name.value)
+            update_processes("-", "PRINTER_WIZARD")
+            printer_wiz_listview.controls.clear()
+            with open(f"./results/{computer_name.value}-Printers.json") as file:
+                printers = json.load(file)
+            for printer in printers:
+                new_printer = printers[printer]
+                printer_list_item = ft.Row([
+                    ft.Column([
+                        ft.Text(f"{new_printer["Name"]}, Status: {new_printer["Status"]}", size=font_size)
+                    ], width=200),
+                    ft.Column([
+                        ft.FilledButton("Test Page", data=f"{new_printer["Name"]}", on_click=printer_wiz_testpage)
+                    ]),
+                    ft.Column([
+                        ft.FilledButton("Rename")
+                    ]),
+                    ft.Column([
+                        ft.FilledButton("Uninstall")
+                    ]),
+                ])
+                
+                printer_wiz_listview.controls.append(printer_list_item)
+            page.go("/printerwizard")
+        
+    def printer_wiz_testpage(e):
+        if check_computer_name():
+            update_processes("+", "TEST-PAGE")
+            show_message(f"Printing test page from {computer_name.value}.")
+            powershell = the_shell.Power_Shell()
+            result = powershell.test_page(computer=computer_name.value, printerName=e.control.data)
+            update_console(result)
+            update_processes("-", "TEST-PAGE")
+    
+    # def test_command(e):
+    #     page.go("/")
+    #     update_processes("+", "TEST")
+    #     show_message(f"Running test.ps1")
+    #     powershell = the_shell.Power_Shell()
+    #     result = powershell.test_commands()
+    #     for item in result:
+    #         print("print statement", item)
+    #     update_processes("-", "TEST")
             
 
     ping_btn = ft.FilledButton(text="Ping", on_click=ping)
@@ -280,7 +336,6 @@ def main(page: ft.Page):
                     "/settings",
                     [
                         ft.AppBar(title=ft.Text("Settings"), bgcolor=ft.colors.SURFACE_VARIANT),
-                        ft.ElevatedButton("Go Home", on_click=lambda _: page.go("/")),
                         ft.Row(
                             [
                                 font_size_text,
@@ -319,6 +374,25 @@ def main(page: ft.Page):
                     [
                         ft.AppBar(title=ft.Text("Printers"), bgcolor=ft.colors.SURFACE_VARIANT),
                         ft.ElevatedButton("Check Printers", on_click=check_printers),
+                        ft.ElevatedButton("Printer Wizard", on_click=printer_wizard),
+                    ],
+                )
+            )
+        if page.route == "/printerwizard":
+            page.views.append(
+                ft.View(
+                    "/printerwizard",
+                    [
+                        ft.AppBar(title=ft.Text("Printer Wizard"), bgcolor=ft.colors.SURFACE_VARIANT),
+                        ft.Row([
+                            ft.Column([
+                            printer_wiz_listview,
+                            ], expand=True),
+                            ft.Column([
+                                console_container
+                            ], expand=True)
+                        ], expand=True)
+                        
                     ],
                 )
             )

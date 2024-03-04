@@ -17,3 +17,15 @@ class Power_Shell():
     def check_printers(self, computer):
         p = subprocess.getoutput(["pwsh.exe", "-File", f"./scripts/check_printers.ps1", f"{computer}" ])
         return p
+    
+    def printer_wizard(self, computer):
+        p = subprocess.getoutput(["pwsh.exe", "-File", f"./scripts/PrinterWiz.ps1", f"{computer}" ])
+        return p
+    
+    def test_commands(self):
+        p = subprocess.getoutput(["pwsh.exe", "-File", f"./scripts/test.ps1"])
+        return p
+
+    def test_page(self, computer, printerName):
+        p = subprocess.getoutput(["pwsh.exe", "-File", f"./scripts/test_page.ps1", f"{computer}", f"{printerName}"])
+        return p
