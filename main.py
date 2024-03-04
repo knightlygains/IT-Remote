@@ -196,22 +196,24 @@ def main(page: ft.Page):
             show_running_processes.value = ""
         page.update()
     
-    def ping(e):
+    def check_computer_name():
         if computer_name.value == "":
             update_console("Please input a computer hostname")
+            return False
         else:
+            return True
+        
+    def ping(e):
+        if check_computer_name():
             update_processes("+", "PING")
             show_message(f"Pinging {computer_name.value}")
             powershell = the_shell.Power_Shell()
             result = powershell.ping(computer=computer_name.value)
             update_console(result)
             update_processes("-", "PING")
-            
     
     def quser(e):
-        if computer_name.value == "":
-            update_console("Please input a computer hostname")
-        else:
+        if check_computer_name():
             update_processes("+", "QUSER")
             show_message(f"Querying logged in users on {computer_name.value}")
             powershell = the_shell.Power_Shell()
@@ -219,6 +221,16 @@ def main(page: ft.Page):
             update_console(result)
             update_processes("-", "QUSER")
 
+    def check_printers(e):
+        if check_computer_name():
+            page.go("/")
+            update_processes("+", "CHECK-PRINTERS")
+            show_message(f"Getting printers on {computer_name.value}")
+            powershell = the_shell.Power_Shell()
+            result = powershell.check_printers(computer=computer_name.value)
+            update_console(result)
+            update_processes("-", "CHECK-PRINTERS")
+            
 
     ping_btn = ft.FilledButton(text="Ping", on_click=ping)
     quser_btn = ft.IconButton(
@@ -306,7 +318,7 @@ def main(page: ft.Page):
                     "/printers",
                     [
                         ft.AppBar(title=ft.Text("Printers"), bgcolor=ft.colors.SURFACE_VARIANT),
-                        ft.ElevatedButton("Go Home", on_click=lambda _: page.go("/")),
+                        ft.ElevatedButton("Check Printers", on_click=check_printers),
                     ],
                 )
             )
