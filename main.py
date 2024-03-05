@@ -2,7 +2,6 @@ import flet as ft
 import the_shell
 import datetime
 import json
-import powershell_functions
 
 # Initial settings.json values
 font_size = 16
@@ -14,6 +13,7 @@ window_height = 680
 running_processes_count = 0
 
 printer_wiz_target_computer = ""
+printer_to_change = ""
 
 # Load user settings
 def load_settings(e, update):
@@ -114,6 +114,7 @@ def main(page: ft.Page):
         running_processes_icon.size = font_size
         running_processes_count_text.size = font_size
         show_running_processes.size = font_size
+        new_printer_name.text_size = font_size
         page.update()
 
     
@@ -134,7 +135,8 @@ def main(page: ft.Page):
     show_running_processes = ft.Text("", size=font_size)
     
     # List view for printer wizard
-    printer_wiz_listview = ft.ListView(expand=1, spacing=10, padding=20, auto_scroll=True)
+    printer_wiz_listview = ft.ListView(expand=1, spacing=10, padding=20)
+    new_printer_name = ft.TextField(text_size=font_size, expand=True)
     
     # Settings color choice radio
     console_color_label = ft.Text("Console Color:", size=font_size)
@@ -234,7 +236,52 @@ def main(page: ft.Page):
             result = powershell.check_printers(computer=computer_name.value)
             update_console(result)
             update_processes("-", "CHECK-PRINTERS")
+        else:
+            show_message("There is no computer name entered.")
+            
+    def rename_printer(e):
+        if check_computer_name():
+            close_dlg(e)
+            update_processes("+", "RENAME-PRINTER")
+            show_message(f"Renaming printer on {computer_name.value}")
+            powershell = the_shell.Power_Shell()
+            result = powershell.rename_printer(computer=computer_name.value, printerName=printer_to_change, newName=new_printer_name.value)
+            update_console(result)
+            update_processes("-", "RENAME-PRINTER")
+        printer_wizard(e)
+        
+    # Rename Printer modal
+    def close_dlg(e):
+        printer_name_modal.open = False
+        page.update()
+
+    enter_printer_name = ft.Column([
+        ft.Row([
+            ft.Text("What's the new name?", size=font_size, expand=True),
+        ]),
+        ft.Row([
+            new_printer_name
+        ]),
+    ], alignment="center")
+
+    printer_name_modal = ft.AlertDialog(
+        modal=True,
+        title=ft.Text("Rename Printer"),
+        content=enter_printer_name,
+        actions=[
+            ft.TextButton("Rename", on_click=rename_printer),
+            ft.TextButton("Cancel", on_click=close_dlg),
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+        on_dismiss=lambda e: print("Modal dialog dismissed!"),
+    )
     
+    def open_printer_name_modal(e):
+        global printer_to_change
+        printer_to_change = e.control.data
+        page.dialog = printer_name_modal
+        printer_name_modal.open = True
+        page.update()
     
     def printer_wizard(e):
         global printer_wiz_target_computer
@@ -258,7 +305,7 @@ def main(page: ft.Page):
                         ft.FilledButton("Test Page", data=f"{new_printer["Name"]}", on_click=printer_wiz_testpage)
                     ]),
                     ft.Column([
-                        ft.FilledButton("Rename")
+                        ft.FilledButton("Rename", data=f"{new_printer["Name"]}", on_click=open_printer_name_modal), 
                     ]),
                     ft.Column([
                         ft.FilledButton("Uninstall")
@@ -267,6 +314,8 @@ def main(page: ft.Page):
                 
                 printer_wiz_listview.controls.append(printer_list_item)
             page.go("/printerwizard")
+        else:
+            show_message("There is no computer name entered.")
         
     def printer_wiz_testpage(e):
         if check_computer_name():
@@ -276,17 +325,6 @@ def main(page: ft.Page):
             result = powershell.test_page(computer=computer_name.value, printerName=e.control.data)
             update_console(result)
             update_processes("-", "TEST-PAGE")
-    
-    # def test_command(e):
-    #     page.go("/")
-    #     update_processes("+", "TEST")
-    #     show_message(f"Running test.ps1")
-    #     powershell = the_shell.Power_Shell()
-    #     result = powershell.test_commands()
-    #     for item in result:
-    #         print("print statement", item)
-    #     update_processes("-", "TEST")
-            
 
     ping_btn = ft.FilledButton(text="Ping", on_click=ping)
     quser_btn = ft.IconButton(
@@ -387,10 +425,10 @@ def main(page: ft.Page):
                         ft.Row([
                             ft.Column([
                             printer_wiz_listview,
-                            ], expand=True),
+                            ], expand=2),
                             ft.Column([
                                 console_container
-                            ], expand=True)
+                            ], expand=1)
                         ], expand=True)
                         
                     ],

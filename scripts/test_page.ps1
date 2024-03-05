@@ -6,7 +6,7 @@ param (
 )
 
 Invoke-Command -ComputerName $Computer -ScriptBlock {
-                param($printerName)
-                $printer = Get-WmiObject Win32_Printer | where {$_.name -eq "$printerName"}
-                $printer.PrintTestPage()
-            } -ArgumentList ($printerName)
+    param($printerName)
+    $printer = Get-WmiObject Win32_Printer | Where-Object { $_.name -eq "$printerName" }
+    $printer.PrintTestPage()
+} -ArgumentList ($printerName)

@@ -29,3 +29,7 @@ class Power_Shell():
     def test_page(self, computer, printerName):
         p = subprocess.getoutput(["pwsh.exe", "-File", f"./scripts/test_page.ps1", f"{computer}", f"{printerName}"])
         return p
+    
+    def rename_printer(self, computer, printerName, newName):
+        p = subprocess.getoutput(["pwsh.exe", "-File", f"./scripts/rename_printer.ps1", f"{computer}", f"{printerName}", f"{newName}"])
+        return p
