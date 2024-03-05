@@ -115,6 +115,7 @@ def main(page: ft.Page):
         running_processes_count_text.size = font_size
         show_running_processes.size = font_size
         new_printer_name.text_size = font_size
+        console_label.size = font_size
         page.update()
 
     
@@ -128,11 +129,86 @@ def main(page: ft.Page):
     programs_icon = ft.FilledButton("Programs", icon=ft.icons.SAVE, on_click=lambda _: page.go("/programs"))
     commands_icon = ft.FilledButton("Commands", icon=ft.icons.COMPUTER, on_click=lambda _: page.go("/commands"))
     
+    
+    
+    def ping(e):
+        if check_computer_name():
+            update_processes("+", "PING")
+            show_message(f"Pinging {computer_name.value}")
+            powershell = the_shell.Power_Shell()
+            result = powershell.ping(computer=computer_name.value)
+            update_console(result)
+            update_processes("-", "PING")
+    
+    
+    
+    #Left pane navigation rail
+    def navigate_view(e):
+        index = e.control.selected_index
+        if index == 0:
+            current_view.controls = [settings]
+        if index == 1:
+            current_view.controls = [home]
+        if index == 2:
+            page.go("/delprof")
+        if index == 3:
+            current_view.controls = [printers]
+        if index == 4:
+            page.go("/programs")
+        if index == 5:
+            page.go("/commands")
+        page.update()
+    
+    
+    
+    rail = ft.NavigationRail(
+        selected_index=1,
+        label_type=ft.NavigationRailLabelType.ALL,
+        # extended=True,
+        min_width=100,
+        min_extended_width=400,
+        group_alignment=-0.9,
+        destinations=[
+            ft.NavigationRailDestination(
+                icon=ft.icons.SETTINGS_OUTLINED,
+                selected_icon_content=ft.Icon(ft.icons.SETTINGS),
+                label_content=ft.Text("Settings"),
+            ),
+            ft.NavigationRailDestination(
+                icon=ft.icons.HOME_OUTLINED,
+                selected_icon_content=ft.Icon(ft.icons.HOME),
+                label_content=ft.Text("Home"),
+            ),
+            ft.NavigationRailDestination(
+                icon=ft.icons.DELETE_OUTLINE,
+                selected_icon_content=ft.Icon(ft.icons.DELETE),
+                label_content=ft.Text("DelProf2"),
+            ),
+            ft.NavigationRailDestination(
+                icon=ft.icons.PRINT_OUTLINED,
+                selected_icon_content=ft.Icon(ft.icons.PRINT),
+                label_content=ft.Text("Printers"),
+            ),
+            ft.NavigationRailDestination(
+                icon=ft.icons.SAVE_OUTLINED,
+                selected_icon_content=ft.Icon(ft.icons.SAVE),
+                label_content=ft.Text("Programs"),
+            ),
+            ft.NavigationRailDestination(
+                icon=ft.icons.LAPTOP_OUTLINED,
+                selected_icon_content=ft.Icon(ft.icons.LAPTOP),
+                label_content=ft.Text("Commands"),
+            ),
+        ],
+        on_change=navigate_view
+    )
+    
     # Other controls
     settings_save_btn = ft.FilledButton("Save", icon=ft.icons.SAVE, on_click=update_settings)
     running_processes_icon = ft.Icon(name=ft.icons.TERMINAL, size=font_size, tooltip=list_of_processes)
     running_processes_count_text = ft.Text(f"{running_processes_count}", size=font_size)
     show_running_processes = ft.Text("", size=font_size)
+    console_label = ft.Text("Console Output:", size=font_size)
     
     # List view for printer wizard
     printer_wiz_listview = ft.ListView(expand=1, spacing=10, padding=20)
@@ -162,17 +238,21 @@ def main(page: ft.Page):
         ])
     )
     
+    
+    console_text = ft.Text("", overflow=True, selectable=True, size=font_size, color=console_text_color)
+    
     # Console text output
-    console_output = ft.Text("", overflow=True, selectable=True, size=font_size, color=console_text_color)
+    console_output = ft.Row([
+        console_text
+        ], expand=True)
     console_container = ft.Container(
                                 content=console_output,
                                 bgcolor=console_color,
                                 expand=True,
-                                alignment=ft.alignment.top_left,
+                                alignment=ft.alignment.top_center,
                                 )
     
-    # Computer Text Field
-    computer_name = ft.TextField(label="Computer Name")
+    
     
     def date_time():
         x = datetime.datetime.now()
@@ -180,7 +260,7 @@ def main(page: ft.Page):
         return x
     
     def update_console(data):
-        console_output.value = f"\n[{date_time()}]: {data}" + f"\n{console_output.value}"
+        console_text.value = f"\n[{date_time()}]: {data}" + f"\n{console_text.value}"
         page.update()
     
     def update_processes(op, name):
@@ -209,14 +289,7 @@ def main(page: ft.Page):
         else:
             return True
         
-    def ping(e):
-        if check_computer_name():
-            update_processes("+", "PING")
-            show_message(f"Pinging {computer_name.value}")
-            powershell = the_shell.Power_Shell()
-            result = powershell.ping(computer=computer_name.value)
-            update_console(result)
-            update_processes("-", "PING")
+    
     
     def quser(e):
         if check_computer_name():
@@ -287,6 +360,7 @@ def main(page: ft.Page):
         global printer_wiz_target_computer
         if check_computer_name():
             printer_wiz_target_computer = computer_name.value
+            current_view.controls = [print_wizard_view]
             update_processes("+", "PRINTER_WIZARD")
             show_message(f"Running printer wizard on {computer_name.value}")
             powershell = the_shell.Power_Shell()
@@ -326,6 +400,10 @@ def main(page: ft.Page):
             update_console(result)
             update_processes("-", "TEST-PAGE")
 
+
+    # Computer Text Field
+    computer_name = ft.TextField(label="Computer Name")
+    
     ping_btn = ft.FilledButton(text="Ping", on_click=ping)
     quser_btn = ft.IconButton(
                                 icon=ft.icons.PERSON,
@@ -336,137 +414,84 @@ def main(page: ft.Page):
                             )
     font_size_text = ft.Text("Font Size:", size=font_size)
     font_size_num_txt = ft.Text(f"{font_size}",size=font_size)
-    def route_change(route):
-        
-        page.views.clear()
-        page.views.append(
-            ft.View(
-                "/",
-                [ 
+
+
+    home = ft.Column([
+            ft.Row([
+                computer_name,
+                ping_btn,
+                quser_btn,
+                running_processes_icon,
+                running_processes_count_text,
+                ft.Column([
                     ft.Row([
-                        ft.Column(controls=[left_tab_pane], alignment="center"),
-                        ft.Column([
-                            ft.Row([
-                                computer_name,
-                                ping_btn,
-                                quser_btn,
-                                running_processes_icon,
-                                running_processes_count_text,
-                                ft.Column([
-                                    ft.Row([
-                                        show_running_processes
-                                    ], scroll=True, width=200)
-                                ])
-                            ]),
-                            ft.Row([
-                                console_container
-                            ], expand=True)
-                        ], expand=True),
-                        
-                    ], expand=True),
-                ],
-            )
-        )
-        
-        if page.route == "/settings":
-            page.views.append(
-                ft.View(
-                    "/settings",
-                    [
-                        ft.AppBar(title=ft.Text("Settings"), bgcolor=ft.colors.SURFACE_VARIANT),
-                        ft.Row(
-                            [
-                                font_size_text,
-                                font_size_num_txt,
-                            ]
-                        ),
-                        ft.Row(
-                            [
-                                ft.Slider(value=font_size, min=10, max=36, divisions=26, on_change=set_font_size),
-                            ]
-                        ),
-                        ft.Row([
-                            console_color_label,
-                            cg
-                        ]),
-                        ft.Row([
-                            settings_save_btn,
-                        ])
-                    ],
-                )
-            )
-        if page.route == "/delprof":
-            page.views.append(
-                ft.View(
-                    "/delprof",
-                    [
-                        ft.AppBar(title=ft.Text("DelProf2"), bgcolor=ft.colors.SURFACE_VARIANT),
-                        ft.ElevatedButton("Go Home", on_click=lambda _: page.go("/")),
-                    ],
-                )
-            )
-        if page.route == "/printers":
-            page.views.append(
-                ft.View(
-                    "/printers",
-                    [
-                        ft.AppBar(title=ft.Text("Printers"), bgcolor=ft.colors.SURFACE_VARIANT),
-                        ft.ElevatedButton("Check Printers", on_click=check_printers),
-                        ft.ElevatedButton("Printer Wizard", on_click=printer_wizard),
-                    ],
-                )
-            )
-        if page.route == "/printerwizard":
-            page.views.append(
-                ft.View(
-                    "/printerwizard",
-                    [
-                        ft.AppBar(title=ft.Text("Printer Wizard"), bgcolor=ft.colors.SURFACE_VARIANT),
-                        ft.Row([
-                            ft.Column([
-                            printer_wiz_listview,
-                            ], expand=2),
-                            ft.Column([
-                                console_container
-                            ], expand=1)
-                        ], expand=True)
-                        
-                    ],
-                )
-            )
-        if page.route == "/programs":
-            page.views.append(
-                ft.View(
-                    "/programs",
-                    [
-                        ft.AppBar(title=ft.Text("Programs"), bgcolor=ft.colors.SURFACE_VARIANT),
-                        ft.ElevatedButton("Go Home", on_click=lambda _: page.go("/")),
-                    ],
-                )
-            )
-        if page.route == "/commands":
-            page.views.append(
-                ft.View(
-                    "/commands",
-                    [
-                        ft.AppBar(title=ft.Text("Commands"), bgcolor=ft.colors.SURFACE_VARIANT),
-                        ft.ElevatedButton("Go Home", on_click=lambda _: page.go("/")),
-                    ],
-                )
-            )
-        page.update()
-        
-    def view_pop(view):
-        page.views.pop()
-        top_view = page.views[-1]
-        page.go(top_view.route)
+                        show_running_processes
+                    ], scroll=True, width=200)
+                ])
+            ]),
+            console_label,
+            console_container
+        ], expand=True)
     
-    page.on_route_change = route_change
-    page.on_view_pop = view_pop
-    page.go(page.route)
+    settings = ft.Column([
+        ft.Row(
+            [
+                font_size_text,
+                font_size_num_txt,
+            ]
+        ),
+        ft.Row(
+            [
+                ft.Slider(value=font_size, min=10, max=36, divisions=26, on_change=set_font_size),
+            ]
+        ),
+        ft.Row([
+            console_color_label,
+            cg
+        ]),
+        ft.Row([
+            settings_save_btn,
+        ])
+    ])
     
-    # page.add(
+    printers = ft.Column([
+        ft.Row([
+                computer_name,
+                ping_btn,
+                quser_btn,
+                running_processes_icon,
+                running_processes_count_text,
+                ft.Column([
+                    ft.Row([
+                        show_running_processes
+                    ], scroll=True, width=200)
+                ])
+            ]),
+        ft.ElevatedButton("Check Printers", on_click=check_printers),
+        ft.ElevatedButton("Printer Wizard", on_click=printer_wizard),
+    ])
+    
+    current_view = ft.Row([home], expand=True)
+
+    print_wizard_view = ft.Row([
+
+            ft.Column([
+                printer_wiz_listview,
+            ], expand=2),
+
+            ft.Column([
+                console_label,
+                console_container
+            ], expand=1,)
+
+    ], expand=True)
         
-    # )
+    page.add(
+        ft.Row([
+            rail,
+            current_view
+        ], expand=True)
+
+    )
 
 ft.app(target=main)
