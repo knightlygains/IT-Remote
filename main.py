@@ -3,12 +3,12 @@ import the_shell
 import datetime
 import json
 
-# Initial settings.json values
+# Default settings.json values
 font_size = 16
 console_color = "blue"
 console_text_color = "white"
-window_width = 680
-window_height = 680
+window_width = 650
+window_height = 515
 
 running_processes_count = 0
 
@@ -68,6 +68,8 @@ def main(page: ft.Page):
     
     page.window_width = window_width
     page.window_height = window_height
+    page.window_min_height = 515
+    page.window_min_width = 650
     
     def save_page_dimensions(e):
         print("page resize")
@@ -105,7 +107,6 @@ def main(page: ft.Page):
         printers_icon.icon_size = font_size
         programs_icon.icon_size = font_size
         commands_icon.icon_size = font_size
-        console_output.size = font_size
         font_size_text.size = font_size
         font_size_num_txt.size = font_size
         font_size_num_txt.value = f"{font_size}"
@@ -129,8 +130,6 @@ def main(page: ft.Page):
     programs_icon = ft.FilledButton("Programs", icon=ft.icons.SAVE, on_click=lambda _: page.go("/programs"))
     commands_icon = ft.FilledButton("Commands", icon=ft.icons.COMPUTER, on_click=lambda _: page.go("/commands"))
     
-    
-    
     def ping(e):
         if check_computer_name():
             update_processes("+", "PING")
@@ -139,8 +138,6 @@ def main(page: ft.Page):
             result = powershell.ping(computer=computer_name.value)
             update_console(result)
             update_processes("-", "PING")
-    
-    
     
     #Left pane navigation rail
     def navigate_view(e):
@@ -238,20 +235,15 @@ def main(page: ft.Page):
         ])
     )
     
-    
-    console_text = ft.Text("", overflow=True, selectable=True, size=font_size, color=console_text_color)
-    
     # Console text output
-    console_output = ft.Row([
-        console_text
-        ], expand=True)
+    console_text = ft.Text("", selectable=True, size=font_size, color=console_text_color)
+
     console_container = ft.Container(
-                                content=console_output,
+                                content=console_text,
                                 bgcolor=console_color,
                                 expand=True,
-                                alignment=ft.alignment.top_center,
+                                alignment=ft.alignment.top_left,
                                 )
-    
     
     
     def date_time():
@@ -284,12 +276,10 @@ def main(page: ft.Page):
     
     def check_computer_name():
         if computer_name.value == "":
-            update_console("Please input a computer hostname")
+            show_message("Please input a computer hostname")
             return False
         else:
             return True
-        
-    
     
     def quser(e):
         if check_computer_name():
@@ -365,10 +355,14 @@ def main(page: ft.Page):
             show_message(f"Running printer wizard on {computer_name.value}")
             powershell = the_shell.Power_Shell()
             result = powershell.printer_wizard(computer=computer_name.value)
+            update_console(result)
             update_processes("-", "PRINTER_WIZARD")
             printer_wiz_listview.controls.clear()
             with open(f"./results/{computer_name.value}-Printers.json") as file:
                 printers = json.load(file)
+            
+            # For each printer in the json file, show a ft.Row
+            # containing text and buttons
             for printer in printers:
                 new_printer = printers[printer]
                 printer_list_item = ft.Row([
@@ -388,8 +382,6 @@ def main(page: ft.Page):
                 
                 printer_wiz_listview.controls.append(printer_list_item)
             page.go("/printerwizard")
-        else:
-            show_message("There is no computer name entered.")
         
     def printer_wiz_testpage(e):
         if check_computer_name():
@@ -399,7 +391,6 @@ def main(page: ft.Page):
             result = powershell.test_page(computer=computer_name.value, printerName=e.control.data)
             update_console(result)
             update_processes("-", "TEST-PAGE")
-
 
     # Computer Text Field
     computer_name = ft.TextField(label="Computer Name")
@@ -416,6 +407,8 @@ def main(page: ft.Page):
     font_size_num_txt = ft.Text(f"{font_size}",size=font_size)
 
 
+    # "Views". We swap these in and out of current_view
+    # when navigating using the rail.
     home = ft.Column([
             ft.Row([
                 computer_name,
@@ -485,10 +478,17 @@ def main(page: ft.Page):
             ], expand=1,)
 
     ], expand=True)
+    
+    delprof_view = ft.Row([
         
+    ])
+    
+    
+    #Finally build the page
     page.add(
         ft.Row([
             rail,
+            ft.VerticalDivider(width=9, thickness=3),
             current_view
         ], expand=True)
 

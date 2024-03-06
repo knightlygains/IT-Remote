@@ -46,8 +46,9 @@ Function getPrinters {
     $variableNumber = 1
     #Loop through adapters and create/update variables for each one.
 
-    New-Item -Path ".\results\$Computer-Printers.json" -ItemType "file" -Force
 
+    New-Item -Path ".\results\$Computer-Printers.json" -ItemType "file" -Force
+    
     $json_format = @"
     {
         
@@ -92,10 +93,18 @@ Function getPrinters {
     }
 
     Set-Content -Path ".\results\$Computer-Printers.json" -Value (ConvertTo-Json $json_obj)
+
 }
 
-EnableWinRM -Computers $Computer
-getPrinters
+if (Test-Connection $Computer -Count 1) {
+    EnableWinRM -Computers $Computer
+    getPrinters
+}
+else {
+    return "$Computer could not be contacted."
+}
+
+
 
 # Do{ #Start of printer modification
 #     getPrinters #Call function to create variables of the printers
