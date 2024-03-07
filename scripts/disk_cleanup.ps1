@@ -1,60 +1,23 @@
 
 # [CmdletBinding()]
-# param (
-#     [string]$Computers,
-#     [string]$delete_users,
-#     [string]$logout
-# )
+param (
+    [string]$Computers,
+    [string]$delete_users,
+    [string]$logout,
+    [string]$list
+)
 
-$Computers = "SP350929"
-$delete_users = "True"
-$logout = "True"
-
-$results = "--"
-
-Function EnableWinRM {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory)]
-        [string]$Computers
-    )
-    #accept eula for psexec so it works
-    Start-Process cmd -ArgumentList "/c psexec -accepteula" -WindowStyle hidden
-    #Enable WinRM to use Get-CimInstance
-    
-    #check if winrm running on computer
-    $result = winrm id -r:$computer 2>$null
-    if ($LastExitCode -eq 0) {
-        Write-Host "WinRM already enabled on" $computer "..." -ForegroundColor green
-    }
-    else {
-        Write-Host "Enabling WinRM on" $computer "..." -ForegroundColor red
-        psexec.exe \\"$computer" -s C:\Windows\System32\winrm.cmd qc -quiet
-    
-        if ($LastExitCode -eq 0) {
-            psservice.exe \\"$computer" restart WinRM
-            $result = winrm id -r:$computer 2>$null
-    
-            if ($LastExitCode -eq 0) { Write-Host "WinRM successfully enabled!" -ForegroundColor green }
-            else {
-                exit 1
-            }
-        }
-        else {
-            Write-Host "Couldn't enable WinRM on $computer."
-        } #end of if
-    } #end of else  
+if ($list -eq "True") {
+    $Computers = Get-Content ".\lists\computers.txt"
 }
 
-foreach ($Computer in $Computers) {
-    Write-Host "Here 1"
-    $this_comps_results = ""
+$results = ""
 
-    EnableWinRM $Computer
+foreach ($Computer in $Computers) {
+    $this_comps_results = ""
 
     $command = Invoke-Command -ComputerName $Computer -ScriptBlock {
         param($delete_users, $this_comps_results, $Computer, $logout)
-        Write-Host "Here 2"
         #Get logged in users
         $users = query user /server:$Computer;
 
@@ -68,7 +31,7 @@ foreach ($Computer in $Computers) {
                 $arrayOfUsers += $userOnly
             }
         }
-        Write-Host "Here 3"
+
         #Remove recycle bin data
         $Path = 'C' + ':\$Recycle.Bin'
         # Get all items (files and directories) within the recycle bin path, including hidden ones
@@ -80,7 +43,6 @@ foreach ($Computer in $Computers) {
             Write-Host $_
             $this_comps_results += "Couldn't remove recycle bin data on $($Computer): $_`n"
         }
-        Write-Host "Here 4"
 
         # Remove Temp files from various locations 
         $Path1 = 'C' + ':\Windows\Temp' 
@@ -123,11 +85,11 @@ foreach ($Computer in $Computers) {
         }
 
         # If we want to delete user profiles
-        if ($delete_users -match "True") {
+        if ($delete_users -eq "True") {
             # Get all CimInstances of user profiles
             $users_to_delete = Get-CimInstance Win32_UserProfile | Where-Object { $_.LocalPath -notLike "Public", "admin", "localadmin" }
             
-            if ($logout -match "True") {
+            if ($logout -eq "True") {
                 $IDs = @() ;
                 for ($i = 1; $i -lt $users.Count; $i++) {
                     # using regex to find the IDs
@@ -155,7 +117,6 @@ foreach ($Computer in $Computers) {
                         Write-Host $_
                         $this_comps_results += "Couldn't remove user $user on $($Computer): $_`n"
                     }
-                    
                 }
             }
         }

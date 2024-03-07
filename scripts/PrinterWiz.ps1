@@ -4,41 +4,6 @@ param (
     [string]$Computer
 )
 
-Function EnableWinRM {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory)]
-        [string]$Computers
-    )
-    #accept eula for psexec so it works
-    Start-Process cmd -ArgumentList "/c psexec -accepteula" -WindowStyle hidden
-    #Enable WinRM to use Get-CimInstance and Invoke-Command
-    foreach ($computer in $Computers) {
-        #check if winrm running on computer
-        $result = winrm id -r:$Computers 2>$null
-        if ($LastExitCode -eq 0) {
-            Write-Host "WinRM already enabled on" $computer "..." -ForegroundColor green
-        }
-        else {
-            Write-Host "Enabling WinRM on" $computer "..." -ForegroundColor red
-            psexec.exe \\$computer -s C:\Windows\System32\winrm.cmd qc -quiet
-        
-            if ($LastExitCode -eq 0) {
-                psservice.exe \\$computer restart WinRM
-                $result = winrm id -r:$computer 2>$null
-        
-                if ($LastExitCode -eq 0) { Write-Host "WinRM successfully enabled!" -ForegroundColor green }
-                else {
-                    exit 1
-                }
-            }
-            else {
-                Write-Host "Couldn't enable WinRM on $computer."
-            }
-        }
-    }
-}
-
 Function getPrinters {
     #Variable that allows us to loop through and get all printers on a remote computer.
     $printers = Get-CimInstance -Class Win32_Printer -ComputerName $Computer | Select-Object Name, PrinterStatus
@@ -47,7 +12,7 @@ Function getPrinters {
     #Loop through adapters and create/update variables for each one.
 
 
-    New-Item -Path ".\results\$Computer-Printers.json" -ItemType "file" -Force
+    New-Item -Path ".\results\$Computer-Printers.json" -ItemType "file" -Force | Out-Null
     
     $json_format = @"
     {
@@ -84,8 +49,6 @@ Function getPrinters {
             "Status": "$printerStatus"
         }
 "@
-
-        Write-Host($printer_json)
         
         $json_obj | add-member -Name "$variableNumber" -value (ConvertFrom-Json $printer_json) -MemberType NoteProperty
         
@@ -97,7 +60,6 @@ Function getPrinters {
 }
 
 if (Test-Connection $Computer -Count 1) {
-    EnableWinRM -Computers $Computer
     getPrinters
 }
 else {

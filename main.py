@@ -102,11 +102,6 @@ def main(page: ft.Page):
         global font_size
         font_size = int(e.control.value)
         computer_name.text_size = font_size
-        settings_icon.icon_size = font_size
-        delprof_icon.icon_size = font_size
-        printers_icon.icon_size = font_size
-        programs_icon.icon_size = font_size
-        commands_icon.icon_size = font_size
         font_size_text.size = font_size
         font_size_num_txt.size = font_size
         font_size_num_txt.value = f"{font_size}"
@@ -122,13 +117,6 @@ def main(page: ft.Page):
     
     # Store list of runing processes here for tooltip
     list_of_processes = []
-    
-    # Left tab Pane
-    settings_icon = ft.FilledButton("Settings", icon=ft.icons.SETTINGS, on_click=lambda _: page.go("/settings"))
-    delprof_icon = ft.FilledButton("DelProf2", icon=ft.icons.DELETE, on_click=lambda _: page.go("/delprof"))
-    printers_icon = ft.FilledButton("Printers", icon=ft.icons.PRINT, on_click=lambda _: page.go("/printers"))
-    programs_icon = ft.FilledButton("Programs", icon=ft.icons.SAVE, on_click=lambda _: page.go("/programs"))
-    commands_icon = ft.FilledButton("Commands", icon=ft.icons.COMPUTER, on_click=lambda _: page.go("/commands"))
     
     def ping(e):
         if check_computer_name():
@@ -147,16 +135,14 @@ def main(page: ft.Page):
         if index == 1:
             current_view.controls = [home]
         if index == 2:
-            page.go("/delprof")
+            current_view.controls = [delprof_view]
         if index == 3:
             current_view.controls = [printers]
         if index == 4:
-            page.go("/programs")
+            pass
         if index == 5:
-            page.go("/commands")
+            pass
         page.update()
-    
-    
     
     rail = ft.NavigationRail(
         selected_index=1,
@@ -179,7 +165,7 @@ def main(page: ft.Page):
             ft.NavigationRailDestination(
                 icon=ft.icons.DELETE_OUTLINE,
                 selected_icon_content=ft.Icon(ft.icons.DELETE),
-                label_content=ft.Text("DelProf2"),
+                label_content=ft.Text("Clear Space"),
             ),
             ft.NavigationRailDestination(
                 icon=ft.icons.PRINT_OUTLINED,
@@ -224,17 +210,6 @@ def main(page: ft.Page):
             black_color_radio
         ]))
     
-    
-    left_tab_pane = ft.Container(
-        content=ft.Column(controls=[
-            settings_icon,
-            delprof_icon,
-            printers_icon,
-            programs_icon,
-            commands_icon,
-        ])
-    )
-    
     # Console text output
     console_text = ft.Text("", selectable=True, size=font_size, color=console_text_color)
 
@@ -274,6 +249,13 @@ def main(page: ft.Page):
             show_running_processes.value = ""
         page.update()
     
+    def enable_winrm():
+        update_processes("+", "WinRM")
+        powershell = the_shell.Power_Shell()
+        result = powershell.enable_winrm(computer_name.value)
+        update_console(result)
+        update_processes("-", "WinRM")
+    
     def check_computer_name():
         if computer_name.value == "":
             show_message("Please input a computer hostname")
@@ -289,18 +271,6 @@ def main(page: ft.Page):
             result = powershell.quser(computer=computer_name.value)
             update_console(result)
             update_processes("-", "QUSER")
-
-    def check_printers(e):
-        if check_computer_name():
-            page.go("/")
-            update_processes("+", "CHECK-PRINTERS")
-            show_message(f"Getting printers on {computer_name.value}")
-            powershell = the_shell.Power_Shell()
-            result = powershell.check_printers(computer=computer_name.value)
-            update_console(result)
-            update_processes("-", "CHECK-PRINTERS")
-        else:
-            show_message("There is no computer name entered.")
             
     def rename_printer(e):
         if check_computer_name():
@@ -349,6 +319,7 @@ def main(page: ft.Page):
     def printer_wizard(e):
         global printer_wiz_target_computer
         if check_computer_name():
+            enable_winrm()
             printer_wiz_target_computer = computer_name.value
             current_view.controls = [print_wizard_view]
             update_processes("+", "PRINTER_WIZARD")
@@ -365,18 +336,21 @@ def main(page: ft.Page):
             # containing text and buttons
             for printer in printers:
                 new_printer = printers[printer]
-                printer_list_item = ft.Row([
-                    ft.Column([
-                        ft.Text(f"{new_printer["Name"]}, Status: {new_printer["Status"]}", size=font_size)
-                    ], width=200),
-                    ft.Column([
-                        ft.FilledButton("Test Page", data=f"{new_printer["Name"]}", on_click=printer_wiz_testpage)
-                    ]),
-                    ft.Column([
-                        ft.FilledButton("Rename", data=f"{new_printer["Name"]}", on_click=open_printer_name_modal), 
-                    ]),
-                    ft.Column([
-                        ft.FilledButton("Uninstall")
+                printer_list_item = ft.Column([
+                    ft.Divider(),
+                    ft.Row([
+                        ft.Column([
+                            ft.Text(f"{new_printer["Name"]}, Status: {new_printer["Status"]}", size=font_size)
+                        ], width=200),
+                        ft.Column([
+                            ft.FilledButton("Test Page", data=f"{new_printer["Name"]}", on_click=printer_wiz_testpage)
+                        ]),
+                        ft.Column([
+                            ft.FilledButton("Rename", data=f"{new_printer["Name"]}", on_click=open_printer_name_modal), 
+                        ]),
+                        ft.Column([
+                            ft.FilledButton("Uninstall")
+                        ]),
                     ]),
                 ])
                 
@@ -460,9 +434,9 @@ def main(page: ft.Page):
                     ], scroll=True, width=200)
                 ])
             ]),
-        ft.ElevatedButton("Check Printers", on_click=check_printers),
+        ft.Divider(height=9, thickness=3),
         ft.ElevatedButton("Printer Wizard", on_click=printer_wizard),
-    ])
+    ], expand=True)
     
     current_view = ft.Row([home], expand=True)
 
@@ -479,10 +453,48 @@ def main(page: ft.Page):
 
     ], expand=True)
     
-    delprof_view = ft.Row([
-        
-    ])
+    def clear_space(e):
+        users = "False"
+        list = "False"
+        logout = "False"
+        if delete_users_checkbox.value == True:
+            users = "True"
+        if logout_users_checkbox.value == True:
+            logout = "True"
+        if use_list_checkbox.value == True:
+            list = "True"
+        if check_computer_name():
+            update_processes("+", "CLEAR-SPACE")
+            show_message(f"Clearing space on {computer_name.value}.")
+            powershell = the_shell.Power_Shell()
+            result = powershell.clear_space(computer=computer_name.value, list=list, users=users, logout=logout)
+            update_console(result)
+            update_processes("-", "CLEAR-SPACE")
     
+    delete_users_checkbox = ft.Checkbox(label="Remove user profiles", value=False)
+    logout_users_checkbox = ft.Checkbox(label="Logout users before deletion", value=False)
+    use_list_checkbox = ft.Checkbox(label="Use list of computers", value=False)
+    
+    delprof_view = ft.Column([
+
+        ft.Row([
+            computer_name,
+            ping_btn,
+            quser_btn,
+            running_processes_icon,
+            running_processes_count_text,
+        ]),
+
+        ft.Divider(height=9, thickness=3),
+
+        ft.Column([
+            delete_users_checkbox,
+            logout_users_checkbox,
+            use_list_checkbox,
+            ft.FilledButton(text="Clear Disk Space", on_click=clear_space)
+        ]),
+
+    ], expand=True)
     
     #Finally build the page
     page.add(
@@ -491,7 +503,6 @@ def main(page: ft.Page):
             ft.VerticalDivider(width=9, thickness=3),
             current_view
         ], expand=True)
-
     )
 
 ft.app(target=main)
