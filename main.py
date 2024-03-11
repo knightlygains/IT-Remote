@@ -65,11 +65,15 @@ def load_settings(e, update):
 load_settings(e=None, update=False)
 
 def main(page: ft.Page):
+    page.fonts = {
+        "Consola": "/fonts/Consola.ttf"
+    }
     
     page.window_width = window_width
     page.window_height = window_height
     page.window_min_height = 515
     page.window_min_width = 650
+    page.theme = ft.Theme(font_family="Consola")
     
     def save_page_dimensions(e):
         print("page resize")
@@ -112,8 +116,11 @@ def main(page: ft.Page):
         show_running_processes.size = font_size
         new_printer_name.text_size = font_size
         console_label.size = font_size
+        # Update console card sizes
+        console_cards = console_data.controls
+        for card in console_cards:
+            print(card)
         page.update()
-
     
     # Store list of runing processes here for tooltip
     list_of_processes = []
@@ -129,7 +136,13 @@ def main(page: ft.Page):
     
     #Left pane navigation rail
     def navigate_view(e):
-        index = e.control.selected_index
+        #If called by a control set equal to control value
+        # Otherwise we are likely passing a specific index
+        try:
+            index = e.control.selected_index
+        except AttributeError:
+            index = e
+        
         if index == 0:
             current_view.controls = [settings]
         if index == 1:
@@ -142,6 +155,10 @@ def main(page: ft.Page):
             pass
         if index == 5:
             pass
+        if index == 6:
+            # Custom index
+            rail.selected_index = 3
+            current_view.controls = [print_wizard_view]
         page.update()
     
     rail = ft.NavigationRail(
@@ -278,7 +295,10 @@ def main(page: ft.Page):
     )
     
     def open_card(e):
-        console_card_modal.content = ft.Text(e.control.data, size=font_size)
+        console_card_modal.content = ft.Container(
+            content=ft.Column([
+                ft.Text(e.control.data, size=font_size)
+            ], scroll=True), bgcolor=console_color)
         console_card_modal.title = ft.Text(e.control.title.value, size=font_size)
         show_card_modal()
     
@@ -376,44 +396,50 @@ def main(page: ft.Page):
     
     def printer_wizard(e):
         global printer_wiz_target_computer
-        if check_computer_name():
-            enable_winrm()
-            printer_wiz_target_computer = computer_name.value
-            current_view.controls = [print_wizard_view]
-            update_processes("+", "PRINTER_WIZARD")
-            show_message(f"Running printer wizard on {computer_name.value}")
-            powershell = the_shell.Power_Shell()
-            result = powershell.printer_wizard(computer=computer_name.value)
-            update_console("Printer Wizard", result)
-            update_processes("-", "PRINTER_WIZARD")
-            printer_wiz_listview.controls.clear()
-            with open(f"./results/{computer_name.value}-Printers.json") as file:
-                printers = json.load(file)
-            
-            # For each printer in the json file, show a ft.Row
-            # containing text and buttons
-            for printer in printers:
-                new_printer = printers[printer]
-                printer_list_item = ft.Column([
-                    ft.Divider(),
-                    ft.Row([
-                        ft.Column([
-                            ft.Text(f"{new_printer["Name"]}, Status: {new_printer["Status"]}", size=font_size)
-                        ], width=200),
-                        ft.Column([
-                            ft.FilledButton("Test Page", data=f"{new_printer["Name"]}", on_click=printer_wiz_testpage)
-                        ]),
-                        ft.Column([
-                            ft.FilledButton("Rename", data=f"{new_printer["Name"]}", on_click=open_printer_name_modal), 
-                        ]),
-                        ft.Column([
-                            ft.FilledButton("Uninstall")
-                        ]),
-                    ]),
-                ])
+        if e.control.text == "Last result":
+            navigate_view(6)   
+        else:
+            if check_computer_name():
+                enable_winrm()
+                printer_wiz_target_computer = computer_name.value
+                update_processes("+", "PRINTER_WIZARD")
+                show_message(f"Running printer wizard on {computer_name.value}")
+                powershell = the_shell.Power_Shell()
+                result = powershell.printer_wizard(computer=computer_name.value)
+                print(result) # Debugging purposes only
+                update_console("Printer Wizard", result)
+                update_processes("-", "PRINTER_WIZARD")
+                printer_wiz_listview.controls.clear()
+                try:
+                    with open(f"./results/{computer_name.value}-Printers.json") as file:
+                        printers = json.load(file)
+                    # For each printer in the json file, show a ft.Row
+                    # containing text and buttons
+                    for printer in printers:
+                        new_printer = printers[printer]
+                        printer_list_item = ft.Column([
+                            ft.Divider(),
+                            ft.Row([
+                                ft.Column([
+                                    ft.Text(f"{new_printer["Name"]}, Status: {new_printer["Status"]}", size=font_size)
+                                ], width=200),
+                                ft.Column([
+                                    ft.FilledButton("Test Page", data=f"{new_printer["Name"]}", on_click=printer_wiz_testpage)
+                                ]),
+                                ft.Column([
+                                    ft.FilledButton("Rename", data=f"{new_printer["Name"]}", on_click=open_printer_name_modal), 
+                                ]),
+                                ft.Column([
+                                    ft.FilledButton("Uninstall")
+                                ]),
+                            ]),
+                        ])
+                        
+                        printer_wiz_listview.controls.append(printer_list_item)
+                except FileNotFoundError:
+                    show_message(f"Could not get printers on {computer_name.value}")
                 
-                printer_wiz_listview.controls.append(printer_list_item)
-            page.go("/printerwizard")
+                navigate_view(6)
         
     def printer_wiz_testpage(e):
         if check_computer_name():
@@ -493,7 +519,8 @@ def main(page: ft.Page):
                 ])
             ]),
         ft.Divider(height=9, thickness=3),
-        ft.ElevatedButton("Printer Wizard", on_click=printer_wizard),
+        ft.ElevatedButton("Run Printer Wizard", on_click=printer_wizard),
+        ft.ElevatedButton("Last result", on_click=printer_wizard)
     ], expand=True)
     
     current_view = ft.Row([home], expand=True)
@@ -522,6 +549,7 @@ def main(page: ft.Page):
         if use_list_checkbox.value == True:
             list = "True"
         if check_computer_name():
+            enable_winrm()
             update_processes("+", "CLEAR-SPACE")
             show_message(f"Clearing space on {computer_name.value}.")
             powershell = the_shell.Power_Shell()

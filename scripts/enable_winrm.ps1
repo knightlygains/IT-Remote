@@ -9,43 +9,37 @@ param (
 #     $Computer = Get-Content ".\lists\computers.txt"
 # }
 
-$script:end_result = ""
-
 Function Enable-WinRM {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
         [string]$Computer
     )
-    #accept eula for psexec so it works
-    Start-Process cmd -ArgumentList "/c psexec -accepteula" -WindowStyle hidden
-    #Enable WinRM to use Get-CimInstance
     
-
     Write-Host "Enabling WinRM on" $Computer "..." -ForegroundColor red
-    psexec.exe \\"$computer" -s C:\Windows\System32\winrm.cmd qc -quiet | Out-Null
+    psexec.exe \\"$Computer" -s -nobanner -accepteula C:\Windows\System32\winrm.cmd qc -quiet
 
+    $result = winrm id -r:$computer 2>$null
     if ($LastExitCode -eq 0) {
-        psservice.exe \\"$computer" restart WinRM | Out-Null
-
+        psservice.exe \\"$Computer" -nobanner restart WinRM
+        $result = winrm id -r:$computer 2>$null
         if ($LastExitCode -eq 0) { 
-            $script:end_result = "WinRM successfully enabled!"
+            exit 0
         }
         else {
             exit 1
         }
     }
     else {
-        $script:end_result = "Couldn't enable WinRM on $computer."
+        exit 1
     } #end of if
 } #end of else
 
+Enable-WinRM $Computer -ErrorAction Stop
 
-try {
-    Enable-WinRM $Computer -ErrorAction Stop | Out-Null
+if ($LASTEXITCODE -eq 0) {
+    exit 0
 }
-catch {
-    $script:end_result = "WinRM could not be enabled."
+else {
+    exit 1
 }
-
-return $script:end_result

@@ -7,8 +7,14 @@ param (
 )
 Function getPrinters {
     #Variable that allows us to loop through and get all printers on a remote computer.
-    $printers = Get-CimInstance -Class Win32_Printer -ComputerName $Computer | Select-Object Name, PrinterStatus
-
+    
+    try {
+        $printers = Get-CimInstance -Class Win32_Printer -ComputerName $Computer | Select-Object Name, PrinterStatus
+    }
+    catch {
+        exit 1
+    }
+    
     $variableNumber = 1
     #Loop through adapters and create/update variables for each one.
 
@@ -58,13 +64,14 @@ Function getPrinters {
 
     Set-Content -Path ".\results\$Computer-Printers.json" -Value (ConvertTo-Json $json_obj)
 
+    exit 0
 }
 
-if (Test-Connection $Computer -Count 1) {
+if (Test-Connection $Computer) {
     getPrinters
 }
 else {
-    return "$Computer could not be contacted."
+    exit 1
 }
 
 
