@@ -1,37 +1,17 @@
 {
   "1": {
-    "Name": "OneNote (Desktop)",
+    "Name": "TeamWest",
     "Status": "Idle"
   },
   "2": {
-    "Name": "XPS Card Printer",
+    "Name": "OneNote (Desktop)",
     "Status": "Idle"
   },
   "3": {
-    "Name": "Xerox B210 Printer",
+    "Name": "CH_D1_Sharp_Copier",
     "Status": "Idle"
   },
   "4": {
-    "Name": "Team West",
-    "Status": "Idle"
-  },
-  "5": {
-    "Name": "SHARP BP-70C31 PCL6",
-    "Status": "Idle"
-  },
-  "6": {
-    "Name": "OneNote for Windows 10",
-    "Status": "Idle"
-  },
-  "7": {
-    "Name": "kasjdhgfkwe",
-    "Status": "Idle"
-  },
-  "8": {
-    "Name": "HP LaserJet Professional P1102w (Copy 1)",
-    "Status": "Idle"
-  },
-  "9": {
     "Name": "\\\\PRNTSVR2021\\CHBP70C31RMUDWN_SC",
     "Status": "Idle"
   }

@@ -124,7 +124,7 @@ def main(page: ft.Page):
             show_message(f"Pinging {computer_name.value}")
             powershell = the_shell.Power_Shell()
             result = powershell.ping(computer=computer_name.value)
-            update_console(result)
+            update_console("Ping", result)
             update_processes("-", "PING")
     
     #Left pane navigation rail
@@ -210,24 +210,22 @@ def main(page: ft.Page):
             black_color_radio
         ]))
     
-    # Console text output
-    console_text = ft.Text("", selectable=True, size=font_size, color=console_text_color)
-
-    console_container = ft.Container(
-                                content=console_text,
-                                bgcolor=console_color,
-                                expand=True,
-                                alignment=ft.alignment.top_left,
-                                )
-    
-    
     def date_time():
         x = datetime.datetime.now()
-        x = x.strftime("%c")
-        return x
+        full = x.strftime("%c")
+        day = x.strftime("%a")
+        month = x.strftime("%b")
+        time = x.strftime("%X")
+        return f"{day}, {month}, {time}"
     
-    def update_console(data):
-        console_text.value = f"\n[{date_time()}]: {data}" + f"\n{console_text.value}"
+    def update_console(title_text, data):
+        title_text = f"{date_time()}: {title_text}"
+        card = generate_console_card(
+            leading = ft.Icon(ft.icons.TERMINAL),
+            title=ft.Text(title_text, size=font_size),
+            data=data
+        )
+        console_data.controls.insert(0, card)
         page.update()
     
     def update_processes(op, name):
@@ -249,11 +247,71 @@ def main(page: ft.Page):
             show_running_processes.value = ""
         page.update()
     
+    # Console text output
+    console_data = ft.ListView(expand=1, spacing=10, padding=20)
+
+    console_container = ft.Container(
+                                content=console_data,
+                                bgcolor=console_color,
+                                expand=True,
+                                alignment=ft.alignment.top_left,
+                                )
+    
+    def show_card_modal():
+        page.dialog = console_card_modal
+        console_card_modal.open = True
+        page.update()
+    
+    def close_card_modal(e):
+        console_card_modal.open = False
+        page.update()
+    
+    # Show card info when clicked
+    console_card_modal = ft.AlertDialog(
+        modal=True,
+        title=ft.Text("Title"),
+        content=ft.Text("No content"),
+        actions=[
+            ft.TextButton("Close", on_click=close_card_modal),
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+    )
+    
+    def open_card(e):
+        console_card_modal.content = ft.Text(e.control.data, size=font_size)
+        console_card_modal.title = ft.Text(e.control.title.value, size=font_size)
+        show_card_modal()
+    
+    def generate_console_card(leading, title, data):
+        """
+        Clickable card that shows in the console.
+        """
+        # Format and shorten text
+        subtitle_text = data[0:40]
+        if len(data) > 40:
+            subtitle_text += "..."
+        
+        #Define card attributes
+        console_card = ft.Card(
+            content=ft.Container(
+                content=ft.Column([
+                    ft.ListTile(
+                        leading=leading,
+                        title=title,
+                        subtitle=ft.Text(subtitle_text),
+                        on_click=open_card,
+                        data=data
+                    )
+                ])
+            )
+        )
+        return console_card
+    
     def enable_winrm():
         update_processes("+", "WinRM")
         powershell = the_shell.Power_Shell()
         result = powershell.enable_winrm(computer_name.value)
-        update_console(result)
+        update_console("WinRM", result)
         update_processes("-", "WinRM")
     
     def check_computer_name():
@@ -269,7 +327,7 @@ def main(page: ft.Page):
             show_message(f"Querying logged in users on {computer_name.value}")
             powershell = the_shell.Power_Shell()
             result = powershell.quser(computer=computer_name.value)
-            update_console(result)
+            update_console("QUser", result)
             update_processes("-", "QUSER")
             
     def rename_printer(e):
@@ -279,7 +337,7 @@ def main(page: ft.Page):
             show_message(f"Renaming printer on {computer_name.value}")
             powershell = the_shell.Power_Shell()
             result = powershell.rename_printer(computer=computer_name.value, printerName=printer_to_change, newName=new_printer_name.value)
-            update_console(result)
+            update_console("Rename Printer", result)
             update_processes("-", "RENAME-PRINTER")
         printer_wizard(e)
         
@@ -326,7 +384,7 @@ def main(page: ft.Page):
             show_message(f"Running printer wizard on {computer_name.value}")
             powershell = the_shell.Power_Shell()
             result = powershell.printer_wizard(computer=computer_name.value)
-            update_console(result)
+            update_console("Printer Wizard", result)
             update_processes("-", "PRINTER_WIZARD")
             printer_wiz_listview.controls.clear()
             with open(f"./results/{computer_name.value}-Printers.json") as file:
@@ -363,7 +421,7 @@ def main(page: ft.Page):
             show_message(f"Printing test page from {computer_name.value}.")
             powershell = the_shell.Power_Shell()
             result = powershell.test_page(computer=computer_name.value, printerName=e.control.data)
-            update_console(result)
+            update_console("Printer Test Page", result)
             update_processes("-", "TEST-PAGE")
 
     # Computer Text Field
@@ -468,7 +526,7 @@ def main(page: ft.Page):
             show_message(f"Clearing space on {computer_name.value}.")
             powershell = the_shell.Power_Shell()
             result = powershell.clear_space(computer=computer_name.value, list=list, users=users, logout=logout)
-            update_console(result)
+            update_console("Clear Space", result)
             update_processes("-", "CLEAR-SPACE")
     
     delete_users_checkbox = ft.Checkbox(label="Remove user profiles", value=False)
