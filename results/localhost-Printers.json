@@ -4,15 +4,15 @@
     "Status": "Idle"
   },
   "2": {
-    "Name": "TeamWest",
+    "Name": "Microsoft Print to PDF",
     "Status": "Idle"
   },
   "3": {
-    "Name": "CH_D1_Sharp_Copier",
+    "Name": "Fax",
     "Status": "Idle"
   },
   "4": {
-    "Name": "\\\\PRNTSVR2021\\CHBP70C31RMUDWN_SC",
+    "Name": "Balls",
     "Status": "Idle"
   }
 }

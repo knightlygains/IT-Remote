@@ -127,12 +127,12 @@ def main(page: ft.Page):
     
     def ping(e):
         if check_computer_name():
-            update_processes("+", "PING")
+            add_new_process("+", "PING")
             show_message(f"Pinging {computer_name.value}")
             powershell = the_shell.Power_Shell()
             result = powershell.ping(computer=computer_name.value)
             update_console("Ping", result)
-            update_processes("-", "PING")
+            add_new_process("-", "PING")
     
     #Left pane navigation rail
     def navigate_view(e):
@@ -205,10 +205,10 @@ def main(page: ft.Page):
     
     # Other controls
     settings_save_btn = ft.FilledButton("Save", icon=ft.icons.SAVE, on_click=update_settings)
-    running_processes_icon = ft.Icon(name=ft.icons.TERMINAL, size=font_size, tooltip=list_of_processes)
-    running_processes_count_text = ft.Text(f"{running_processes_count}", size=font_size)
-    show_running_processes = ft.Text("", size=font_size)
     console_label = ft.Text("Console Output:", size=font_size)
+    
+    # Container for running process cards
+    show_running_processes = ft.ListView(expand=1, spacing=10, padding=20)
     
     # List view for printer wizard
     printer_wiz_listview = ft.ListView(expand=1, spacing=10, padding=20)
@@ -245,24 +245,62 @@ def main(page: ft.Page):
         console_data.controls.insert(0, card)
         page.update()
     
-    def update_processes(op, name):
+    def add_new_process(process_object):
         global running_processes_count
-        if op == "-":
-            running_processes_count -= 1
-            list_of_processes.remove(name)
-            running_processes_count_text.value = f"{running_processes_count}"
-        else:
-            running_processes_count += 1
-            list_of_processes.append(name)
-            running_processes_count_text.value = f"{running_processes_count}"
-        if len(list_of_processes) > 0:
-            processes = ""
-            for process in list_of_processes:
-                processes += f"{process} "
-            show_running_processes.value = processes
-        else:
-            show_running_processes.value = ""
+        running_processes_count += 1
+        list_of_processes.append(process_object)
+        running_processes_count_text.value = f"{running_processes_count}"
+        update_processes()
         page.update()
+    
+    def update_processes():
+        """
+        Resets list of controls for show_running_processes,
+        then loops through list_of_process and re-adds
+        existing ones.
+        """
+        # Reset lsit of controls
+        show_running_processes.controls.clear()
+        
+        # The loop through existing ones and re-add
+        for process in list_of_processes:
+            comps = "Computers: "
+            
+            for comp in process["computers"]:
+                comps +=  f"{comp} "
+                
+            new_proc_card = ft.Card(
+                content=ft.Column([
+                    ft.ListTile(
+                        leading=ft.Icon(name=ft.icons.TERMINAL_ROUNDED, color=ft.colors.PINK),
+                        title=ft.Text(process["name"]),
+                        subtitle=ft.Text(comps),
+                    )
+                ])
+            )
+            show_running_processes.controls.append(new_proc_card)
+    
+    def end_of_process(id):
+        global running_processes_count
+        for process in list_of_processes:
+            if process["id"] == id:
+                list_of_processes.remove(process)
+                running_processes_count -= 1
+                running_processes_count_text.value = f"{running_processes_count}"
+        update_processes()
+        page.update()
+    
+    def new_process(name, computers, date, id):
+        """
+        Define a new process' details
+        """
+        new_process = {
+            "name": name,
+            "computers":  computers,
+            "date": date,
+            "id": id
+        }
+        return new_process
     
     # Console text output
     console_data = ft.ListView(expand=1, spacing=10, padding=20)
@@ -274,6 +312,31 @@ def main(page: ft.Page):
                                 alignment=ft.alignment.top_left,
                                 )
     
+    # Running Processes Modal \/
+    def show_processes_modal(e):
+        page.dialog = processes_modal
+        processes_modal.open = True
+        page.update()
+    
+    def close_processes_modal(e):
+        processes_modal.open = False
+        page.update()
+        
+    # Define card modal
+    processes_modal = ft.AlertDialog(
+        modal=True,
+        title=ft.Text("Running Processes", size=font_size),
+        content=show_running_processes,
+        actions=[
+            ft.TextButton("Close", on_click=close_processes_modal),
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+    )
+    
+    running_processes_icon = ft.IconButton(icon=ft.icons.TERMINAL, on_click=show_processes_modal)
+    running_processes_count_text = ft.Text(f"{running_processes_count}", size=font_size)
+    
+    # Card modal Stuff \/
     def show_card_modal():
         page.dialog = console_card_modal
         console_card_modal.open = True
@@ -283,7 +346,7 @@ def main(page: ft.Page):
         console_card_modal.open = False
         page.update()
     
-    # Show card info when clicked
+    # Define card modal
     console_card_modal = ft.AlertDialog(
         modal=True,
         title=ft.Text("Title"),
@@ -295,9 +358,12 @@ def main(page: ft.Page):
     )
     
     def open_card(e):
+        """
+        Sets modal content and opens it.
+        """
         console_card_modal.content = ft.Container(
             content=ft.Column([
-                ft.Text(e.control.data, size=font_size)
+                ft.Text(e.control.data, size=font_size, selectable=True)
             ], scroll=True), bgcolor=console_color)
         console_card_modal.title = ft.Text(e.control.title.value, size=font_size)
         show_card_modal()
@@ -328,11 +394,12 @@ def main(page: ft.Page):
         return console_card
     
     def enable_winrm():
-        update_processes("+", "WinRM")
+        id = len(list_of_processes)
+        add_new_process(new_process("WinRM", [computer_name.value], date_time(), id))
         powershell = the_shell.Power_Shell()
         result = powershell.enable_winrm(computer_name.value)
         update_console("WinRM", result)
-        update_processes("-", "WinRM")
+        end_of_process(id)
     
     def check_computer_name():
         if computer_name.value == "":
@@ -343,22 +410,24 @@ def main(page: ft.Page):
     
     def quser(e):
         if check_computer_name():
-            update_processes("+", "QUSER")
+            id = len(list_of_processes)
+            add_new_process(new_process("QUSER", [computer_name.value], date_time(), id))
             show_message(f"Querying logged in users on {computer_name.value}")
             powershell = the_shell.Power_Shell()
             result = powershell.quser(computer=computer_name.value)
             update_console("QUser", result)
-            update_processes("-", "QUSER")
+            end_of_process(id)
             
     def rename_printer(e):
         if check_computer_name():
             close_dlg(e)
-            update_processes("+", "RENAME-PRINTER")
+            id = len(list_of_processes)
+            add_new_process(new_process("Rename Printer", [computer_name.value], date_time(), id))
             show_message(f"Renaming printer on {computer_name.value}")
             powershell = the_shell.Power_Shell()
             result = powershell.rename_printer(computer=computer_name.value, printerName=printer_to_change, newName=new_printer_name.value)
             update_console("Rename Printer", result)
-            update_processes("-", "RENAME-PRINTER")
+            end_of_process(id)
         printer_wizard(e)
         
     # Rename Printer modal
@@ -402,13 +471,13 @@ def main(page: ft.Page):
             if check_computer_name():
                 enable_winrm()
                 printer_wiz_target_computer = computer_name.value
-                update_processes("+", "PRINTER_WIZARD")
+                id = len(list_of_processes)
+                add_new_process(new_process("Printer Wizard", [computer_name.value], date_time(), id))
                 show_message(f"Running printer wizard on {computer_name.value}")
                 powershell = the_shell.Power_Shell()
                 result = powershell.printer_wizard(computer=computer_name.value)
                 print(result) # Debugging purposes only
                 update_console("Printer Wizard", result)
-                update_processes("-", "PRINTER_WIZARD")
                 printer_wiz_listview.controls.clear()
                 try:
                     with open(f"./results/{computer_name.value}-Printers.json") as file:
@@ -438,17 +507,18 @@ def main(page: ft.Page):
                         printer_wiz_listview.controls.append(printer_list_item)
                 except FileNotFoundError:
                     show_message(f"Could not get printers on {computer_name.value}")
-                
+                end_of_process(id)
                 navigate_view(6)
         
     def printer_wiz_testpage(e):
         if check_computer_name():
-            update_processes("+", "TEST-PAGE")
+            id = len(list_of_processes)
+            add_new_process(new_process("Test Page", [computer_name.value], date_time(), id))
             show_message(f"Printing test page from {computer_name.value}.")
             powershell = the_shell.Power_Shell()
             result = powershell.test_page(computer=computer_name.value, printerName=e.control.data)
             update_console("Printer Test Page", result)
-            update_processes("-", "TEST-PAGE")
+            end_of_process(id)
 
     # Computer Text Field
     computer_name = ft.TextField(label="Computer Name")
@@ -474,11 +544,6 @@ def main(page: ft.Page):
                 quser_btn,
                 running_processes_icon,
                 running_processes_count_text,
-                ft.Column([
-                    ft.Row([
-                        show_running_processes
-                    ], scroll=True, width=200)
-                ])
             ]),
             console_label,
             console_container
@@ -512,11 +577,6 @@ def main(page: ft.Page):
                 quser_btn,
                 running_processes_icon,
                 running_processes_count_text,
-                ft.Column([
-                    ft.Row([
-                        show_running_processes
-                    ], scroll=True, width=200)
-                ])
             ]),
         ft.Divider(height=9, thickness=3),
         ft.ElevatedButton("Run Printer Wizard", on_click=printer_wizard),
@@ -550,12 +610,13 @@ def main(page: ft.Page):
             list = "True"
         if check_computer_name():
             enable_winrm()
-            update_processes("+", "CLEAR-SPACE")
+            id = len(list_of_processes)
+            add_new_process(new_process("Clear Space", [computer_name.value], date_time(), id))
             show_message(f"Clearing space on {computer_name.value}.")
             powershell = the_shell.Power_Shell()
             result = powershell.clear_space(computer=computer_name.value, list=list, users=users, logout=logout)
             update_console("Clear Space", result)
-            update_processes("-", "CLEAR-SPACE")
+            end_of_process(id)
     
     delete_users_checkbox = ft.Checkbox(label="Remove user profiles", value=False)
     logout_users_checkbox = ft.Checkbox(label="Logout users before deletion", value=False)
