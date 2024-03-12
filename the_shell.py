@@ -1,6 +1,4 @@
 import subprocess
-import sys
-import flet as ft
 
 class Power_Shell():
     def __init___(self):
@@ -36,14 +34,12 @@ class Power_Shell():
         else:
             return f"Failed to get the printers from {computer}."
 
-    
-    def test_commands(self):
-        p = subprocess.getoutput(["pwsh.exe", "-File", f"./scripts/test.ps1"])
-        return p
-
     def test_page(self, computer, printerName):
-        p = subprocess.getoutput(["pwsh.exe", "-File", f"./scripts/test_page.ps1", f"{computer}", f"{printerName}"])
-        return p
+        p = subprocess.call(["pwsh.exe", "-File", f"./scripts/test_page.ps1", f"{computer}", f"{printerName}"])
+        if p == 0:
+            return f"Test page sent to {computer}."
+        else:
+            return f"Test page failed to send to {computer}."
     
     def rename_printer(self, computer, printerName, newName):
         p = subprocess.call(["pwsh.exe", "-File", f"./scripts/rename_printer.ps1", f"{computer}", f"{printerName}", f"{newName}"])
@@ -51,6 +47,13 @@ class Power_Shell():
             return f"Renamed a printer on {computer}."
         else:
             return f"Failed to rename a printer on {computer}."
+        
+    def uninstall_printer(self, computer, printerName):
+        p = subprocess.call(["pwsh.exe", "-File", f"./scripts/uninstall_printer.ps1", f"{computer}", f"{printerName}"])
+        if p == 0:
+            return f"Uninstalled printer {printerName} on {computer}."
+        else:
+            return f"Failed to uninstall {printerName} on {computer}."
     
     def clear_space(self, computer, list, users, logout):
         p = subprocess.getoutput(["pwsh.exe", "-File", f"./scripts/disk_cleanup.ps1", f"{computer}", f"{users}", f"{logout}", f"{list}"])

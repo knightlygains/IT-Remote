@@ -4,19 +4,20 @@ param (
     [string]$Computer,
     [string]$printerName
 )
-Function Send-TestPage {
+Function Uninstall-Printer {
     Invoke-Command -ComputerName $Computer -ScriptBlock {
         param($printerName)
-        $printer = Get-WmiObject Win32_Printer | Where-Object { $_.name -eq "$printerName" }
-        $printer.PrintTestPage()
+        Remove-Printer -Name "$printerName"
     } -ArgumentList ($printerName)
 }
 
-Send-TestPage
+Uninstall-Printer
 
 if ($LASTEXITCODE -eq 0) {
+    Write-Host "Exiting 0"
     exit 0
 }
 else {
+    Write-Host "Exiting 1"
     exit 1
 }

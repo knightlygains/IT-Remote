@@ -11,16 +11,16 @@ if ($list -eq "True") {
     $Computers = Get-Content ".\lists\computers.txt"
 }
 
-$results = ""
-
 foreach ($Computer in $Computers) {
     $this_comps_results = ""
 
-    $command = Invoke-Command -ComputerName $Computer -ScriptBlock {
+    Invoke-Command -ComputerName $Computer -ScriptBlock {
         param($delete_users, $this_comps_results, $Computer, $logout)
         #Get logged in users
         $users = query user /server:$Computer;
 
+        # We store logged in users and their IDs here so we can
+        # get the IDs later for logoff.
         $arrayOfUsers = @() ;
 
         foreach ($user in $users) {
@@ -36,11 +36,10 @@ foreach ($Computer in $Computers) {
         $Path = 'C' + ':\$Recycle.Bin'
         # Get all items (files and directories) within the recycle bin path, including hidden ones
         try {
-            Get-ChildItem $Path -Force -Recurse -ErrorAction Stop | Remove-Item -Recurse -Exclude "*.ini" -ErrorAction Stop
+            Get-ChildItem $Path -Force -Recurse -ErrorAction Stop | Remove-Item -Recurse -Exclude "*.ini" -Force -ErrorAction Stop
             $this_comps_results += "Removed recycle bin data on $Computer.`n"
         }
         catch {
-            Write-Host $_
             $this_comps_results += "Couldn't remove recycle bin data on $($Computer): $_`n"
         }
 
@@ -51,7 +50,6 @@ foreach ($Computer in $Computers) {
             $this_comps_results += "Removed Windows\Temp on $Computer.`n"
         }
         catch {
-            Write-Host $_
             $this_comps_results += "Couldn't remove Windows\Temp on $($Computer): $_`n"
         }
 
@@ -62,7 +60,6 @@ foreach ($Computer in $Computers) {
             $this_comps_results += "Removed Windows\Temp on $Computer.`n"
         }
         catch {
-            Write-Host $_
             $this_comps_results += "Couldn't remove Windows\Prefetch on $($Computer): $_`n"
         }
 
@@ -71,15 +68,16 @@ foreach ($Computer in $Computers) {
         $user_folders = Get-ChildItem -Path "C:\Users"
 
         foreach ($user in $user_folders) {
-            $Path3 = 'C' + ":\Users\$($user.name)\AppData\Local\Temp"
-            # Remove all items (files and directories) from the specified user's Temp folder
-            try {
-                Get-ChildItem $Path3 -Force -Recurse -ErrorAction Stop | Remove-Item -Recurse -Force -ErrorAction Stop
-                $this_comps_results += "Removed AppData\Local\Temp from $user on $Computer.`n"
-            }
-            catch {
-                Write-Host $_
-                $this_comps_results += "Couldn't remove AppData\Local\Temp from $user on $($Computer): $_`n"
+            if ($user -ne "Public") {
+                $Path3 = 'C' + ":\Users\$($user.name)\AppData\Local\Temp"
+                # Remove all items (files and directories) from the specified user's Temp folder
+                try {
+                    Get-ChildItem $Path3 -Force -Recurse -ErrorAction Stop | Remove-Item -Recurse -Force -ErrorAction Stop
+                    $this_comps_results += "Removed AppData\Local\Temp from $user on $Computer.`n"
+                }
+                catch {
+                    $this_comps_results += "Couldn't remove AppData\Local\Temp from $user on $($Computer): $_`n"
+                }
             }
             
         }
@@ -87,8 +85,12 @@ foreach ($Computer in $Computers) {
         # If we want to delete user profiles
         if ($delete_users -eq "True") {
             # Get all CimInstances of user profiles
-            $users_to_delete = Get-CimInstance Win32_UserProfile | Where-Object { $_.LocalPath -notLike "Public", "admin", "localadmin" }
-            
+            $users_to_delete = Get-CimInstance Win32_UserProfile | Where-Object { ($_.LocalPath -notLike 
+                    "Public", 
+                    "admin", 
+                    "localadmin")
+            }
+    
             if ($logout -eq "True") {
                 $IDs = @() ;
                 for ($i = 1; $i -lt $users.Count; $i++) {
@@ -105,24 +107,18 @@ foreach ($Computer in $Computers) {
             }
 
             # Make sure they are not logged in before deleting
-            Write-Host "$users_to_delete"
             foreach ($u in $users_to_delete) {
-                Write-Host "Found $u"
-                if (-not($arrayOfUsers -contains $u)) {
-                    try {
-                        Remove-CimInstance -InputObject $u -ErrorAction Stop
-                        $this_comps_results += "Removed user $user on $Computer.`n"
-                    }
-                    catch {
-                        Write-Host $_
-                        $this_comps_results += "Couldn't remove user $user on $($Computer): $_`n"
-                    }
+                try {
+                    Remove-CimInstance -InputObject $u -ErrorAction Stop
+                    $this_comps_results += "Removed user $($u.LocalPath) on $Computer.`n"
                 }
+                catch {
+                    $this_comps_results += "Couldn't remove user $($u.LocalPath) on $($Computer): $_`n"
+                }
+                
             }
         }
-        return $this_comps_results
+        New-Item -Path ".\results\ClearSpace\$Computer-ClearSpace.txt" -ItemType "file" -Force
+        Set-Content -Path ".\results\ClearSpace\$Computer-ClearSpace.txt" -Value $this_comps_results
     } -ArgumentList($delete_users, $this_comps_results, $Computer, $logout)
-    $results += $command
 }
-
-return $results

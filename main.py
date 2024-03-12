@@ -73,7 +73,7 @@ def main(page: ft.Page):
     page.window_height = window_height
     page.window_min_height = 515
     page.window_min_width = 650
-    page.theme = ft.Theme(font_family="Consola")
+    page.theme = ft.Theme(font_family="Consola", color_scheme_seed=console_color)
     
     def save_page_dimensions(e):
         print("page resize")
@@ -88,7 +88,7 @@ def main(page: ft.Page):
                 json.dump(data, settings, indent=4)
         
     page.on_resize = save_page_dimensions
-    page.snack_bar = page.snack_bar = ft.SnackBar(ft.Text("", size=font_size), duration=3000)
+    page.snack_bar = page.snack_bar = ft.SnackBar(ft.Text("", ), duration=3000)
     
     def update_settings(e):
         global console_color
@@ -96,43 +96,36 @@ def main(page: ft.Page):
             console_color = cg.value
         load_settings(e, update=True )
         console_container.bgcolor = console_color
+        page.theme.color_scheme_seed = console_color
+        page.update()
     
     def show_message(message):
         page.snack_bar.content.value = message
         page.snack_bar.open = True
         page.update()
     
-    def set_font_size(e):
-        global font_size
-        font_size = int(e.control.value)
-        computer_name.text_size = font_size
-        font_size_text.size = font_size
-        font_size_num_txt.size = font_size
-        font_size_num_txt.value = f"{font_size}"
-        settings_save_btn.size = font_size
-        console_color_label.size = font_size
-        running_processes_icon.size = font_size
-        running_processes_count_text.size = font_size
-        show_running_processes.size = font_size
-        new_printer_name.text_size = font_size
-        console_label.size = font_size
-        # Update console card sizes
-        console_cards = console_data.controls
-        for card in console_cards:
-            print(card)
-        page.update()
+    # def set_font_size(e):
+    #     global font_size
+    #     font_size = int(e.control.value)
+    #     computer_name.text_size = font_size
+    #     font_size_text.size = font_size
+    #     font_size_num_txt.size = font_size
+    #     font_size_num_txt.value = f"{font_size}"
+    #     settings_save_btn.size = font_size
+    #     console_color_label.size = font_size
+    #     running_processes_icon.size = font_size
+    #     running_processes_count_text.size = font_size
+    #     show_running_processes.size = font_size
+    #     new_printer_name.text_size = font_size
+    #     console_label.size = font_size
+    #     # Update console card sizes
+    #     console_cards = console_data.controls
+    #     for card in console_cards:
+    #         print(card)
+    #     page.update()
     
     # Store list of runing processes here for tooltip
     list_of_processes = []
-    
-    def ping(e):
-        if check_computer_name():
-            add_new_process("+", "PING")
-            show_message(f"Pinging {computer_name.value}")
-            powershell = the_shell.Power_Shell()
-            result = powershell.ping(computer=computer_name.value)
-            update_console("Ping", result)
-            add_new_process("-", "PING")
     
     #Left pane navigation rail
     def navigate_view(e):
@@ -205,27 +198,14 @@ def main(page: ft.Page):
     
     # Other controls
     settings_save_btn = ft.FilledButton("Save", icon=ft.icons.SAVE, on_click=update_settings)
-    console_label = ft.Text("Console Output:", size=font_size)
+    console_label = ft.Text("Results:", )
     
     # Container for running process cards
     show_running_processes = ft.ListView(expand=1, spacing=10, padding=20)
     
     # List view for printer wizard
     printer_wiz_listview = ft.ListView(expand=1, spacing=10, padding=20)
-    new_printer_name = ft.TextField(text_size=font_size, expand=True)
-    
-    # Settings color choice radio
-    console_color_label = ft.Text("Console Color:", size=font_size)
-    red_color_radio = ft.Radio(value="red", label="Red", fill_color="red")
-    blue_color_radio = ft.Radio(value="blue", label="Blue", fill_color="blue")
-    green_color_radio = ft.Radio(value="green", label="Green", fill_color="green")
-    black_color_radio = ft.Radio(value="black", label="Black", fill_color="black")
-    cg = ft.RadioGroup(content=ft.Column([
-            red_color_radio,
-            blue_color_radio,
-            green_color_radio,
-            black_color_radio
-        ]))
+    new_printer_name = ft.TextField(expand=True)
     
     def date_time():
         x = datetime.datetime.now()
@@ -239,7 +219,7 @@ def main(page: ft.Page):
         title_text = f"{date_time()}: {title_text}"
         card = generate_console_card(
             leading = ft.Icon(ft.icons.TERMINAL),
-            title=ft.Text(title_text, size=font_size),
+            title=ft.Text(title_text, ),
             data=data
         )
         console_data.controls.insert(0, card)
@@ -325,7 +305,7 @@ def main(page: ft.Page):
     # Define card modal
     processes_modal = ft.AlertDialog(
         modal=True,
-        title=ft.Text("Running Processes", size=font_size),
+        title=ft.Text("Running Processes", ),
         content=show_running_processes,
         actions=[
             ft.TextButton("Close", on_click=close_processes_modal),
@@ -334,7 +314,7 @@ def main(page: ft.Page):
     )
     
     running_processes_icon = ft.IconButton(icon=ft.icons.TERMINAL, on_click=show_processes_modal)
-    running_processes_count_text = ft.Text(f"{running_processes_count}", size=font_size)
+    running_processes_count_text = ft.Text(f"{running_processes_count}", )
     
     # Card modal Stuff \/
     def show_card_modal():
@@ -363,9 +343,9 @@ def main(page: ft.Page):
         """
         console_card_modal.content = ft.Container(
             content=ft.Column([
-                ft.Text(e.control.data, size=font_size, selectable=True)
-            ], scroll=True), bgcolor=console_color)
-        console_card_modal.title = ft.Text(e.control.title.value, size=font_size)
+                ft.Text(e.control.data, selectable=True)
+            ], scroll=True))
+        console_card_modal.title = ft.Text(e.control.title.value, )
         show_card_modal()
     
     def generate_console_card(leading, title, data):
@@ -392,6 +372,16 @@ def main(page: ft.Page):
             )
         )
         return console_card
+    
+    def ping(e):
+        if check_computer_name():
+            id = len(list_of_processes)
+            add_new_process(new_process("Ping", [computer_name.value], date_time(), id))
+            show_message(f"Pinging {computer_name.value}")
+            powershell = the_shell.Power_Shell()
+            result = powershell.ping(computer=computer_name.value)
+            update_console("Ping", result)
+            end_of_process(id)
     
     def enable_winrm():
         id = len(list_of_processes)
@@ -437,7 +427,7 @@ def main(page: ft.Page):
 
     enter_printer_name = ft.Column([
         ft.Row([
-            ft.Text("What's the new name?", size=font_size, expand=True),
+            ft.Text("What's the new name?", expand=True),
         ]),
         ft.Row([
             new_printer_name
@@ -490,7 +480,7 @@ def main(page: ft.Page):
                             ft.Divider(),
                             ft.Row([
                                 ft.Column([
-                                    ft.Text(f"{new_printer["Name"]}, Status: {new_printer["Status"]}", size=font_size)
+                                    ft.Text(f"{new_printer["Name"]}, Status: {new_printer["Status"]}", )
                                 ], width=200),
                                 ft.Column([
                                     ft.FilledButton("Test Page", data=f"{new_printer["Name"]}", on_click=printer_wiz_testpage)
@@ -531,8 +521,8 @@ def main(page: ft.Page):
                                 tooltip="QUser",
                                 on_click=quser
                             )
-    font_size_text = ft.Text("Font Size:", size=font_size)
-    font_size_num_txt = ft.Text(f"{font_size}",size=font_size)
+    font_size_text = ft.Text("Font Size:", )
+    font_size_num_txt = ft.Text(f"{font_size}",)
 
 
     # "Views". We swap these in and out of current_view
@@ -549,24 +539,43 @@ def main(page: ft.Page):
             console_container
         ], expand=True)
     
-    settings = ft.Column([
-        ft.Row(
-            [
-                font_size_text,
-                font_size_num_txt,
-            ]
-        ),
-        ft.Row(
-            [
-                ft.Slider(value=font_size, min=10, max=36, divisions=26, on_change=set_font_size),
-            ]
-        ),
-        ft.Row([
-            console_color_label,
-            cg
+    # Settings color choice radio
+    console_color_label = ft.Text("Console Color:", )
+    red_color_radio = ft.Radio(value="red", label="Red", fill_color="red")
+    blue_color_radio = ft.Radio(value="blue", label="Blue", fill_color="blue")
+    green_color_radio = ft.Radio(value="green", label="Green", fill_color="green")
+    purple_color_radio = ft.Radio(value="purple", label="Purple", fill_color="purple")
+    yellow_color_radio = ft.Radio(value="yellow", label="Yellow", fill_color="yellow")
+    cg = ft.RadioGroup(content=ft.Column([
+        red_color_radio,
+        blue_color_radio,
+        green_color_radio,
+        purple_color_radio,
+        yellow_color_radio
+    ]))
+    
+    settings = ft.Row([
+        ft.Column([
+            # ft.Row(
+            #     [
+            #         font_size_text,
+            #         font_size_num_txt,
+            #     ]
+            # ),
+            # ft.Row(
+            #     [
+            #         ft.Slider(value=font_size, min=10, max=36, divisions=26, on_change=set_font_size),
+            #     ]
+            # ),
+            ft.Row([
+                settings_save_btn,
+            ])
         ]),
-        ft.Row([
-            settings_save_btn,
+        ft.Column([
+            console_color_label,
+            ft.Row([
+                cg
+            ]),
         ])
     ])
     
@@ -589,12 +598,7 @@ def main(page: ft.Page):
 
             ft.Column([
                 printer_wiz_listview,
-            ], expand=2),
-
-            ft.Column([
-                console_label,
-                console_container
-            ], expand=1,)
+            ], expand=1),
 
     ], expand=True)
     

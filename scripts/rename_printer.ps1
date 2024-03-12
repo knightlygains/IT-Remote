@@ -6,16 +6,20 @@ param (
     [string]$newName
 )
 
-Invoke-Command -ComputerName $Computer -ScriptBlock {
-    param($printerName, $newName)
-    try {
-        Rename-Printer -Name "$printerName" -NewName "$newName"
-    }
-    catch {
-        exit 1
-    }
-    
-} -ArgumentList ($printerName, $newName)
+Function Rename-RemotePrinter {
+    Invoke-Command -ComputerName $Computer -ScriptBlock {
+        param($printerName, $newName)
+        try {
+            Rename-Printer -Name "$printerName" -NewName "$newName"
+        }
+        catch {
+            exit 1
+        }
+        
+    } -ArgumentList ($printerName, $newName)
+}
+
+Rename-RemotePrinter
 
 if ($LASTEXITCODE -eq 0) {
     exit 0

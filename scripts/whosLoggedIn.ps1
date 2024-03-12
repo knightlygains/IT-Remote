@@ -5,7 +5,6 @@ param (
     [string] $computer
 )
 
-
 Function Get-LoggedInUser {
     $loggedInUsers = "No one"
 

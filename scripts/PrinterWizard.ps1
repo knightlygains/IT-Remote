@@ -6,20 +6,28 @@ param (
     [string]$Computer
 )
 Function getPrinters {
-    #Variable that allows us to loop through and get all printers on a remote computer.
     
+    # Enable print service log
+    Invoke-Command -ComputerName $Computer -ScriptBlock {
+        $logName = 'Microsoft-Windows-PrintService/Operational'
+
+        $log = New-Object System.Diagnostics.Eventing.Reader.EventLogConfiguration $logName
+        $log.IsEnabled = $true
+        $log.SaveChanges()
+    }
+
     try {
+        #Variable that allows us to loop through and get all printers on a remote computer.
         $printers = Get-CimInstance -Class Win32_Printer -ComputerName $Computer | Select-Object Name, PrinterStatus
     }
     catch {
         exit 1
     }
     
+    # Initialize variable number to assign to and increment with each printer
     $variableNumber = 1
-    #Loop through adapters and create/update variables for each one.
 
-
-    New-Item -Path ".\results\$Computer-Printers.json" -ItemType "file" -Force | Out-Null
+    New-Item -Path ".\results\Printers\$Computer-Printers.json" -ItemType "file" -Force | Out-Null
     
     $json_format = @"
     {
