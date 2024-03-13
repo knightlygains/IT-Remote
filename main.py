@@ -7,7 +7,7 @@ import json
 font_size = 16
 console_color = "blue"
 console_text_color = "white"
-window_width = 650
+window_width = 735
 window_height = 515
 
 running_processes_count = 0
@@ -57,8 +57,8 @@ def load_settings(e, update):
                 "font_size": font_size,
                 "console_color": console_color,
                 "console_text_color": console_text_color,
-                "window_width": 680,
-                "window_height": 680
+                "window_width": 735,
+                "window_height": 515
             }
             json.dump(data, file, indent=4)
     
@@ -72,7 +72,7 @@ def main(page: ft.Page):
     page.window_width = window_width
     page.window_height = window_height
     page.window_min_height = 515
-    page.window_min_width = 650
+    page.window_min_width = 735
     page.theme = ft.Theme(font_family="Consola", color_scheme_seed=console_color)
     
     def save_page_dimensions(e):
@@ -211,9 +211,10 @@ def main(page: ft.Page):
         x = datetime.datetime.now()
         full = x.strftime("%c")
         day = x.strftime("%a")
+        day_num = x.strftime("%d")
         month = x.strftime("%b")
         time = x.strftime("%X")
-        return f"{day}, {month}, {time}"
+        return f"{day}, {month} {day_num}, {time}"
     
     def update_console(title_text, data):
         title_text = f"{date_time()}: {title_text}"
@@ -313,7 +314,7 @@ def main(page: ft.Page):
         actions_alignment=ft.MainAxisAlignment.END,
     )
     
-    running_processes_icon = ft.IconButton(icon=ft.icons.TERMINAL, on_click=show_processes_modal)
+    running_processes_icon = ft.IconButton(icon=ft.icons.TERMINAL, on_click=show_processes_modal, tooltip="Running processes")
     running_processes_count_text = ft.Text(f"{running_processes_count}", )
     
     # Card modal Stuff \/
@@ -515,29 +516,41 @@ def main(page: ft.Page):
     
     ping_btn = ft.FilledButton(text="Ping", on_click=ping)
     quser_btn = ft.IconButton(
-                                icon=ft.icons.PERSON,
-                                icon_color="blue400",
-                                icon_size=20,
-                                tooltip="QUser",
-                                on_click=quser
-                            )
+        icon=ft.icons.PERSON,
+        icon_size=20,
+        tooltip="QUser",
+        on_click=quser
+    )
     font_size_text = ft.Text("Font Size:", )
     font_size_num_txt = ft.Text(f"{font_size}",)
 
+    def open_pc_list(e):
+        powershell = the_shell.Power_Shell()
+        powershell.open_pc_list()
+
+    computer_list_btn = ft.IconButton(
+        icon=ft.icons.LIST,
+        icon_size=20,
+        on_click=open_pc_list,
+        tooltip="Open list of PCs"
+    )
 
     # "Views". We swap these in and out of current_view
     # when navigating using the rail.
+    
+    computer_top_row = ft.Row([computer_list_btn,
+        computer_name,
+        ping_btn,
+        quser_btn,
+        running_processes_icon,
+        running_processes_count_text,
+    ])
+    
     home = ft.Column([
-            ft.Row([
-                computer_name,
-                ping_btn,
-                quser_btn,
-                running_processes_icon,
-                running_processes_count_text,
-            ]),
-            console_label,
-            console_container
-        ], expand=True)
+        computer_top_row,
+        console_label,
+        console_container
+    ], expand=True)
     
     # Settings color choice radio
     console_color_label = ft.Text("Console Color:", )
@@ -580,13 +593,7 @@ def main(page: ft.Page):
     ])
     
     printers = ft.Column([
-        ft.Row([
-                computer_name,
-                ping_btn,
-                quser_btn,
-                running_processes_icon,
-                running_processes_count_text,
-            ]),
+        computer_top_row,
         ft.Divider(height=9, thickness=3),
         ft.ElevatedButton("Run Printer Wizard", on_click=printer_wizard),
         ft.ElevatedButton("Last result", on_click=printer_wizard)
@@ -595,11 +602,9 @@ def main(page: ft.Page):
     current_view = ft.Row([home], expand=True)
 
     print_wizard_view = ft.Row([
-
-            ft.Column([
-                printer_wiz_listview,
-            ], expand=1),
-
+        ft.Column([
+            printer_wiz_listview,
+        ], expand=1),
     ], expand=True)
     
     def clear_space(e):
@@ -627,24 +632,14 @@ def main(page: ft.Page):
     use_list_checkbox = ft.Checkbox(label="Use list of computers", value=False)
     
     delprof_view = ft.Column([
-
-        ft.Row([
-            computer_name,
-            ping_btn,
-            quser_btn,
-            running_processes_icon,
-            running_processes_count_text,
-        ]),
-
+        computer_top_row,
         ft.Divider(height=9, thickness=3),
-
         ft.Column([
             delete_users_checkbox,
             logout_users_checkbox,
             use_list_checkbox,
             ft.FilledButton(text="Clear Disk Space", on_click=clear_space)
         ]),
-
     ], expand=True)
     
     #Finally build the page
