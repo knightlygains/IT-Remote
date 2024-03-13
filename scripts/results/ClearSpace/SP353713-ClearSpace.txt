@@ -1,0 +1,11 @@
+Removed recycle bin data on SP353713.
+Couldn't remove Windows\Temp on SP353713: Cannot remove item C:\Windows\Temp\hsperfdata_SP353713$\672: Access to the path '672' is denied.
+Removed Windows\Temp on SP353713.
+Couldn't remove AppData\Local\Temp from Public on SP353713: Cannot find path 'C:\Users\Public\AppData\Local\' because it does not exist.
+Removed AppData\Local\Temp from SWhitney on SP353713.
+Couldn't remove user C:\Users\SWhitney on SP353713: The process cannot access the file because it is being used by another process. 
+Couldn't remove user  on SP353713: The system cannot find the file specified. 
+Couldn't remove user C:\Windows\ServiceProfiles\NetworkService on SP353713: Access is denied. 
+Couldn't remove user C:\Windows\ServiceProfiles\LocalService on SP353713: Access is denied. 
+Couldn't remove user C:\Windows\system32\config\systemprofile on SP353713: Access is denied. 
+

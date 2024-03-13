@@ -3,18 +3,63 @@
 param (
     [string]$Computers,
     [string]$delete_users,
-    [string]$logout,
-    [string]$list
+    [string]$logout
 )
 
-if ($list -eq "True") {
-    $Computers = Get-Content ".\lists\computers.txt"
+Function Enable-WinRM {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory)]
+        [string]$Computer
+    )
+    
+    Write-Host "Enabling WinRM on" $Computer "..." -ForegroundColor red
+    psexec.exe \\"$Computer" -s -nobanner -accepteula C:\Windows\System32\winrm.cmd qc -quiet
+
+    $result = winrm id -r:$computer 2>$null
+    if ($LastExitCode -eq 0) {
+        psservice.exe \\"$Computer" -nobanner restart WinRM
+        $result = winrm id -r:$computer 2>$null
+        if ($LastExitCode -eq 0) { 
+            Write-Host "WinRM Enabled on $Computer."
+        }
+        else {
+            Write-Host "Failed to enable WinRM on $Computer."
+        }
+    }
+    else {
+        Write-Host "Failed to enable WinRM on $Computer."
+    } #end of if
+} #end of else 
+
+$list = Get-Content ".\lists\computers.txt"
+# If using list, set Computers = to Get-Content for list contents
+if ($Computers -eq "Use-List") {
+    foreach ($Computer in $list) {
+        Write-Host "Unga $Computer"
+        Enable-WinRM -Computer $Computer
+    }
+}
+else {
+    $list = $Computers
 }
 
-foreach ($Computer in $Computers) {
+foreach ($Computer in $list) {
     $this_comps_results = ""
 
-    Invoke-Command -ComputerName $Computer -ScriptBlock {
+    Function Check-Space {
+        try {
+            $space = Get-CimInstance -ComputerName $Computer win32_logicaldisk -ErrorAction Stop | Select-Object -Property DeviceID, @{Label = 'FreeSpace'; expression = { ($_.FreeSpace / 1GB).ToString('F2') + " GB" } }, @{Label = 'MaxSize'; expression = { ($_.Size / 1GB).ToString('F2') + " GB" } }
+            return "$($space.FreeSpace) / $($space.MaxSize)"
+        }
+        catch {
+            return "Couldn't query space on $Computer."
+        }
+    }
+
+    $space_before = Check-Space
+
+    $command = Invoke-Command -ComputerName $Computer -ScriptBlock {
         param($delete_users, $this_comps_results, $Computer, $logout)
         #Get logged in users
         $users = query user /server:$Computer;
@@ -118,7 +163,15 @@ foreach ($Computer in $Computers) {
                 
             }
         }
-        New-Item -Path ".\results\ClearSpace\$Computer-ClearSpace.txt" -ItemType "file" -Force
-        Set-Content -Path ".\results\ClearSpace\$Computer-ClearSpace.txt" -Value $this_comps_results
+        return $this_comps_results
     } -ArgumentList($delete_users, $this_comps_results, $Computer, $logout)
+
+    $results = $command
+
+    $space_after = Check-Space
+
+    $results += "$($Computer) - Space before: $space_before | Space after: $space_after"
+
+    New-Item -Path ".\results\ClearSpace\$Computer-ClearSpace.txt" -ItemType "file" -Force
+    Set-Content -Path ".\results\ClearSpace\$Computer-ClearSpace.txt" -Value $results
 }

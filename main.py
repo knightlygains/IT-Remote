@@ -214,7 +214,7 @@ def main(page: ft.Page):
         day_num = x.strftime("%d")
         month = x.strftime("%b")
         time = x.strftime("%X")
-        return f"{day}, {month} {day_num}, {time}"
+        return f"{day} {month} {day_num}, {time}"
     
     def update_console(title_text, data):
         title_text = f"{date_time()}: {title_text}"
@@ -384,11 +384,13 @@ def main(page: ft.Page):
             update_console("Ping", result)
             end_of_process(id)
     
-    def enable_winrm():
+    def enable_winrm(computer):
+        if computer == None:
+            computer = computer_name.value
         id = len(list_of_processes)
-        add_new_process(new_process("WinRM", [computer_name.value], date_time(), id))
+        add_new_process(new_process("WinRM", [computer], date_time(), id))
         powershell = the_shell.Power_Shell()
-        result = powershell.enable_winrm(computer_name.value)
+        result = powershell.enable_winrm(computer)
         update_console("WinRM", result)
         end_of_process(id)
     
@@ -460,7 +462,7 @@ def main(page: ft.Page):
             navigate_view(6)   
         else:
             if check_computer_name():
-                enable_winrm()
+                enable_winrm(computer_name.value)
                 printer_wiz_target_computer = computer_name.value
                 id = len(list_of_processes)
                 add_new_process(new_process("Printer Wizard", [computer_name.value], date_time(), id))
@@ -481,7 +483,7 @@ def main(page: ft.Page):
                             ft.Divider(),
                             ft.Row([
                                 ft.Column([
-                                    ft.Text(f"{new_printer["Name"]}, Status: {new_printer["Status"]}", )
+                                    ft.Text(f"{new_printer["Name"]}, Status: {new_printer["Status"]}", selectable=True)
                                 ], width=200),
                                 ft.Column([
                                     ft.FilledButton("Test Page", data=f"{new_printer["Name"]}", on_click=printer_wiz_testpage)
@@ -496,6 +498,7 @@ def main(page: ft.Page):
                         ])
                         
                         printer_wiz_listview.controls.append(printer_list_item)
+                        printer_wiz_computer.value = f"{computer_name.value}'s printers:"
                 except FileNotFoundError:
                     show_message(f"Could not get printers on {computer_name.value}")
                 end_of_process(id)
@@ -553,7 +556,7 @@ def main(page: ft.Page):
     ], expand=True)
     
     # Settings color choice radio
-    console_color_label = ft.Text("Console Color:", )
+    console_color_label = ft.Text("App Color:", )
     red_color_radio = ft.Radio(value="red", label="Red", fill_color="red")
     blue_color_radio = ft.Radio(value="blue", label="Blue", fill_color="blue")
     green_color_radio = ft.Radio(value="green", label="Green", fill_color="green")
@@ -601,31 +604,47 @@ def main(page: ft.Page):
     
     current_view = ft.Row([home], expand=True)
 
+    # Used to store and later update with the computer
+    # that printer_wizard was run on
+    printer_wiz_computer = ft.Text("None")
+    
     print_wizard_view = ft.Row([
         ft.Column([
+            printer_wiz_computer,
             printer_wiz_listview,
         ], expand=1),
     ], expand=True)
     
     def clear_space(e):
         users = "False"
-        list = "False"
         logout = "False"
         if delete_users_checkbox.value == True:
             users = "True"
         if logout_users_checkbox.value == True:
             logout = "True"
-        if use_list_checkbox.value == True:
-            list = "True"
-        if check_computer_name():
-            enable_winrm()
+            
+        def run_operation(computer):
+            if computer != "Use-List":
+                enable_winrm(computer)
+            # else skip winrm here, it will be done in script
+            
             id = len(list_of_processes)
-            add_new_process(new_process("Clear Space", [computer_name.value], date_time(), id))
-            show_message(f"Clearing space on {computer_name.value}.")
+            add_new_process(new_process("Clear Space", ["Using list"], date_time(), id))
+            
+            if use_list_checkbox.value == True:
+                show_message(f"Clearing space on list of PCs.")
+            else:
+                show_message(f"Clearing space on {computer}.")
+                
             powershell = the_shell.Power_Shell()
-            result = powershell.clear_space(computer=computer_name.value, list=list, users=users, logout=logout)
+            result = powershell.clear_space(computer=computer, users=users, logout=logout)
             update_console("Clear Space", result)
             end_of_process(id)
+            
+        if check_computer_name() and use_list_checkbox.value == False:
+            run_operation(computer_name.value)
+        elif use_list_checkbox.value == True:
+            run_operation("Use-List")
     
     delete_users_checkbox = ft.Checkbox(label="Remove user profiles", value=False)
     logout_users_checkbox = ft.Checkbox(label="Logout users before deletion", value=False)

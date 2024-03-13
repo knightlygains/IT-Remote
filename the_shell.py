@@ -65,6 +65,6 @@ class Power_Shell():
         else:
             return f"Failed to uninstall {printerName} on {computer}."
     
-    def clear_space(self, computer, list, users, logout):
-        p = subprocess.getoutput([self.pspath, "-File", f"./scripts/disk_cleanup.ps1", f"{computer}", f"{users}", f"{logout}", f"{list}"])
+    def clear_space(self, computer, users, logout):
+        p = subprocess.getoutput([self.pspath, "-File", f"./scripts/disk_cleanup.ps1", f"{computer}", f"{users}", f"{logout}"])
         return p
