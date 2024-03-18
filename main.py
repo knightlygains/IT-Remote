@@ -265,6 +265,7 @@ def main(page: ft.Page):
         global running_processes_count
         for process in list_of_processes:
             if process["id"] == id:
+                show_message(f"{process['name']} - {process["computers"]}: has finished.")
                 list_of_processes.remove(process)
                 running_processes_count -= 1
                 running_processes_count_text.value = f"{running_processes_count}"
@@ -462,11 +463,11 @@ def main(page: ft.Page):
             navigate_view(6)   
         else:
             if check_computer_name():
+                show_message(f"Running printer wizard on {computer_name.value}")
                 enable_winrm(computer_name.value)
                 printer_wiz_target_computer = computer_name.value
                 id = len(list_of_processes)
                 add_new_process(new_process("Printer Wizard", [computer_name.value], date_time(), id))
-                show_message(f"Running printer wizard on {computer_name.value}")
                 powershell = the_shell.Power_Shell()
                 result = powershell.printer_wizard(computer=computer_name.value)
                 print(result) # Debugging purposes only
@@ -492,13 +493,14 @@ def main(page: ft.Page):
                                     ft.FilledButton("Rename", data=f"{new_printer["Name"]}", on_click=open_printer_name_modal), 
                                 ]),
                                 ft.Column([
-                                    ft.FilledButton("Uninstall")
+                                    ft.FilledButton("Uninstall", data=f"{new_printer["Name"]}", on_click=uninstall_printer)
                                 ]),
                             ]),
                         ])
                         
                         printer_wiz_listview.controls.append(printer_list_item)
                         printer_wiz_computer.value = f"{computer_name.value}'s printers:"
+                        printer_wiz_computer.data = computer_name.value
                 except FileNotFoundError:
                     show_message(f"Could not get printers on {computer_name.value}")
                 end_of_process(id)
@@ -513,6 +515,15 @@ def main(page: ft.Page):
             result = powershell.test_page(computer=computer_name.value, printerName=e.control.data)
             update_console("Printer Test Page", result)
             end_of_process(id)
+    
+    def uninstall_printer(e):
+        id = len(list_of_processes)
+        add_new_process(new_process("Uninstall Printer", [printer_wiz_computer.data], date_time(), id))
+        show_message(f"Uninstalling printer from {printer_wiz_computer.data}.")
+        powershell = the_shell.Power_Shell()
+        result = powershell.uninstall_printer(computer=printer_wiz_computer.data, printerName=e.control.data)
+        update_console("Printer Test Page", result)
+        end_of_process(id)
 
     # Computer Text Field
     computer_name = ft.TextField(label="Computer Name")
@@ -524,8 +535,6 @@ def main(page: ft.Page):
         tooltip="QUser",
         on_click=quser
     )
-    font_size_text = ft.Text("Font Size:", )
-    font_size_num_txt = ft.Text(f"{font_size}",)
 
     def open_pc_list(e):
         powershell = the_shell.Power_Shell()
@@ -570,29 +579,16 @@ def main(page: ft.Page):
         yellow_color_radio
     ]))
     
-    settings = ft.Row([
-        ft.Column([
-            # ft.Row(
-            #     [
-            #         font_size_text,
-            #         font_size_num_txt,
-            #     ]
-            # ),
-            # ft.Row(
-            #     [
-            #         ft.Slider(value=font_size, min=10, max=36, divisions=26, on_change=set_font_size),
-            #     ]
-            # ),
-            ft.Row([
-                settings_save_btn,
-            ])
-        ]),
-        ft.Column([
+    settings = ft.Column([
+        ft.Row([
+            ft.Column([
             console_color_label,
-            ft.Row([
-                cg
-            ]),
-        ])
+                ft.Row([
+                    cg
+                ]),
+            ], width=200),
+        ]),
+        ft.Row([settings_save_btn])
     ])
     
     printers = ft.Column([

@@ -26,8 +26,10 @@ class Power_Shell():
         p = subprocess.call([self.pspath, "-File", f"./scripts/ping_computer.ps1", f"{computer}" ])
         if p == 0:
             return f"{computer} is online."
+        elif p == 2:
+            return f"Conneciton to {computer} timed out."
         else:
-            return f"{computer} is offline."
+            return f"Couldn't ping {computer}."
     
     def quser(self, computer):
         p = subprocess.getoutput([self.pspath, "-File", f"./scripts/whosLoggedIn.ps1", f"{computer}" ])

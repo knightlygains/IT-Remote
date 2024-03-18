@@ -4,20 +4,11 @@ param (
     [string]$Computer,
     [string]$printerName
 )
-Function Uninstall-Printer {
-    Invoke-Command -ComputerName $Computer -ScriptBlock {
-        param($printerName)
-        Remove-Printer -Name "$printerName"
-    } -ArgumentList ($printerName)
-}
 
-Uninstall-Printer
-
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "Exiting 0"
+try {
+    Remove-Printer -Name $printerName -ComputerName $Computer -ErrorAction Stop
     exit 0
 }
-else {
-    Write-Host "Exiting 1"
+catch {
     exit 1
 }
