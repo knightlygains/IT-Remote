@@ -248,7 +248,7 @@ def main(page: ft.Page):
         global running_processes_count
         for process in list_of_processes:
             if process["id"] == id:
-                show_message(f"{process['name']} - {process["computers"]}: has finished.")
+                show_message(f"{process['name']} - {process['computers']}: has finished.")
                 list_of_processes.remove(process)
                 running_processes_count -= 1
                 running_processes_count_text.value = f"{running_processes_count}"
@@ -611,18 +611,36 @@ def main(page: ft.Page):
             # else skip winrm here, it will be done in script
             
             id = len(list_of_processes)
-            add_new_process(new_process("Clear Space", computer, date_time(), id))
             
-            if use_list_checkbox.value == True:
+            # If we are using a list of pcs,
+            # get each pc from list and create
+            # an array of them.
+            if computer == "Use-List":
+                list_of_pcs = []
+                list = open("./lists/computers.txt", "r")
+                computers = list.readlines()
+                for pc in computers:
+                    list_of_pcs.append(pc.strip("\\n"))
+                add_new_process(new_process("Clear Space", list_of_pcs, date_time(), id))
                 show_message(f"Clearing space on list of PCs.")
             else:
+                add_new_process(new_process("Clear Space", computer, date_time(), id))
                 show_message(f"Clearing space on {computer}.")
                 
             powershell = the_shell.Power_Shell()
             powershell.clear_space(computer=computer, users=users, logout=logout)
-            results = open(f"./results/ClearSpace/{computer}-ClearSpace.txt", "r")
-            result = results.read()
-            update_console("Clear Space", result)
+            
+            if use_list_checkbox.value == True:
+                for pc in list_of_pcs:
+                    pc_result = open(f"./results/ClearSpace/{pc}-ClearSpace.txt", "r")
+                    read_pc_result = pc_result.readlines()
+                    update_console("Clear Space", read_pc_result)
+                    pc_result.close()
+            else:
+                results = open(f"./results/ClearSpace/{computer}-ClearSpace.txt", "r")
+                result = results.read()
+                update_console("Clear Space", result)
+            
             end_of_process(id)
             
         if check_computer_name() and use_list_checkbox.value == False:
