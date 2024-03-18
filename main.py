@@ -104,26 +104,6 @@ def main(page: ft.Page):
         page.snack_bar.open = True
         page.update()
     
-    # def set_font_size(e):
-    #     global font_size
-    #     font_size = int(e.control.value)
-    #     computer_name.text_size = font_size
-    #     font_size_text.size = font_size
-    #     font_size_num_txt.size = font_size
-    #     font_size_num_txt.value = f"{font_size}"
-    #     settings_save_btn.size = font_size
-    #     console_color_label.size = font_size
-    #     running_processes_icon.size = font_size
-    #     running_processes_count_text.size = font_size
-    #     show_running_processes.size = font_size
-    #     new_printer_name.text_size = font_size
-    #     console_label.size = font_size
-    #     # Update console card sizes
-    #     console_cards = console_data.controls
-    #     for card in console_cards:
-    #         print(card)
-    #     page.update()
-    
     # Store list of runing processes here for tooltip
     list_of_processes = []
     
@@ -149,9 +129,12 @@ def main(page: ft.Page):
         if index == 5:
             pass
         if index == 6:
-            # Custom index
+            # Print Wizard View
             rail.selected_index = 3
             current_view.controls = [print_wizard_view]
+        if index == 7:
+            # Custom scripts view
+            pass
         page.update()
     
     rail = ft.NavigationRail(
@@ -220,7 +203,7 @@ def main(page: ft.Page):
         title_text = f"{date_time()}: {title_text}"
         card = generate_console_card(
             leading = ft.Icon(ft.icons.TERMINAL),
-            title=ft.Text(title_text, ),
+            title=ft.Text(title_text),
             data=data
         )
         console_data.controls.insert(0, card)
@@ -246,14 +229,14 @@ def main(page: ft.Page):
         # The loop through existing ones and re-add
         for process in list_of_processes:
             comps = "Computers: "
-            
+
             for comp in process["computers"]:
                 comps +=  f"{comp} "
                 
             new_proc_card = ft.Card(
                 content=ft.Column([
                     ft.ListTile(
-                        leading=ft.Icon(name=ft.icons.TERMINAL_ROUNDED, color=ft.colors.PINK),
+                        leading=ft.Icon(name=ft.icons.TERMINAL_ROUNDED),
                         title=ft.Text(process["name"]),
                         subtitle=ft.Text(comps),
                     )
@@ -414,7 +397,7 @@ def main(page: ft.Page):
             
     def rename_printer(e):
         if check_computer_name():
-            close_dlg(e)
+            close_printer_dlg(e)
             id = len(list_of_processes)
             add_new_process(new_process("Rename Printer", [computer_name.value], date_time(), id))
             show_message(f"Renaming printer on {computer_name.value}")
@@ -425,7 +408,7 @@ def main(page: ft.Page):
         printer_wizard(e)
         
     # Rename Printer modal
-    def close_dlg(e):
+    def close_printer_dlg(e):
         printer_name_modal.open = False
         page.update()
 
@@ -444,7 +427,7 @@ def main(page: ft.Page):
         content=enter_printer_name,
         actions=[
             ft.TextButton("Rename", on_click=rename_printer),
-            ft.TextButton("Cancel", on_click=close_dlg),
+            ft.TextButton("Cancel", on_click=close_printer_dlg),
         ],
         actions_alignment=ft.MainAxisAlignment.END,
         on_dismiss=lambda e: print("Modal dialog dismissed!"),
@@ -460,7 +443,10 @@ def main(page: ft.Page):
     def printer_wizard(e):
         global printer_wiz_target_computer
         if e.control.text == "Last result":
-            navigate_view(6)   
+            if len(printer_wiz_listview.controls) > 0:
+                navigate_view(6)
+            else:
+                show_message("No previous results.")
         else:
             if check_computer_name():
                 show_message(f"Running printer wizard on {computer_name.value}")
@@ -594,7 +580,7 @@ def main(page: ft.Page):
     printers = ft.Column([
         computer_top_row,
         ft.Divider(height=9, thickness=3),
-        ft.ElevatedButton("Run Printer Wizard", on_click=printer_wizard),
+        ft.ElevatedButton("Get printers", on_click=printer_wizard),
         ft.ElevatedButton("Last result", on_click=printer_wizard)
     ], expand=True)
     
@@ -625,7 +611,7 @@ def main(page: ft.Page):
             # else skip winrm here, it will be done in script
             
             id = len(list_of_processes)
-            add_new_process(new_process("Clear Space", ["Using list"], date_time(), id))
+            add_new_process(new_process("Clear Space", computer, date_time(), id))
             
             if use_list_checkbox.value == True:
                 show_message(f"Clearing space on list of PCs.")
@@ -633,7 +619,9 @@ def main(page: ft.Page):
                 show_message(f"Clearing space on {computer}.")
                 
             powershell = the_shell.Power_Shell()
-            result = powershell.clear_space(computer=computer, users=users, logout=logout)
+            powershell.clear_space(computer=computer, users=users, logout=logout)
+            results = open(f"./results/ClearSpace/{computer}-ClearSpace.txt", "r")
+            result = results.read()
             update_console("Clear Space", result)
             end_of_process(id)
             
