@@ -72,7 +72,7 @@ def main(page: ft.Page):
     page.window_width = window_width
     page.window_height = window_height
     page.window_min_height = 515
-    page.window_min_width = 735
+    page.window_min_width = 745
     page.theme = ft.Theme(font_family="Consola", color_scheme_seed=console_color)
     
     def save_page_dimensions(e):
@@ -326,7 +326,7 @@ def main(page: ft.Page):
         height=25,
         visible=False,
         fit=ft.ImageFit.SCALE_DOWN,
-        offset=ft.transform.Offset(-0.12, 1)
+        offset=ft.transform.Offset(-0.11, 1)
     )
     
     # Card modal Stuff \/
