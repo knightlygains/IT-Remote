@@ -66,7 +66,7 @@ load_settings(e=None, update=False)
 
 def main(page: ft.Page):
     page.fonts = {
-        "Consola": "/fonts/Consola.ttf"
+        "Consola": "assets/fonts/Consola.ttf"
     }
     
     page.window_width = window_width
@@ -201,10 +201,12 @@ def main(page: ft.Page):
     
     def update_console(title_text, data):
         title_text = f"{date_time()}: {title_text}"
+        id = len(console_data.controls)
         card = generate_console_card(
             leading = ft.Icon(ft.icons.TERMINAL),
             title=ft.Text(title_text),
-            data=data
+            data=data,
+            id=id
         )
         console_data.controls.insert(0, card)
         page.update()
@@ -243,6 +245,10 @@ def main(page: ft.Page):
                 ])
             )
             show_running_processes.controls.append(new_proc_card)
+        if len(list_of_processes) > 0:
+            loading_gif.visible = True
+        else:
+            loading_gif.visible = False
     
     def end_of_process(id):
         global running_processes_count
@@ -298,15 +304,30 @@ def main(page: ft.Page):
         actions_alignment=ft.MainAxisAlignment.END,
     )
     
-    running_processes_icon = ft.IconButton(icon=ft.icons.TERMINAL, on_click=show_processes_modal, tooltip="Running processes")
-    running_processes_count_text = ft.Text(f"{running_processes_count}", )
-    loading = ft.Lottie(
-            src="/images/loading.json",
-            repeat=True,
-            reverse=False,
-            animate=True,
-            visible=True,
+    running_processes_icon = ft.IconButton(
+        icon=ft.icons.TERMINAL, 
+        on_click=show_processes_modal, 
+        tooltip="Running processes",
         )
+    
+    running_processes_count_text = ft.Text(f"{running_processes_count}", )
+    
+    # Local lottie files dont work currently
+    # loading = ft.Lottie(
+    #         src=f"assets/images/loading.json",
+    #         repeat=True,
+    #         reverse=False,
+    #         visible=True,
+    #     )
+    
+    loading_gif = ft.Image(
+        src=f"assets/images/gifs/loading.gif",
+        width=50,
+        height=25,
+        visible=False,
+        fit=ft.ImageFit.SCALE_DOWN,
+        offset=ft.transform.Offset(-0.12, 1)
+    )
     
     # Card modal Stuff \/
     def show_card_modal():
@@ -331,7 +352,7 @@ def main(page: ft.Page):
     
     def open_card(e):
         """
-        Sets modal content and opens it.
+        Sets card modal content and opens it.
         """
         console_card_modal.content = ft.Container(
             content=ft.Column([
@@ -340,9 +361,19 @@ def main(page: ft.Page):
         console_card_modal.title = ft.Text(e.control.title.value, )
         show_card_modal()
     
-    def generate_console_card(leading, title, data):
+    def remove_card(e):
+        if e.control.data == "all":
+            console_data.controls.clear()
+        else:
+            for control in console_data.controls:
+                if e.control.data == control.data:
+                    console_data.controls.remove(control)
+        page.update()
+    
+    def generate_console_card(leading, title, data, id):
         """
         Clickable card that shows in the console.
+        Is called from update_console()
         """
         # Format and shorten text
         subtitle_text = data[0:40]
@@ -351,17 +382,23 @@ def main(page: ft.Page):
         
         #Define card attributes
         console_card = ft.Card(
-            content=ft.Container(
-                content=ft.Column([
-                    ft.ListTile(
-                        leading=leading,
-                        title=title,
-                        subtitle=ft.Text(subtitle_text),
-                        on_click=open_card,
-                        data=data
-                    )
-                ])
-            )
+            content=ft.Column([
+                        ft.ListTile(
+                            leading=leading,
+                            trailing=ft.IconButton(
+                                icon=ft.icons.CLOSE,
+                                icon_size=10,
+                                tooltip="Remove",
+                                on_click=remove_card,
+                                data=id
+                            ),
+                            title=title,
+                            subtitle=ft.Text(subtitle_text),
+                            on_click=open_card,
+                            data=data
+                        ),
+                    ]), 
+            data=id
         )
         return console_card
     
@@ -477,8 +514,15 @@ def main(page: ft.Page):
                             ft.Divider(),
                             ft.Row([
                                 ft.Column([
-                                    ft.Text(f"{new_printer["Name"]}, Status: {new_printer["Status"]}", selectable=True)
-                                ], width=200),
+                                    ft.Row([
+                                        ft.Text(f"{new_printer["Name"]}, Status: {new_printer["Status"]}", selectable=True, width=200),
+                                        ft.IconButton(
+                                            icon=ft.icons.INFO,
+                                            icon_size=20,
+                                            tooltip="More info",
+                                        ),
+                                    ]),
+                                ], expand_loose=True),
                                 ft.Column([
                                     ft.FilledButton("Test Page", data=f"{new_printer["Name"]}", on_click=printer_wiz_testpage)
                                 ]),
@@ -548,16 +592,26 @@ def main(page: ft.Page):
         ping_btn,
         quser_btn,
         ft.Column([
-            running_processes_icon,
-            loading
-        ]),
+            ft.Stack([
+                running_processes_icon,
+                loading_gif
+            ])
+        ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
         running_processes_count_text,
-        loading
     ])
     
     home = ft.Column([
         computer_top_row,
-        console_label,
+        ft.Row([
+            console_label,
+            ft.IconButton(
+                icon=ft.icons.CLOSE,
+                icon_size=10,
+                tooltip="Clear Results",
+                on_click=remove_card,
+                data="all"
+            ),
+        ]),
         console_container
     ], expand=True)
     
@@ -683,5 +737,4 @@ def main(page: ft.Page):
         ], expand=True)
     )
 
-ft.app(target=main,
-       assets_dir="assets")
+ft.app(target=main)
