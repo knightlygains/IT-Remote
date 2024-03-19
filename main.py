@@ -300,6 +300,13 @@ def main(page: ft.Page):
     
     running_processes_icon = ft.IconButton(icon=ft.icons.TERMINAL, on_click=show_processes_modal, tooltip="Running processes")
     running_processes_count_text = ft.Text(f"{running_processes_count}", )
+    loading = ft.Lottie(
+            src="/images/loading.json",
+            repeat=True,
+            reverse=False,
+            animate=True,
+            visible=True,
+        )
     
     # Card modal Stuff \/
     def show_card_modal():
@@ -540,8 +547,12 @@ def main(page: ft.Page):
         computer_name,
         ping_btn,
         quser_btn,
-        running_processes_icon,
+        ft.Column([
+            running_processes_icon,
+            loading
+        ]),
         running_processes_count_text,
+        loading
     ])
     
     home = ft.Column([
@@ -654,4 +665,5 @@ def main(page: ft.Page):
         ], expand=True)
     )
 
-ft.app(target=main)
+ft.app(target=main,
+       assets_dir="assets")
