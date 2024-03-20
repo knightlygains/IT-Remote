@@ -187,7 +187,7 @@ def main(page: ft.Page):
     show_running_processes = ft.ListView(expand=1, spacing=10, padding=20)
     
     # List view for printer wizard
-    printer_wiz_listview = ft.ListView(expand=1, spacing=10, padding=20)
+    printer_wiz_listview = ft.ListView(expand=1, spacing=10, padding=20,)
     new_printer_name = ft.TextField(expand=True)
     
     def date_time():
@@ -515,7 +515,12 @@ def main(page: ft.Page):
                             ft.Row([
                                 ft.Column([
                                     ft.Row([
-                                        ft.Text(f"{new_printer["Name"]}, Status: {new_printer["Status"]}", selectable=True, width=200),
+                                        ft.Column([
+                                            ft.Text(f"{new_printer['Name']}", selectable=True, weight=ft.FontWeight.BOLD,),
+                                            ft.Text(f"PortName: {new_printer['Port']}", selectable=True),
+                                            ft.Text(f"Status: {new_printer['Status']}", selectable=True)
+                                        ], width=200),
+                                        
                                         ft.IconButton(
                                             icon=ft.icons.INFO,
                                             icon_size=20,
@@ -659,8 +664,8 @@ def main(page: ft.Page):
         ft.Column([
             printer_wiz_computer,
             printer_wiz_listview,
-        ], expand=1),
-    ], expand=True)
+        ], expand_loose=1),
+    ], expand=True, scroll=True)
     
     def clear_space(e):
         users = "False"
@@ -689,7 +694,7 @@ def main(page: ft.Page):
                 add_new_process(new_process("Clear Space", list_of_pcs, date_time(), id))
                 show_message(f"Clearing space on list of PCs.")
             else:
-                add_new_process(new_process("Clear Space", computer, date_time(), id))
+                add_new_process(new_process("Clear Space", [computer], date_time(), id))
                 show_message(f"Clearing space on {computer}.")
                 
             powershell = the_shell.Power_Shell()
