@@ -5,9 +5,8 @@ import json
 
 # Default settings.json values
 font_size = 16
-console_color = "blue"
-console_text_color = "white"
-window_width = 735
+app_color = "blue"
+window_width = 745
 window_height = 515
 
 running_processes_count = 0
@@ -15,10 +14,14 @@ running_processes_count = 0
 printer_wiz_target_computer = ""
 printer_to_change = ""
 
+# Used for are you sure modal
+said_yes = False
+modal_not_dismissed = True
+
 # Load user settings
 def load_settings(e, update):
     global font_size
-    global console_color
+    global app_color
     global window_width
     global window_height
     # Check if settings already exists
@@ -30,8 +33,8 @@ def load_settings(e, update):
                 data = json.load(file)
                 data.update({
                     "font_size": font_size, 
-                    "console_color": console_color,
-                    "console_text_color": console_text_color})
+                    "app_color": app_color,
+                    })
         except ValueError:
             print("Something went wrong")
         finally:
@@ -44,7 +47,7 @@ def load_settings(e, update):
             try:
                 settings_data = json.load(file)
                 font_size = settings_data["font_size"]
-                console_color = settings_data["console_color"]
+                app_color = settings_data["app_color"]
                 window_width = settings_data["window_width"]
                 window_height = settings_data["window_height"]
             except json.decoder.JSONDecodeError:
@@ -55,10 +58,9 @@ def load_settings(e, update):
             print("settings.json created")
             data = {
                 "font_size": font_size,
-                "console_color": console_color,
-                "console_text_color": console_text_color,
-                "window_width": 735,
-                "window_height": 515
+                "app_color": app_color,
+                "window_width": window_width,
+                "window_height": window_height
             }
             json.dump(data, file, indent=4)
     
@@ -73,7 +75,7 @@ def main(page: ft.Page):
     page.window_height = window_height
     page.window_min_height = 515
     page.window_min_width = 745
-    page.theme = ft.Theme(font_family="Consola", color_scheme_seed=console_color)
+    page.theme = ft.Theme(font_family="Consola", color_scheme_seed=app_color)
     
     def save_page_dimensions(e):
         print("page resize")
@@ -91,12 +93,12 @@ def main(page: ft.Page):
     page.snack_bar = page.snack_bar = ft.SnackBar(ft.Text("", ), duration=3000)
     
     def update_settings(e):
-        global console_color
+        global app_color
         if cg.value:
-            console_color = cg.value
+            app_color = cg.value
         load_settings(e, update=True )
-        console_container.bgcolor = console_color
-        page.theme.color_scheme_seed = console_color
+        results_container.bgcolor = app_color
+        page.theme.color_scheme_seed = app_color
         page.update()
     
     def show_message(message):
@@ -140,7 +142,6 @@ def main(page: ft.Page):
     rail = ft.NavigationRail(
         selected_index=1,
         label_type=ft.NavigationRailLabelType.ALL,
-        # extended=True,
         min_width=100,
         min_extended_width=400,
         group_alignment=-0.9,
@@ -181,7 +182,7 @@ def main(page: ft.Page):
     
     # Other controls
     settings_save_btn = ft.FilledButton("Save", icon=ft.icons.SAVE, on_click=update_settings)
-    console_label = ft.Text("Results:", )
+    results_label = ft.Text("Results:", )
     
     # Container for running process cards
     show_running_processes = ft.ListView(expand=1, spacing=10, padding=20)
@@ -192,23 +193,23 @@ def main(page: ft.Page):
     
     def date_time():
         x = datetime.datetime.now()
-        full = x.strftime("%c")
+        # full = x.strftime("%c")
         day = x.strftime("%a")
         day_num = x.strftime("%d")
         month = x.strftime("%b")
         time = x.strftime("%X")
         return f"{day} {month} {day_num}, {time}"
     
-    def update_console(title_text, data):
+    def update_results(title_text, data):
         title_text = f"{date_time()}: {title_text}"
-        id = len(console_data.controls)
-        card = generate_console_card(
+        id = len(result_data.controls)
+        card = generate_result_card(
             leading = ft.Icon(ft.icons.TERMINAL),
             title=ft.Text(title_text),
             data=data,
             id=id
         )
-        console_data.controls.insert(0, card)
+        result_data.controls.insert(0, card)
         page.update()
     
     def add_new_process(process_object):
@@ -274,13 +275,14 @@ def main(page: ft.Page):
         return new_process
     
     # Console text output
-    console_data = ft.ListView(expand=1, spacing=10, padding=20)
+    result_data = ft.ListView(expand=1, spacing=10, padding=20)
 
-    console_container = ft.Container(
-                                content=console_data,
-                                bgcolor=console_color,
+    results_container = ft.Container(
+                                content=result_data,
+                                bgcolor=app_color,
                                 expand=True,
                                 alignment=ft.alignment.top_left,
+                                border_radius=20
                                 )
     
     # Running Processes Modal \/
@@ -326,21 +328,21 @@ def main(page: ft.Page):
         height=25,
         visible=False,
         fit=ft.ImageFit.SCALE_DOWN,
-        offset=ft.transform.Offset(-0.11, 1)
+        offset=ft.transform.Offset(-0.1, 1)
     )
     
     # Card modal Stuff \/
     def show_card_modal():
-        page.dialog = console_card_modal
-        console_card_modal.open = True
+        page.dialog = result_card_modal
+        result_card_modal.open = True
         page.update()
     
     def close_card_modal(e):
-        console_card_modal.open = False
+        result_card_modal.open = False
         page.update()
     
     # Define card modal
-    console_card_modal = ft.AlertDialog(
+    result_card_modal = ft.AlertDialog(
         modal=True,
         title=ft.Text("Title"),
         content=ft.Text("No content"),
@@ -354,26 +356,26 @@ def main(page: ft.Page):
         """
         Sets card modal content and opens it.
         """
-        console_card_modal.content = ft.Container(
+        result_card_modal.content = ft.Container(
             content=ft.Column([
                 ft.Text(e.control.data, selectable=True)
             ], scroll=True))
-        console_card_modal.title = ft.Text(e.control.title.value, )
+        result_card_modal.title = ft.Text(e.control.title.value, )
         show_card_modal()
     
     def remove_card(e):
         if e.control.data == "all":
-            console_data.controls.clear()
+            result_data.controls.clear()
         else:
-            for control in console_data.controls:
+            for control in result_data.controls:
                 if e.control.data == control.data:
-                    console_data.controls.remove(control)
+                    result_data.controls.remove(control)
         page.update()
     
-    def generate_console_card(leading, title, data, id):
+    def generate_result_card(leading, title, data, id):
         """
         Clickable card that shows in the console.
-        Is called from update_console()
+        Is called from update_results()
         """
         # Format and shorten text
         subtitle_text = data[0:40]
@@ -381,7 +383,7 @@ def main(page: ft.Page):
             subtitle_text += "..."
         
         #Define card attributes
-        console_card = ft.Card(
+        result_card = ft.Card(
             content=ft.Column([
                         ft.ListTile(
                             leading=leading,
@@ -400,7 +402,7 @@ def main(page: ft.Page):
                     ]), 
             data=id
         )
-        return console_card
+        return result_card
     
     def ping(e):
         if check_computer_name():
@@ -409,7 +411,7 @@ def main(page: ft.Page):
             show_message(f"Pinging {computer_name.value}")
             powershell = the_shell.Power_Shell()
             result = powershell.ping(computer=computer_name.value)
-            update_console("Ping", result)
+            update_results("Ping", result)
             end_of_process(id)
     
     def enable_winrm(computer):
@@ -419,7 +421,7 @@ def main(page: ft.Page):
         add_new_process(new_process("WinRM", [computer], date_time(), id))
         powershell = the_shell.Power_Shell()
         result = powershell.enable_winrm(computer)
-        update_console("WinRM", result)
+        update_results("WinRM", result)
         end_of_process(id)
     
     def check_computer_name():
@@ -436,7 +438,7 @@ def main(page: ft.Page):
             show_message(f"Querying logged in users on {computer_name.value}")
             powershell = the_shell.Power_Shell()
             result = powershell.quser(computer=computer_name.value)
-            update_console("QUser", result)
+            update_results("QUser", result)
             end_of_process(id)
             
     def rename_printer(e):
@@ -447,7 +449,7 @@ def main(page: ft.Page):
             show_message(f"Renaming printer on {computer_name.value}")
             powershell = the_shell.Power_Shell()
             result = powershell.rename_printer(computer=computer_name.value, printerName=printer_to_change, newName=new_printer_name.value)
-            update_console("Rename Printer", result)
+            update_results("Rename Printer", result)
             end_of_process(id)
         printer_wizard(e)
         
@@ -484,6 +486,74 @@ def main(page: ft.Page):
         printer_name_modal.open = True
         page.update()
     
+    # More info printer modal
+    def open_printer_more_info_modal(e):
+        global printer_wiz_target_computer
+        printer_name = e.control.data
+        
+        def close_more_info_dlg(e):
+            more_info_printer_modal.open = False
+            page.update()
+            return
+        
+        with open(f"./results/printers/{computer_name.value}-Printers.json") as file:
+            printers = json.load(file)
+        
+        for printer in printers:
+            p = printers[printer]
+            if p['Name'] == printer_name:
+                more_info_printer = p
+        
+        more_info_printer_modal = ft.AlertDialog(
+            modal=True,
+            title=ft.Text(f"{more_info_printer['Name']}: Additional printer info"),
+            content=ft.Column([
+                ft.Row([
+                    ft.Row([
+                        ft.Text(f"Status:", weight=ft.FontWeight.BOLD),
+                        ft.Text(f"{more_info_printer['Status']}", selectable=True),
+                    ])
+                ]),
+                ft.Row([
+                    ft.Row([
+                        ft.Text(f"Port:", weight=ft.FontWeight.BOLD),
+                        ft.Text(f"{more_info_printer['Port']}", selectable=True),
+                    ])
+                ]),
+                ft.Row([
+                    ft.Row([
+                        ft.Text(f"Published:", weight=ft.FontWeight.BOLD),
+                        ft.Text(f"{more_info_printer['Published']}", selectable=True),
+                    ])
+                ]),ft.Row([
+                    ft.Row([
+                        ft.Text(f"Type:", weight=ft.FontWeight.BOLD),
+                        ft.Text(f"{more_info_printer['Type']}", selectable=True),
+                    ])
+                ]),
+                ft.Row([
+                    ft.Row([
+                        ft.Text(f"Shared:", weight=ft.FontWeight.BOLD),
+                        ft.Text(f"{more_info_printer['Shared']}", selectable=True),
+                    ])
+                ]),
+                ft.Row([
+                    ft.Row([
+                        ft.Text(f"Driver:", weight=ft.FontWeight.BOLD),
+                        ft.Text(f"{more_info_printer['Driver']}", selectable=True),
+                    ])
+                ]),
+            ]),
+            actions=[
+                ft.TextButton("Close", on_click=close_more_info_dlg),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        
+        page.dialog = more_info_printer_modal
+        more_info_printer_modal.open = True
+        page.update()
+    
     def printer_wizard(e):
         global printer_wiz_target_computer
         if e.control.text == "Last result":
@@ -493,7 +563,7 @@ def main(page: ft.Page):
                 show_message("No previous results.")
         else:
             if check_computer_name():
-                show_message(f"Running printer wizard on {computer_name.value}")
+                show_message(f"Getting printers on {computer_name.value}")
                 enable_winrm(computer_name.value)
                 printer_wiz_target_computer = computer_name.value
                 id = len(list_of_processes)
@@ -501,10 +571,10 @@ def main(page: ft.Page):
                 powershell = the_shell.Power_Shell()
                 result = powershell.printer_wizard(computer=computer_name.value)
                 print(result) # Debugging purposes only
-                update_console("Printer Wizard", result)
+                update_results("Printer Wizard", result)
                 printer_wiz_listview.controls.clear()
                 try:
-                    with open(f"./results/{computer_name.value}-Printers.json") as file:
+                    with open(f"./results/printers/{computer_name.value}-Printers.json") as file:
                         printers = json.load(file)
                     # For each printer in the json file, show a ft.Row
                     # containing text and buttons
@@ -525,6 +595,8 @@ def main(page: ft.Page):
                                             icon=ft.icons.INFO,
                                             icon_size=20,
                                             tooltip="More info",
+                                            data=new_printer['Name'],
+                                            on_click=open_printer_more_info_modal
                                         ),
                                     ]),
                                 ], expand_loose=True),
@@ -555,17 +627,73 @@ def main(page: ft.Page):
             show_message(f"Printing test page from {computer_name.value}.")
             powershell = the_shell.Power_Shell()
             result = powershell.test_page(computer=computer_name.value, printerName=e.control.data)
-            update_console("Printer Test Page", result)
+            update_results("Printer Test Page", result)
             end_of_process(id)
     
+    def are_you_sure(e):
+        global said_yes
+        global modal_not_dismissed
+        
+        def dismissed(e):
+            global modal_not_dismissed
+            modal_not_dismissed = False
+        
+        def close_sure_dlg(e):
+            sure_modal.open = False
+            page.update()
+            return
+        
+        def answer(e):
+            global said_yes
+            said_yes = True
+            close_sure_dlg(e)
+        
+        sure_modal = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("Are you sure?"),
+            content=ft.Column([
+                    ft.Row([
+                        ft.Text(f"Uninstall {e.control.data}?")
+                    ])
+                ]),
+            actions=[
+                ft.TextButton("Yes", on_click=answer),
+                ft.TextButton("Cancel", on_click=close_sure_dlg),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+            on_dismiss=dismissed
+        )
+        
+        page.dialog = sure_modal
+        sure_modal.open = True
+        page.update()
+        
+        # Have to sit here in while loop
+        # to make sure function doesnt exit
+        # early.
+        while modal_not_dismissed:
+            pass
+        
+        if said_yes:
+            # Reset global tracker variables before exit function
+            # So function doesnt automatically return True next time
+            said_yes = False
+            modal_not_dismissed = True
+            return True
+        else:
+            said_yes = False
+            modal_not_dismissed = True
+            return False 
+    
     def uninstall_printer(e):
-        id = len(list_of_processes)
-        add_new_process(new_process("Uninstall Printer", [printer_wiz_computer.data], date_time(), id))
-        show_message(f"Uninstalling printer from {printer_wiz_computer.data}.")
-        powershell = the_shell.Power_Shell()
-        result = powershell.uninstall_printer(computer=printer_wiz_computer.data, printerName=e.control.data)
-        update_console("Printer Test Page", result)
-        end_of_process(id)
+        if are_you_sure(e):
+            id = len(list_of_processes)
+            add_new_process(new_process("Uninstall Printer", [printer_wiz_computer.data], date_time(), id))
+            show_message(f"Uninstalling printer from {printer_wiz_computer.data}.")
+            powershell = the_shell.Power_Shell()
+            result = powershell.uninstall_printer(computer=printer_wiz_computer.data, printerName=e.control.data)
+            update_results("Printer Test Page", result)
+            end_of_process(id)
 
     # Computer Text Field
     computer_name = ft.TextField(label="Computer Name")
@@ -608,7 +736,7 @@ def main(page: ft.Page):
     home = ft.Column([
         computer_top_row,
         ft.Row([
-            console_label,
+            results_label,
             ft.IconButton(
                 icon=ft.icons.CLOSE,
                 icon_size=10,
@@ -617,11 +745,11 @@ def main(page: ft.Page):
                 data="all"
             ),
         ]),
-        console_container
+        results_container
     ], expand=True)
     
     # Settings color choice radio
-    console_color_label = ft.Text("App Color:", )
+    app_color_label = ft.Text("App Color:", )
     red_color_radio = ft.Radio(value="red", label="Red", fill_color="red")
     blue_color_radio = ft.Radio(value="blue", label="Blue", fill_color="blue")
     green_color_radio = ft.Radio(value="green", label="Green", fill_color="green")
@@ -638,7 +766,7 @@ def main(page: ft.Page):
     settings = ft.Column([
         ft.Row([
             ft.Column([
-            console_color_label,
+            app_color_label,
                 ft.Row([
                     cg
                 ]),
@@ -704,12 +832,12 @@ def main(page: ft.Page):
                 for pc in list_of_pcs:
                     pc_result = open(f"./results/ClearSpace/{pc}-ClearSpace.txt", "r")
                     read_pc_result = pc_result.readlines()
-                    update_console("Clear Space", read_pc_result)
+                    update_results("Clear Space", read_pc_result)
                     pc_result.close()
             else:
                 results = open(f"./results/ClearSpace/{computer}-ClearSpace.txt", "r")
                 result = results.read()
-                update_console("Clear Space", result)
+                update_results("Clear Space", result)
             
             end_of_process(id)
             

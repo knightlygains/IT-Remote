@@ -75,7 +75,7 @@ Function getPrinters {
         $variableNumber += 1
     }
 
-    Set-Content -Path ".\results\$Computer-Printers.json" -Value (ConvertTo-Json $json_obj)
+    Set-Content -Path ".\results\printers\$Computer-Printers.json" -Value (ConvertTo-Json $json_obj)
 
     exit 0
 }

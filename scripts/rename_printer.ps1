@@ -19,10 +19,14 @@ Function Rename-RemotePrinter {
     } -ArgumentList ($printerName, $newName)
 }
 
-Rename-RemotePrinter
-
-if ($LASTEXITCODE -eq 0) {
-    exit 0
+if (Test-Connection $Computer) {
+    Rename-RemotePrinter
+    if ($LASTEXITCODE -eq 0) {
+        exit 0
+    }
+    else {
+        exit 1
+    }
 }
 else {
     exit 1

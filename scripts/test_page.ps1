@@ -12,11 +12,10 @@ Function Send-TestPage {
     } -ArgumentList ($printerName)
 }
 
-Send-TestPage
-
-if ($LASTEXITCODE -eq 0) {
+if (Test-Connection $Computer) {
+    Send-TestPage
     exit 0
 }
 else {
-    exit 1
+    exit  1
 }

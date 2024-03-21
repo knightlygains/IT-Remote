@@ -5,10 +5,15 @@ param (
     [string]$printerName
 )
 
-try {
-    Remove-Printer -Name $printerName -ComputerName $Computer -ErrorAction Stop
-    exit 0
+if (Test-Connection $Computer) {
+    try {
+        Remove-Printer -Name $printerName -ComputerName $Computer -ErrorAction Stop
+        exit 0
+    }
+    catch {
+        exit 1
+    }
 }
-catch {
+else {
     exit 1
 }
