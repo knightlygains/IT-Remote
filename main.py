@@ -201,11 +201,12 @@ def main(page: ft.Page):
         return f"{day} {month} {day_num}, {time}"
     
     def update_results(title_text, data):
-        title_text = f"{date_time()}: {title_text}"
+        # title_text = f"{date_time()}: {title_text}"
         id = len(result_data.controls)
         card = generate_result_card(
             leading = ft.Icon(ft.icons.TERMINAL),
             title=ft.Text(title_text),
+            date=date_time(),
             data=data,
             id=id
         )
@@ -372,21 +373,27 @@ def main(page: ft.Page):
                     result_data.controls.remove(control)
         page.update()
     
-    def generate_result_card(leading, title, data, id):
+    def generate_result_card(leading, title, date, data, id):
         """
         Clickable card that shows in the console.
         Is called from update_results()
         """
+        data_max_length = 60
         # Format and shorten text
-        subtitle_text = data[0:40]
-        if len(data) > 40:
+        subtitle_text = data[0:data_max_length]
+        if len(data) > data_max_length:
             subtitle_text += "..."
+        
+        # subtitle_text = "Perspiciatis dolores placeat perspiciatis corrupti doloremque esse non. Repellendus hic quis temporibus doloremque velit quidem. Dignissimos quia nihil nisi alias minima nobis. Nisi sed qui sapiente sint voluptas fugiat.Tempore ut ratione perspiciatis et. Veniam eum quis deserunt. Alias animi dolor asperiores autem. Autem iste aut adipisci repellat."
         
         #Define card attributes
         result_card = ft.Card(
             content=ft.Column([
                         ft.ListTile(
-                            leading=leading,
+                            leading=ft.Column([
+                                leading,
+                                ft.Text(f"{date}")
+                                ], width=85, spacing=1),
                             trailing=ft.IconButton(
                                 icon=ft.icons.CLOSE,
                                 icon_size=10,

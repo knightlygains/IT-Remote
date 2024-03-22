@@ -21,7 +21,7 @@ Function getPrinters {
         $printers = Get-CimInstance -Class Win32_Printer -ComputerName $Computer | Select-Object Name, PrinterStatus, Type, PortName, DriverName, Shared, Published
     }
     catch {
-        exit 1
+        return "Fail"
     }
     
     # Initialize variable number to assign to and increment with each printer
@@ -77,11 +77,16 @@ Function getPrinters {
 
     Set-Content -Path ".\results\printers\$Computer-Printers.json" -Value (ConvertTo-Json $json_obj)
 
-    exit 0
 }
 
 if (Test-Connection $Computer) {
-    getPrinters
+    $result = getPrinters
+    if ($result -eq "Fail") {
+        exit 1
+    }
+    else {
+        exit 0
+    }
 }
 else {
     exit 1
