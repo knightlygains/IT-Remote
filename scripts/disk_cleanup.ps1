@@ -51,7 +51,7 @@ foreach ($Computer in $list) {
 
     Function Get-Space {
         try {
-            $space = Get-CimInstance -ComputerName $Computer win32_logicaldisk -ErrorAction Stop | Select-Object -Property DeviceID, @{Label = 'FreeSpace'; expression = { ($_.FreeSpace / 1GB).ToString('F2') + "GB" } }, @{Label = 'MaxSize'; expression = { ($_.Size / 1GB).ToString('F2') + "kGB" } }
+            $space = Get-CimInstance -ComputerName $Computer win32_logicaldisk -ErrorAction Stop | Select-Object -Property DeviceID, @{Label = 'FreeSpace'; expression = { ($_.FreeSpace / 1GB).ToString('F2') + "GB" } }, @{Label = 'MaxSize'; expression = { ($_.Size / 1GB).ToString('F2') + "GB" } }
             return "$($space.FreeSpace) / $($space.MaxSize)"
         }
         catch {
