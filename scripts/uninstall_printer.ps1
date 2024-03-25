@@ -7,7 +7,13 @@ param (
 
 if (Test-Connection $Computer) {
     try {
-        Remove-Printer -Name $printerName -ComputerName $Computer -ErrorAction Stop
+        if ($Computer -like "localhost") {
+            Remove-Printer -Name "$printerName" -ErrorAction Stop
+        }
+        else {
+            Remove-Printer -Name "$printerName" -ComputerName $Computer -ErrorAction Stop
+        }
+        
         exit 0
     }
     catch {

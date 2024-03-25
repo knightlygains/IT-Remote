@@ -2,6 +2,7 @@ import flet as ft
 import the_shell
 import datetime
 import json
+import os
 
 # Default settings.json values
 font_size = 16
@@ -11,8 +12,14 @@ window_height = 515
 
 running_processes_count = 0
 
+# Used to track the last computer printer wizard was run on,
+# so as to not confuse with the current value in the computername
+# text field.
 printer_wiz_target_computer = ""
 printer_to_change = ""
+
+# Used to store a list of custom scripts
+list_of_scripts = []
 
 # Used for are you sure modal
 said_yes = False
@@ -98,6 +105,7 @@ def main(page: ft.Page):
             app_color = cg.value
         load_settings(e, update=True )
         results_container.bgcolor = app_color
+        printer_wiz_list_container.bgcolor = app_color
         page.theme.color_scheme_seed = app_color
         page.update()
     
@@ -127,9 +135,9 @@ def main(page: ft.Page):
         if index == 3:
             current_view.controls = [printers]
         if index == 4:
-            pass
+            current_view.controls = [commands_view]
         if index == 5:
-            pass
+            current_view.controls = [custom_scripts_view]
         if index == 6:
             # Print Wizard View
             rail.selected_index = 3
@@ -167,14 +175,14 @@ def main(page: ft.Page):
                 label_content=ft.Text("Printers"),
             ),
             ft.NavigationRailDestination(
-                icon=ft.icons.SAVE_OUTLINED,
-                selected_icon_content=ft.Icon(ft.icons.SAVE),
-                label_content=ft.Text("Programs"),
+                icon=ft.icons.TERMINAL_OUTLINED,
+                selected_icon_content=ft.Icon(ft.icons.TERMINAL),
+                label_content=ft.Text("Commands"),
             ),
             ft.NavigationRailDestination(
-                icon=ft.icons.LAPTOP_OUTLINED,
-                selected_icon_content=ft.Icon(ft.icons.LAPTOP),
-                label_content=ft.Text("Commands"),
+                icon=ft.icons.PLAY_ARROW_OUTLINED,
+                selected_icon_content=ft.Icon(ft.icons.PLAY_ARROW),
+                label_content=ft.Text("Custom Scripts"),
             ),
         ],
         on_change=navigate_view
@@ -182,18 +190,24 @@ def main(page: ft.Page):
     
     # Other controls
     settings_save_btn = ft.FilledButton("Save", icon=ft.icons.SAVE, on_click=update_settings)
-    results_label = ft.Text("Results:", )
+    results_label = ft.Text("Results:")
     
     # Container for running process cards
     show_running_processes = ft.ListView(expand=1, spacing=10, padding=20)
     
     # List view for printer wizard
     printer_wiz_listview = ft.ListView(expand=1, spacing=10, padding=20,)
+    printer_wiz_list_container = ft.Container(
+        bgcolor=app_color,
+        content=printer_wiz_listview,
+        border_radius=20,
+        expand=True,
+    )
+    
     new_printer_name = ft.TextField(expand=True)
     
     def date_time():
         x = datetime.datetime.now()
-        # full = x.strftime("%c")
         day = x.strftime("%a")
         day_num = x.strftime("%d")
         month = x.strftime("%b")
@@ -503,7 +517,7 @@ def main(page: ft.Page):
             page.update()
             return
         
-        with open(f"./results/printers/{computer_name.value}-Printers.json") as file:
+        with open(f"./results/printers/{printer_wiz_target_computer}-Printers.json") as file:
             printers = json.load(file)
         
         for printer in printers:
@@ -563,7 +577,7 @@ def main(page: ft.Page):
     
     def printer_wizard(e):
         global printer_wiz_target_computer
-        if e.control.text == "Last result":
+        if e.control.data == "Last result":
             if len(printer_wiz_listview.controls) > 0:
                 navigate_view(6)
             else:
@@ -581,47 +595,42 @@ def main(page: ft.Page):
                 update_results("Printer Wizard", result)
                 printer_wiz_listview.controls.clear()
                 try:
-                    with open(f"./results/printers/{computer_name.value}-Printers.json") as file:
+                    with open(f"./results/printers/{printer_wiz_target_computer}-Printers.json") as file:
                         printers = json.load(file)
-                    # For each printer in the json file, show a ft.Row
+                    # For each printer in the json file, show a card
                     # containing text and buttons
                     for printer in printers:
                         new_printer = printers[printer]
-                        printer_list_item = ft.Column([
-                            ft.Divider(),
-                            ft.Row([
-                                ft.Column([
-                                    ft.Row([
-                                        ft.Column([
-                                            ft.Text(f"{new_printer['Name']}", selectable=True, weight=ft.FontWeight.BOLD,),
-                                            ft.Text(f"PortName: {new_printer['Port']}", selectable=True),
-                                            ft.Text(f"Status: {new_printer['Status']}", selectable=True)
-                                        ], width=200),
-                                        
-                                        ft.IconButton(
-                                            icon=ft.icons.INFO,
-                                            icon_size=20,
-                                            tooltip="More info",
-                                            data=new_printer['Name'],
-                                            on_click=open_printer_more_info_modal
-                                        ),
-                                    ]),
-                                ], expand_loose=True),
-                                ft.Column([
-                                    ft.FilledButton("Test Page", data=f"{new_printer["Name"]}", on_click=printer_wiz_testpage)
-                                ]),
-                                ft.Column([
-                                    ft.FilledButton("Rename", data=f"{new_printer["Name"]}", on_click=open_printer_name_modal), 
-                                ]),
-                                ft.Column([
-                                    ft.FilledButton("Uninstall", data=f"{new_printer["Name"]}", on_click=uninstall_printer)
-                                ]),
-                            ]),
-                        ])
                         
-                        printer_wiz_listview.controls.append(printer_list_item)
-                        printer_wiz_computer.value = f"{computer_name.value}'s printers:"
-                        printer_wiz_computer.data = computer_name.value
+                        p_name = new_printer['Name']
+                        
+                        printer_list_item_card = ft.Card(
+                            content=ft.Container(
+                                content=ft.Column([
+                                    ft.ListTile(
+                                        title=ft.Column([
+                                                ft.Text(p_name, weight=ft.FontWeight.BOLD,),
+                                                ft.Text(f"PortName: {new_printer['Port']}"),
+                                                ft.Text(f"Status: {new_printer['Status']}")
+                                            ], width=200),
+                                        trailing=ft.PopupMenuButton(
+                                            icon=ft.icons.MORE_VERT,
+                                            items=[
+                                                ft.PopupMenuItem(text="Test Page", data=p_name, on_click=printer_wiz_testpage),
+                                                ft.PopupMenuItem(text="Rename", data=p_name, on_click=open_printer_name_modal),
+                                                ft.PopupMenuItem(text=f"Uninstall {p_name}", data=p_name, on_click=uninstall_printer),
+                                            ],
+                                        ),
+                                        data=p_name,
+                                        on_click=open_printer_more_info_modal
+                                    )
+                                ]),
+                            ),
+                        )
+
+                        printer_wiz_listview.controls.append(printer_list_item_card)
+                    printer_wiz_computer.data = computer_name.value
+                    printer_wiz_computer.value = f"{computer_name.value}'s printers:"
                 except FileNotFoundError:
                     show_message(f"Could not get printers on {computer_name.value}")
                 end_of_process(id)
@@ -699,7 +708,7 @@ def main(page: ft.Page):
             show_message(f"Uninstalling printer from {printer_wiz_computer.data}.")
             powershell = the_shell.Power_Shell()
             result = powershell.uninstall_printer(computer=printer_wiz_computer.data, printerName=e.control.data)
-            update_results("Printer Test Page", result)
+            update_results("Uninstall Printer", result)
             end_of_process(id)
 
     # Computer Text Field
@@ -723,6 +732,91 @@ def main(page: ft.Page):
         on_click=open_pc_list,
         tooltip="Open list of PCs"
     )
+    
+    delete_users_checkbox = ft.Checkbox(label="Remove user profiles", value=False)
+    logout_users_checkbox = ft.Checkbox(label="Logout users before deletion", value=False)
+    use_list_checkbox = ft.Checkbox(label="Use list of computers", value=False)
+    
+    def clear_space(e):
+        users = "False"
+        logout = "False"
+        if delete_users_checkbox.value == True:
+            users = "True"
+        if logout_users_checkbox.value == True:
+            logout = "True"
+            
+        def run_operation(computer):
+            if computer != "Use-List":
+                enable_winrm(computer)
+            # else skip winrm here, it will be done in script
+            
+            id = len(list_of_processes)
+            
+            # If we are using a list of pcs,
+            # get each pc from list and create
+            # an array of them.
+            if computer == "Use-List":
+                list_of_pcs = []
+                list = open("./lists/computers.txt", "r")
+                computers = list.readlines()
+                for pc in computers:
+                    list_of_pcs.append(pc.strip("\\n"))
+                add_new_process(new_process("Clear Space", list_of_pcs, date_time(), id))
+                show_message(f"Clearing space on list of PCs.")
+            else:
+                add_new_process(new_process("Clear Space", [computer], date_time(), id))
+                show_message(f"Clearing space on {computer}.")
+                
+            powershell = the_shell.Power_Shell()
+            powershell.clear_space(computer=computer, users=users, logout=logout)
+            
+            if use_list_checkbox.value == True:
+                for pc in list_of_pcs:
+                    pc_result = open(f"./results/ClearSpace/{pc}-ClearSpace.txt", "r")
+                    read_pc_result = pc_result.readlines()
+                    update_results("Clear Space", read_pc_result)
+                    pc_result.close()
+            else:
+                results = open(f"./results/ClearSpace/{computer}-ClearSpace.txt", "r")
+                result = results.read()
+                update_results("Clear Space", result)
+            
+            end_of_process(id)
+            
+        if check_computer_name() and use_list_checkbox.value == False:
+            run_operation(computer_name.value)
+        elif use_list_checkbox.value == True:
+            run_operation("Use-List")
+    
+    def run_custom_command(e):
+        powershell = the_shell.Power_Shell()
+        powershell.custom_command()
+    
+    def generate_commands():
+        global list_of_scripts
+        directory = "./custom_commands"
+        
+        for filename in os.listdir(directory):
+            f = os.path.join(directory, filename)
+            # checking if it is a ps1 file
+            if os.path.isfile(f) and f.endswith('.ps1'):
+                file_dict = {
+                    "name": filename,
+                    "path": f
+                }
+                list_of_scripts.append(file_dict)
+        
+        list_of_controls = []
+        for script in list_of_scripts:   
+            script_list_tile = ft.ListTile(
+                title=ft.Text(f"{script['name']}"),
+                leading=ft.IconButton(
+                    ft.icons.PLAY_ARROW
+                )
+            )
+            list_of_controls.append(script_list_tile)
+            
+        return list_of_controls
 
     # "Views". We swap these in and out of current_view
     # when navigating using the rail.
@@ -785,77 +879,34 @@ def main(page: ft.Page):
     printers = ft.Column([
         computer_top_row,
         ft.Divider(height=9, thickness=3),
-        ft.ElevatedButton("Get printers", on_click=printer_wizard),
-        ft.ElevatedButton("Last result", on_click=printer_wizard)
+        ft.Row([
+            ft.Column([
+                ft.IconButton(icon=ft.icons.PRINT, icon_size=50, on_click=printer_wizard, data=""),
+                ft.Text("Get Printers")
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+            ft.VerticalDivider(),
+            ft.Column([
+                ft.IconButton(icon=ft.icons.RESTORE, icon_size=50, on_click=printer_wizard, data="Last result"),
+                ft.Text("Previous Result")
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+            ft.VerticalDivider(),
+            ft.Column([
+                ft.IconButton(icon=ft.icons.UPLOAD_FILE, icon_size=50,),
+                ft.Text("Import Printer")
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+        ])
     ], expand=True)
-    
-    current_view = ft.Row([home], expand=True)
 
     # Used to store and later update with the computer
     # that printer_wizard was run on
     printer_wiz_computer = ft.Text("None")
     
-    print_wizard_view = ft.Row([
-        ft.Column([
+    print_wizard_view = ft.Column([
+        ft.Row([
             printer_wiz_computer,
-            printer_wiz_listview,
-        ], expand_loose=1),
-    ], expand=True, scroll=True)
-    
-    def clear_space(e):
-        users = "False"
-        logout = "False"
-        if delete_users_checkbox.value == True:
-            users = "True"
-        if logout_users_checkbox.value == True:
-            logout = "True"
-            
-        def run_operation(computer):
-            if computer != "Use-List":
-                enable_winrm(computer)
-            # else skip winrm here, it will be done in script
-            
-            id = len(list_of_processes)
-            
-            # If we are using a list of pcs,
-            # get each pc from list and create
-            # an array of them.
-            if computer == "Use-List":
-                list_of_pcs = []
-                list = open("./lists/computers.txt", "r")
-                computers = list.readlines()
-                for pc in computers:
-                    list_of_pcs.append(pc.strip("\\n"))
-                add_new_process(new_process("Clear Space", list_of_pcs, date_time(), id))
-                show_message(f"Clearing space on list of PCs.")
-            else:
-                add_new_process(new_process("Clear Space", [computer], date_time(), id))
-                show_message(f"Clearing space on {computer}.")
-                
-            powershell = the_shell.Power_Shell()
-            powershell.clear_space(computer=computer, users=users, logout=logout)
-            
-            if use_list_checkbox.value == True:
-                for pc in list_of_pcs:
-                    pc_result = open(f"./results/ClearSpace/{pc}-ClearSpace.txt", "r")
-                    read_pc_result = pc_result.readlines()
-                    update_results("Clear Space", read_pc_result)
-                    pc_result.close()
-            else:
-                results = open(f"./results/ClearSpace/{computer}-ClearSpace.txt", "r")
-                result = results.read()
-                update_results("Clear Space", result)
-            
-            end_of_process(id)
-            
-        if check_computer_name() and use_list_checkbox.value == False:
-            run_operation(computer_name.value)
-        elif use_list_checkbox.value == True:
-            run_operation("Use-List")
-    
-    delete_users_checkbox = ft.Checkbox(label="Remove user profiles", value=False)
-    logout_users_checkbox = ft.Checkbox(label="Logout users before deletion", value=False)
-    use_list_checkbox = ft.Checkbox(label="Use list of computers", value=False)
+        ]),
+            printer_wiz_list_container,
+        ], expand=True)
     
     delprof_view = ft.Column([
         computer_top_row,
@@ -867,6 +918,92 @@ def main(page: ft.Page):
             ft.FilledButton(text="Clear Disk Space", on_click=clear_space)
         ]),
     ], expand=True)
+    
+    
+    commands_list_view = ft.ListView(expand=1, spacing=10, padding=20)
+    commands_list_view.controls = generate_commands()
+    commands_list_container = ft.Container(
+        content=commands_list_view,
+        expand=True,
+    )
+    
+    custom_scripts_view = ft.Column([
+        computer_top_row,
+        ft.Divider(height=9, thickness=3),
+        commands_list_container
+    ], expand=True)
+    
+    
+    commands_view = ft.Column([
+        computer_top_row,
+        ft.Divider(height=9, thickness=3),
+        ft.ListView([
+            ft.Column([
+                ft.Text("Printers", weight=ft.FontWeight.BOLD),
+                ft.Row([
+                    ft.Column([
+                        ft.IconButton(icon=ft.icons.PRINT, icon_size=50, on_click=printer_wizard, data=""),
+                        ft.Text("Get Printers")
+                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                    ft.VerticalDivider(),
+                    ft.Column([
+                        ft.IconButton(icon=ft.icons.RESTORE, icon_size=50, on_click=printer_wizard, data="Last result"),
+                        ft.Text("Previous Result")
+                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                    ft.VerticalDivider(),
+                    ft.Column([
+                        ft.IconButton(icon=ft.icons.UPLOAD_FILE, icon_size=50,),
+                        ft.Text("Import Printer")
+                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                ]),
+            ]),
+            ft.Divider(),
+            ft.Column([
+                ft.Text("Programs", weight=ft.FontWeight.BOLD),
+                ft.Row([
+                    ft.Column([
+                        ft.IconButton(icon=ft.icons.PRINT, icon_size=50, on_click=printer_wizard, data=""),
+                        ft.Text("Get Printers")
+                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                    ft.VerticalDivider(),
+                    ft.Column([
+                        ft.IconButton(icon=ft.icons.RESTORE, icon_size=50, on_click=printer_wizard, data="Last result"),
+                        ft.Text("Previous Result")
+                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                    ft.VerticalDivider(),
+                    ft.Column([
+                        ft.IconButton(icon=ft.icons.UPLOAD_FILE, icon_size=50,),
+                        ft.Text("Import Printer")
+                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                ]),
+            ]),
+            ft.Divider(),
+            ft.Column([
+                ft.Text("Printers", weight=ft.FontWeight.BOLD),
+                ft.Row([
+                    ft.Column([
+                        ft.IconButton(icon=ft.icons.PRINT, icon_size=50, on_click=printer_wizard, data=""),
+                        ft.Text("Get Printers")
+                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                    ft.VerticalDivider(),
+                    ft.Column([
+                        ft.IconButton(icon=ft.icons.RESTORE, icon_size=50, on_click=printer_wizard, data="Last result"),
+                        ft.Text("Previous Result")
+                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                    ft.VerticalDivider(),
+                    ft.Column([
+                        ft.IconButton(icon=ft.icons.UPLOAD_FILE, icon_size=50,),
+                        ft.Text("Import Printer")
+                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                ]),
+            ])
+        ], expand=1, padding=20, spacing=10),
+        
+        
+        
+    ], expand=True)
+    
+    current_view = ft.Row([home], expand=True)
     
     #Finally build the page
     page.add(
