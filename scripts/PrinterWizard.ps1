@@ -8,7 +8,7 @@ param (
 Function getPrinters {
     
     # Enable print service log
-    Invoke-Command -ComputerName $Computer -ScriptBlock {
+    $enable_log_sb = {
         $logName = 'Microsoft-Windows-PrintService/Operational'
 
         $log = New-Object System.Diagnostics.Eventing.Reader.EventLogConfiguration $logName
@@ -17,8 +17,16 @@ Function getPrinters {
     }
 
     try {
+        Invoke-Command -ComputerName $Computer $enable_log_sb -ErrorAction Stop
+    }
+    catch {
+        return "Fail"
+    }
+    
+
+    try {
         #Variable that allows us to loop through and get all printers on a remote computer.
-        $printers = Get-CimInstance -Class Win32_Printer -ComputerName $Computer | Select-Object Name, PrinterStatus, Type, PortName, DriverName, Shared, Published
+        $printers = Get-CimInstance -Class Win32_Printer -ComputerName $Computer | Select-Object Name, PrinterStatus, Type, PortName, DriverName, Shared, Published -ErrorAction Stop
     }
     catch {
         return "Fail"

@@ -9,7 +9,7 @@ font_size = 16
 app_color = "blue"
 window_width = 745
 window_height = 515
-
+enable_win_rm = True
 running_processes_count = 0
 
 # Used to track the last computer printer wizard was run on,
@@ -31,6 +31,7 @@ def load_settings(e, update):
     global app_color
     global window_width
     global window_height
+    global enable_win_rm
     # Check if settings already exists
     
     if update:
@@ -41,9 +42,10 @@ def load_settings(e, update):
                 data.update({
                     "font_size": font_size, 
                     "app_color": app_color,
+                    "enable_winrm": enable_win_rm
                     })
-        except ValueError:
-            print("Something went wrong")
+        except ValueError as e:
+            print(f"Something went wrong, {e}")
         finally:
             with open("settings.json", "w") as settings:
                 json.dump(data, settings, indent=4)
@@ -57,6 +59,7 @@ def load_settings(e, update):
                 app_color = settings_data["app_color"]
                 window_width = settings_data["window_width"]
                 window_height = settings_data["window_height"]
+                enable_win_rm = settings_data["enable_winrm"]
             except json.decoder.JSONDecodeError:
                 print("No settings data found")
     except FileNotFoundError:
@@ -67,7 +70,8 @@ def load_settings(e, update):
                 "font_size": font_size,
                 "app_color": app_color,
                 "window_width": window_width,
-                "window_height": window_height
+                "window_height": window_height,
+                "enable_winrm": enable_win_rm
             }
             json.dump(data, file, indent=4)
     
@@ -101,12 +105,14 @@ def main(page: ft.Page):
     
     def update_settings(e):
         global app_color
+        global enable_win_rm
         if cg.value:
             app_color = cg.value
-        load_settings(e, update=True )
         results_container.bgcolor = app_color
         printer_wiz_list_container.bgcolor = app_color
         page.theme.color_scheme_seed = app_color
+        enable_win_rm = winrm_checkbox.value
+        load_settings(e, update=True )
         page.update()
     
     def show_message(message):
@@ -436,14 +442,15 @@ def main(page: ft.Page):
             end_of_process(id)
     
     def enable_winrm(computer):
-        if computer == None:
-            computer = computer_name.value
-        id = len(list_of_processes)
-        add_new_process(new_process("WinRM", [computer], date_time(), id))
-        powershell = the_shell.Power_Shell()
-        result = powershell.enable_winrm(computer)
-        update_results("WinRM", result)
-        end_of_process(id)
+        if enable_win_rm:
+            if computer == None:
+                computer = computer_name.value
+            id = len(list_of_processes)
+            add_new_process(new_process("WinRM", [computer], date_time(), id))
+            powershell = the_shell.Power_Shell()
+            result = powershell.enable_winrm(computer)
+            update_results("WinRM", result)
+            end_of_process(id)
     
     def check_computer_name():
         if computer_name.value == "":
@@ -710,6 +717,17 @@ def main(page: ft.Page):
             result = powershell.uninstall_printer(computer=printer_wiz_computer.data, printerName=e.control.data)
             update_results("Uninstall Printer", result)
             end_of_process(id)
+    
+    def open_print_logs(e):
+        type = e.control.data
+        enable_winrm(computer_name.value)
+        id = len(list_of_processes)
+        add_new_process(new_process(f"{type} Log", [computer_name.value], date_time(), id))
+        show_message(f"Getting {type} print logs from {computer_name.value}.")
+        powershell = the_shell.Power_Shell()
+        result = powershell.print_logs(computer_name.value, type)
+        update_results(f"{type} Log", result)
+        end_of_process(id)
 
     # Computer Text Field
     computer_name = ft.TextField(label="Computer Name")
@@ -864,6 +882,8 @@ def main(page: ft.Page):
         yellow_color_radio
     ]))
     
+    winrm_checkbox = ft.Checkbox(value=enable_win_rm)
+    
     settings = ft.Column([
         ft.Row([
             ft.Column([
@@ -872,6 +892,10 @@ def main(page: ft.Page):
                     cg
                 ]),
             ], width=200),
+            ft.Column([
+                ft.Text("Enable WinRM before commands:"),
+                winrm_checkbox
+            ])
         ]),
         ft.Row([settings_save_btn])
     ])
@@ -893,6 +917,16 @@ def main(page: ft.Page):
             ft.Column([
                 ft.IconButton(icon=ft.icons.UPLOAD_FILE, icon_size=50,),
                 ft.Text("Import Printer")
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+            ft.VerticalDivider(),
+            ft.Column([
+                ft.IconButton(icon=ft.icons.FILE_OPEN, data="Operational", icon_size=50, on_click=open_print_logs),
+                ft.Text("Operational Logs")
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+            ft.VerticalDivider(),
+            ft.Column([
+                ft.IconButton(icon=ft.icons.FILE_OPEN, data="Admin", icon_size=50, on_click=open_print_logs),
+                ft.Text("Admin Logs")
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
         ])
     ], expand=True)

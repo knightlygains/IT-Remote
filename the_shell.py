@@ -59,6 +59,14 @@ class Power_Shell():
         else:
             return f"Test page failed to send to {computer}."
     
+    def print_logs(self, computer, type):
+        print(type)
+        p = subprocess.call([self.pspath, "-File", "./scripts/print_logs.ps1", f"{computer}", f"{type}"])
+        if p == 0:
+            return f"Retreived logs from {computer}."
+        else:
+            return f"Failed to retreive logs from {computer}."
+    
     def rename_printer(self, computer, printerName, newName):
         p = subprocess.call([self.pspath, "-File", f"./scripts/rename_printer.ps1", f"{computer}", f"{printerName}", f"{newName}"])
         if p == 0:

@@ -1,7 +1,7 @@
 {
     "font_size": 16,
-    "app_color": "blue",
-    "window_width": 729.0,
+    "app_color": "red",
+    "window_width": 855.0,
     "window_height": 476.0,
-    "console_color": "red"
+    "enable_winrm": true
 }
