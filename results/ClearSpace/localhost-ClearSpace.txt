@@ -1,7 +1,0 @@
-Removed recycle bin data on localhost.
-Couldn't remove Windows\Temp on localhost: Cannot remove item C:\Windows\Temp\ELAN WBF LOG\Elan FP-Driver Log-0.htm: The process cannot access the file 'Elan FP-Driver Log-0.htm' because it is being used by another process.
-Couldn't remove Windows\Prefetch on localhost: Cannot remove item C:\Windows\Prefetch\PfPre_53ada89a.mkd: Access to the path 'C:\Windows\Prefetch\PfPre_53ada89a.mkd' is denied.
-Couldn't remove AppData\Local\Temp from Public on localhost: Cannot find path 'C:\Users\Public\AppData\Local\' because it does not exist.
-Removed AppData\Local\Temp from Security on localhost.
-Couldn't remove AppData\Local\Temp from swhitney on localhost: Cannot remove item C:\Users\swhitney\AppData\Local\Temp\hsperfdata_SWhitney\7664: Access to the path '7664' is denied.
-localhost - Space before: 152.20GB 87.36GB / 476.34GB 100.00GB | Space after: 152.65GB 87.36GB / 476.34GB 100.00GB

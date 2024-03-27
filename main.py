@@ -3,6 +3,7 @@ import the_shell
 import datetime
 import json
 import os
+import socket, pathlib
 
 # Default settings.json values
 font_size = 16
@@ -32,8 +33,10 @@ def load_settings(e, update):
     global window_width
     global window_height
     global enable_win_rm
-    # Check if settings already exists
     
+    
+    
+    # Check if settings already exists
     if update:
         try:
             with open("settings.json", "r") as file:
@@ -77,6 +80,13 @@ def load_settings(e, update):
     
 load_settings(e=None, update=False)
 
+#Cleanup old files
+for filename in os.listdir("./results/Printers"):
+    pathlib.Path(f"./results/Printers/{filename}").unlink()
+    
+for filename in os.listdir("./results/ClearSpace"):
+    pathlib.Path(f"./results/ClearSpace/{filename}").unlink()
+
 def main(page: ft.Page):
     page.fonts = {
         "Consola": "assets/fonts/Consola.ttf"
@@ -111,6 +121,7 @@ def main(page: ft.Page):
         results_container.bgcolor = app_color
         printer_wiz_list_container.bgcolor = app_color
         page.theme.color_scheme_seed = app_color
+        actions_view_container.bgcolor = app_color
         enable_win_rm = winrm_checkbox.value
         load_settings(e, update=True )
         page.update()
@@ -133,24 +144,22 @@ def main(page: ft.Page):
             index = e
         
         if index == 0:
-            current_view.controls = [settings]
+            current_view.controls = [settings_view]
         if index == 1:
             current_view.controls = [home]
         if index == 2:
-            current_view.controls = [delprof_view]
+            # Actions Tab
+            current_view.controls = [actions_view]
         if index == 3:
-            current_view.controls = [printers]
-        if index == 4:
-            current_view.controls = [commands_view]
-        if index == 5:
             current_view.controls = [custom_scripts_view]
+        if index == 4:
+            pass
+        if index == 5:
+            pass
         if index == 6:
             # Print Wizard View
             rail.selected_index = 3
             current_view.controls = [print_wizard_view]
-        if index == 7:
-            # Custom scripts view
-            pass
         page.update()
     
     rail = ft.NavigationRail(
@@ -171,23 +180,13 @@ def main(page: ft.Page):
                 label_content=ft.Text("Home"),
             ),
             ft.NavigationRailDestination(
-                icon=ft.icons.DELETE_OUTLINE,
-                selected_icon_content=ft.Icon(ft.icons.DELETE),
-                label_content=ft.Text("Clear Space"),
-            ),
-            ft.NavigationRailDestination(
-                icon=ft.icons.PRINT_OUTLINED,
-                selected_icon_content=ft.Icon(ft.icons.PRINT),
-                label_content=ft.Text("Printers"),
-            ),
-            ft.NavigationRailDestination(
                 icon=ft.icons.TERMINAL_OUTLINED,
                 selected_icon_content=ft.Icon(ft.icons.TERMINAL),
-                label_content=ft.Text("Commands"),
+                label_content=ft.Text("Actions"),
             ),
             ft.NavigationRailDestination(
-                icon=ft.icons.PLAY_ARROW_OUTLINED,
-                selected_icon_content=ft.Icon(ft.icons.PLAY_ARROW),
+                icon=ft.icons.DESCRIPTION_OUTLINED,
+                selected_icon_content=ft.Icon(ft.icons.DESCRIPTION),
                 label_content=ft.Text("Custom Scripts"),
             ),
         ],
@@ -220,16 +219,36 @@ def main(page: ft.Page):
         time = x.strftime("%X")
         return f"{day} {month} {day_num}, {time}"
     
-    def update_results(title_text, data):
-        # title_text = f"{date_time()}: {title_text}"
+    def update_results(title_text, data, **kwargs):
+        print_log_card = False
+        for key, value in kwargs.items():
+            if key == "print_log":
+                print_log_card = True
+            if key == "computer":
+                computer = value
+                if value.lower() == "localhost":
+                    computer = socket.gethostname()
+            if key == "type":
+                type = value
+        
         id = len(result_data.controls)
-        card = generate_result_card(
-            leading = ft.Icon(ft.icons.TERMINAL),
-            title=ft.Text(title_text),
-            date=date_time(),
-            data=data,
-            id=id
-        )
+        if print_log_card:
+            data = f"./results/printers/{computer}-Printers-{type}-logs.json"
+            card = generate_print_log_result_card(
+                leading = ft.Icon(ft.icons.TERMINAL),
+                title=ft.Text(title_text),
+                date=date_time(),
+                data=data,
+                id=id
+            )
+        else:
+            card = generate_result_card(
+                leading = ft.Icon(ft.icons.TERMINAL),
+                title=ft.Text(title_text),
+                date=date_time(),
+                data=data,
+                id=id
+            )
         result_data.controls.insert(0, card)
         page.update()
     
@@ -357,7 +376,7 @@ def main(page: ft.Page):
         page.dialog = result_card_modal
         result_card_modal.open = True
         page.update()
-    
+        
     def close_card_modal(e):
         result_card_modal.open = False
         page.update()
@@ -427,6 +446,110 @@ def main(page: ft.Page):
                             data=data
                         ),
                     ]), 
+            data=id
+        )
+        return result_card
+    
+    # Define print_log card modal
+    def show_print_log_card_modal():
+        page.dialog = print_log_card_modal
+        print_log_card_modal.open = True
+        page.update()
+    
+    def close_print_log_card_modal(e):
+        print_log_card_modal.open = False
+        page.update()
+        
+    print_log_card_modal = ft.AlertDialog(
+        modal=True,
+        title=ft.Text("Title"),
+        content=ft.Text("No content"),
+        actions=[
+            ft.TextButton("Close", on_click=close_print_log_card_modal),
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+    )
+    
+    def open_print_log_card(e):
+        """
+        Sets print log card modal content and opens it.
+        """
+        logs_list_view = ft.ListView(expand=1, padding= 20)
+        card_content = ft.Container(
+            content=logs_list_view,
+            expand=1,
+            width= 500
+        )
+        log_json_path = e.control.data
+        with open(log_json_path, "r") as file:
+            data = json.load(file)
+            for event in data:
+                num = f"{event}"
+                evt = data[event]
+                card = ft.Card(
+                    content=ft.Container(
+                        content=ft.Column([
+                            ft.Text(f"{num}", weight=ft.FontWeight.BOLD),
+                            ft.Row([
+                                ft.Text("Time Created:", weight=ft.FontWeight.BOLD),
+                                ft.Text(f"{evt['TimeCreated']}", selectable=True),
+                            ]),
+                            ft.Row([
+                                ft.Text("Message:", weight=ft.FontWeight.BOLD),
+                                ft.Text(f"{evt['Message']}", selectable=True),
+                            ], wrap=True),
+                            ft.Row([
+                                ft.Text("Id:", weight=ft.FontWeight.BOLD),
+                                ft.Text(f"{evt['Id']}", selectable=True),
+                            ]),
+                            ft.Row([
+                                ft.Text("Level:", weight=ft.FontWeight.BOLD),
+                                ft.Text(f"{evt['Level']}", selectable=True),
+                            ]),
+                            
+                        ], expand = 1),
+                        expand = 1
+                    ),
+                    expand = 1
+                )
+                logs_list_view.controls.append(card)
+        
+        print_log_card_modal.content = card_content
+        print_log_card_modal.title = ft.Text(e.control.title.value, )
+        show_print_log_card_modal()
+    
+    def generate_print_log_result_card(leading, title, date, data, id):
+        """
+        Clickable card that shows in the console.
+        Is called from update_results()
+        """
+        data_max_length = 60
+        # Format and shorten text
+        subtitle_text = data[0:data_max_length]
+        if len(data) > data_max_length:
+            subtitle_text += "..."
+        
+        #Define card attributes
+        result_card = ft.Card(
+            content=ft.Column([
+                        ft.ListTile(
+                            leading=ft.Column([
+                                leading,
+                                ft.Text(f"{date}")
+                                ], width=85, spacing=1),
+                            trailing=ft.IconButton(
+                                icon=ft.icons.CLOSE,
+                                icon_size=10,
+                                tooltip="Remove",
+                                on_click=remove_card,
+                                data=id
+                            ),
+                            title=title,
+                            subtitle=ft.Text(subtitle_text),
+                            on_click=open_print_log_card,
+                            data=data
+                        ),
+                    ]),
             data=id
         )
         return result_card
@@ -719,15 +842,17 @@ def main(page: ft.Page):
             end_of_process(id)
     
     def open_print_logs(e):
-        type = e.control.data
-        enable_winrm(computer_name.value)
-        id = len(list_of_processes)
-        add_new_process(new_process(f"{type} Log", [computer_name.value], date_time(), id))
-        show_message(f"Getting {type} print logs from {computer_name.value}.")
-        powershell = the_shell.Power_Shell()
-        result = powershell.print_logs(computer_name.value, type)
-        update_results(f"{type} Log", result)
-        end_of_process(id)
+        if check_computer_name():
+            computer = computer_name.value
+            type = e.control.data
+            enable_winrm(computer)
+            id = len(list_of_processes)
+            add_new_process(new_process(f"{type} Log", [computer], date_time(), id))
+            show_message(f"Getting {type} print logs from {computer}.")
+            powershell = the_shell.Power_Shell()
+            result = powershell.print_logs(computer, type)
+            update_results(f"{type} Log", result, print_log=True, computer=computer, type=type)
+            end_of_process(id)
 
     # Computer Text Field
     computer_name = ft.TextField(label="Computer Name")
@@ -867,6 +992,113 @@ def main(page: ft.Page):
         results_container
     ], expand=True)
     
+    # Actions tab Expansion List items
+    clear_space_exp_panel = ft.ExpansionPanel(
+        header=ft.ListTile(
+            title=ft.Text("Clear Space")
+        ),
+        content=ft.Container(
+            content=ft.Column([
+                delete_users_checkbox,
+                logout_users_checkbox,
+                use_list_checkbox,
+                ft.FilledButton(text="Clear Disk Space", on_click=clear_space)
+            ]),
+            padding=10
+        ),
+        can_tap_header=True,
+    )
+    
+    printers_exp_panel = ft.ExpansionPanel(
+        header=ft.ListTile(
+            title=ft.Text("Printers")
+        ),
+        content=ft.Container(
+            content=ft.Row([
+                ft.Column([
+                    ft.IconButton(icon=ft.icons.PRINT, icon_size=50, on_click=printer_wizard, data=""),
+                    ft.Text("Get Printers")
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                ft.VerticalDivider(),
+                ft.Column([
+                    ft.IconButton(icon=ft.icons.RESTORE, icon_size=50, on_click=printer_wizard, data="Last result"),
+                    ft.Text("Previous Result")
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                ft.VerticalDivider(),
+                ft.Column([
+                    ft.IconButton(icon=ft.icons.UPLOAD_FILE, icon_size=50,),
+                    ft.Text("Import Printer")
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                ft.VerticalDivider(),
+                ft.Column([
+                    ft.IconButton(icon=ft.icons.FILE_OPEN, data="Operational", icon_size=50, on_click=open_print_logs),
+                    ft.Text("Operational Logs")
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                ft.VerticalDivider(),
+                ft.Column([
+                    ft.IconButton(icon=ft.icons.FILE_OPEN, data="Admin", icon_size=50, on_click=open_print_logs),
+                    ft.Text("Admin Logs")
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+            ], wrap=True),
+            padding=10
+        ),
+        can_tap_header=True,
+    )
+    
+    programs_exp_panel = ft.ExpansionPanel(
+        header=ft.ListTile(
+            title=ft.Text("Programs")
+        ),
+        content=ft.Container(
+            content=ft.Column([
+                    ft.Row([
+                        ft.TextField(
+                            label="Software name"
+                        ),
+                    ]),
+                    ft.Text("Can use with list:"),
+                    ft.Row([
+                        ft.Column([
+                            ft.Row([
+                                ft.FilledTonalButton(text="Check for software")
+                            ])
+                        ]),
+                        ft.Column([
+                            ft.Row([
+                                ft.FilledTonalButton(text="Check for ALL software")
+                            ])
+                        ]),
+                    ])
+                ]),
+            padding=20
+        ),
+        can_tap_header=True,
+    )
+    
+    exp_panel_list = ft.ExpansionPanelList(
+        elevation=8,
+        controls=[
+            clear_space_exp_panel,
+            printers_exp_panel,
+            programs_exp_panel
+        ]
+    )
+    
+    actions_view_container = ft.Container(
+        content=ft.ListView(
+            [exp_panel_list],
+            padding=20,
+        ),
+        bgcolor=app_color,
+        expand = 1,
+        border_radius=20
+    )
+    
+    actions_view = ft.Column([
+        computer_top_row,
+        actions_view_container
+    ], expand=1)
+    
     # Settings color choice radio
     app_color_label = ft.Text("App Color:", )
     red_color_radio = ft.Radio(value="red", label="Red", fill_color="red")
@@ -884,54 +1116,25 @@ def main(page: ft.Page):
     
     winrm_checkbox = ft.Checkbox(value=enable_win_rm)
     
-    settings = ft.Column([
+    settings_view = ft.Column([
         ft.Row([
             ft.Column([
             app_color_label,
                 ft.Row([
                     cg
                 ]),
-            ], width=200),
+            ]),
+            ft.VerticalDivider(),
             ft.Column([
                 ft.Text("Enable WinRM before commands:"),
                 winrm_checkbox
-            ])
-        ]),
-        ft.Row([settings_save_btn])
-    ])
-    
-    printers = ft.Column([
-        computer_top_row,
-        ft.Divider(height=9, thickness=3),
-        ft.Row([
-            ft.Column([
-                ft.IconButton(icon=ft.icons.PRINT, icon_size=50, on_click=printer_wizard, data=""),
-                ft.Text("Get Printers")
-            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+            ], width=150),
             ft.VerticalDivider(),
-            ft.Column([
-                ft.IconButton(icon=ft.icons.RESTORE, icon_size=50, on_click=printer_wizard, data="Last result"),
-                ft.Text("Previous Result")
-            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-            ft.VerticalDivider(),
-            ft.Column([
-                ft.IconButton(icon=ft.icons.UPLOAD_FILE, icon_size=50,),
-                ft.Text("Import Printer")
-            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-            ft.VerticalDivider(),
-            ft.Column([
-                ft.IconButton(icon=ft.icons.FILE_OPEN, data="Operational", icon_size=50, on_click=open_print_logs),
-                ft.Text("Operational Logs")
-            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-            ft.VerticalDivider(),
-            ft.Column([
-                ft.IconButton(icon=ft.icons.FILE_OPEN, data="Admin", icon_size=50, on_click=open_print_logs),
-                ft.Text("Admin Logs")
-            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-        ])
-    ], expand=True)
+        ], expand=1),
+        ft.Row([settings_save_btn], alignment=ft.MainAxisAlignment.CENTER)
+    ], expand=1)
 
-    # Used to store and later update with the computer
+    # Used to store the computer name
     # that printer_wizard was run on
     printer_wiz_computer = ft.Text("None")
     
@@ -941,18 +1144,6 @@ def main(page: ft.Page):
         ]),
             printer_wiz_list_container,
         ], expand=True)
-    
-    delprof_view = ft.Column([
-        computer_top_row,
-        ft.Divider(height=9, thickness=3),
-        ft.Column([
-            delete_users_checkbox,
-            logout_users_checkbox,
-            use_list_checkbox,
-            ft.FilledButton(text="Clear Disk Space", on_click=clear_space)
-        ]),
-    ], expand=True)
-    
     
     commands_list_view = ft.ListView(expand=1, spacing=10, padding=20)
     commands_list_view.controls = generate_commands()
@@ -965,76 +1156,6 @@ def main(page: ft.Page):
         computer_top_row,
         ft.Divider(height=9, thickness=3),
         commands_list_container
-    ], expand=True)
-    
-    
-    commands_view = ft.Column([
-        computer_top_row,
-        ft.Divider(height=9, thickness=3),
-        ft.ListView([
-            ft.Column([
-                ft.Text("Printers", weight=ft.FontWeight.BOLD),
-                ft.Row([
-                    ft.Column([
-                        ft.IconButton(icon=ft.icons.PRINT, icon_size=50, on_click=printer_wizard, data=""),
-                        ft.Text("Get Printers")
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-                    ft.VerticalDivider(),
-                    ft.Column([
-                        ft.IconButton(icon=ft.icons.RESTORE, icon_size=50, on_click=printer_wizard, data="Last result"),
-                        ft.Text("Previous Result")
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-                    ft.VerticalDivider(),
-                    ft.Column([
-                        ft.IconButton(icon=ft.icons.UPLOAD_FILE, icon_size=50,),
-                        ft.Text("Import Printer")
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-                ]),
-            ]),
-            ft.Divider(),
-            ft.Column([
-                ft.Text("Programs", weight=ft.FontWeight.BOLD),
-                ft.Row([
-                    ft.Column([
-                        ft.IconButton(icon=ft.icons.PRINT, icon_size=50, on_click=printer_wizard, data=""),
-                        ft.Text("Get Printers")
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-                    ft.VerticalDivider(),
-                    ft.Column([
-                        ft.IconButton(icon=ft.icons.RESTORE, icon_size=50, on_click=printer_wizard, data="Last result"),
-                        ft.Text("Previous Result")
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-                    ft.VerticalDivider(),
-                    ft.Column([
-                        ft.IconButton(icon=ft.icons.UPLOAD_FILE, icon_size=50,),
-                        ft.Text("Import Printer")
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-                ]),
-            ]),
-            ft.Divider(),
-            ft.Column([
-                ft.Text("Printers", weight=ft.FontWeight.BOLD),
-                ft.Row([
-                    ft.Column([
-                        ft.IconButton(icon=ft.icons.PRINT, icon_size=50, on_click=printer_wizard, data=""),
-                        ft.Text("Get Printers")
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-                    ft.VerticalDivider(),
-                    ft.Column([
-                        ft.IconButton(icon=ft.icons.RESTORE, icon_size=50, on_click=printer_wizard, data="Last result"),
-                        ft.Text("Previous Result")
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-                    ft.VerticalDivider(),
-                    ft.Column([
-                        ft.IconButton(icon=ft.icons.UPLOAD_FILE, icon_size=50,),
-                        ft.Text("Import Printer")
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-                ]),
-            ])
-        ], expand=1, padding=20, spacing=10),
-        
-        
-        
     ], expand=True)
     
     current_view = ft.Row([home], expand=True)

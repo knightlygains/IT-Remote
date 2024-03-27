@@ -1,5 +1,7 @@
 import subprocess
 from os.path import exists
+import json
+import socket
 
 class Power_Shell():
     def __init__(self):
@@ -60,10 +62,18 @@ class Power_Shell():
             return f"Test page failed to send to {computer}."
     
     def print_logs(self, computer, type):
-        print(type)
+        if computer.lower() == "localhost":
+            computer = socket.gethostname()
         p = subprocess.call([self.pspath, "-File", "./scripts/print_logs.ps1", f"{computer}", f"{type}"])
         if p == 0:
-            return f"Retreived logs from {computer}."
+            result_json = f"./results/printers/{computer}-Printers-{type}-logs.json"
+            results = ""
+            with open(result_json, "r") as file:
+                data = json.load(file)
+                for event in data:
+                    evt = data[event]
+                    results += f"________\nMessage:\n{evt['Message']}\n\nTime Created:\n{evt['TimeCreated']}\n\nId: {evt['Id']}\n\nLevel: {evt['Level']}\n________\n"
+            return f"Retreived logs from {computer}.\n{results}"
         else:
             return f"Failed to retreive logs from {computer}."
     

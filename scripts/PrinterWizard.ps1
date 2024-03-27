@@ -72,7 +72,7 @@ Function getPrinters {
             "Status": "$printerStatus",
             "Port": "$($printer.PortName)",
             "Published": "$($printer.Published)",
-            "Type": $($printer.Type),
+            "Type": "$($printer.Type)",
             "Shared": "$($printer.Shared)",
             "Driver": "$($printer.DriverName)"
         }
