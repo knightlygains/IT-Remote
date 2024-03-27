@@ -95,20 +95,20 @@ foreach ($Computer in $list) {
             $Path1 = 'C' + ':\Windows\Temp' 
             try {
                 Get-ChildItem $Path1 -Force -Recurse -ErrorAction Stop | Remove-Item -Recurse -Force -ErrorAction Stop
-                $this_comps_results += "Removed Windows\Temp on $Computer.`n"
+                $this_comps_results += "`nRemoved Windows\Temp on $Computer.`n"
             }
             catch {
-                $this_comps_results += "Couldn't remove Windows\Temp on $($Computer): $_`n"
+                $this_comps_results += "`nCouldn't remove Windows\Temp on $($Computer): $_`n"
             }
 
             # Specify the path where temporary files are stored in the Windows Prefetch folder
             $Path2 = 'C' + ':\Windows\Prefetch' 
             try {
                 Get-ChildItem $Path2 -Force -Recurse -ErrorAction Stop | Remove-Item -Recurse -Force -ErrorAction Stop
-                $this_comps_results += "Removed Windows\Temp on $Computer.`n"
+                $this_comps_results += "`nRemoved Windows\Temp on $Computer.`n"
             }
             catch {
-                $this_comps_results += "Couldn't remove Windows\Prefetch on $($Computer): $_`n"
+                $this_comps_results += "`nCouldn't remove Windows\Prefetch on $($Computer): $_`n"
             }
 
             # Get each user and their temp directory then delete everything in it
@@ -121,10 +121,10 @@ foreach ($Computer in $list) {
                     # Remove all items (files and directories) from the specified user's Temp folder
                     try {
                         Get-ChildItem $Path3 -Force -Recurse -ErrorAction Stop | Remove-Item -Recurse -Force -ErrorAction Stop
-                        $this_comps_results += "Removed AppData\Local\Temp from $user on $Computer.`n"
+                        $this_comps_results += "`nRemoved AppData\Local\Temp from $user on $Computer.`n"
                     }
                     catch {
-                        $this_comps_results += "Couldn't remove AppData\Local\Temp from $user on $($Computer): $_`n"
+                        $this_comps_results += "`nCouldn't remove AppData\Local\Temp from $user on $($Computer): $_`n"
                     }
                 }
                 
@@ -133,10 +133,9 @@ foreach ($Computer in $list) {
             # If we want to delete user profiles
             if ($delete_users -eq "True") {
                 # Get all CimInstances of user profiles
-                $users_to_delete = Get-CimInstance Win32_UserProfile | Where-Object { ($_.LocalPath -notLike 
-                        "Public", 
-                        "admin", 
-                        "localadmin")
+                $users_to_delete = Get-CimInstance Win32_UserProfile | 
+                Where-Object {
+                    $_.LocalPath -notLike "*Public" -and $_.LocalPath -notLike "*admin" -and $_.LocalPath -notLike "*localadmin" -and $_.LocalPath -notLike "*systemprofile" -and $_.LocalPath -notLike "*LocalService" -and $_.LocalPath -notLike "*NetworkService"
                 }
         
                 if ($logout -eq "True") {
@@ -158,10 +157,10 @@ foreach ($Computer in $list) {
                 foreach ($u in $users_to_delete) {
                     try {
                         Remove-CimInstance -InputObject $u -ErrorAction Stop
-                        $this_comps_results += "Removed user $($u.LocalPath) on $Computer.`n"
+                        $this_comps_results += "`nRemoved user $($u.LocalPath) on $Computer.`n"
                     }
                     catch {
-                        $this_comps_results += "Couldn't remove user $($u.LocalPath) on $($Computer): $_`n"
+                        $this_comps_results += "`nCouldn't remove user $($u.LocalPath) on $($Computer): $_`n"
                     }
                     
                 }
@@ -173,7 +172,7 @@ foreach ($Computer in $list) {
 
         $space_after = Get-Space
 
-        $results += "$($Computer) - Space before: $space_before | Space after: $space_after"
+        $results += "`n$($Computer) - Space before: $space_before | Space after: $space_after"
     }
     else {
         $results += "$($Computer) could not be contacted."
