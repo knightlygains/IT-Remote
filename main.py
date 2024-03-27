@@ -34,8 +34,6 @@ def load_settings(e, update):
     global window_height
     global enable_win_rm
     
-    
-    
     # Check if settings already exists
     if update:
         try:
@@ -83,10 +81,10 @@ load_settings(e=None, update=False)
 #Cleanup old files
 for filename in os.listdir("./results/Printers"):
     pathlib.Path(f"./results/Printers/{filename}").unlink()
-    
 for filename in os.listdir("./results/ClearSpace"):
     pathlib.Path(f"./results/ClearSpace/{filename}").unlink()
 
+# Program
 def main(page: ft.Page):
     page.fonts = {
         "Consola": "assets/fonts/Consola.ttf"
@@ -96,10 +94,9 @@ def main(page: ft.Page):
     page.window_height = window_height
     page.window_min_height = 515
     page.window_min_width = 745
-    page.theme = ft.Theme(font_family="Consola", color_scheme_seed=app_color)
+    page.theme = ft.Theme(color_scheme_seed=app_color)
     
     def save_page_dimensions(e):
-        print("page resize")
         try:
             with open("settings.json", "r") as settings:
                 data = json.load(settings)
@@ -195,7 +192,7 @@ def main(page: ft.Page):
     
     # Other controls
     settings_save_btn = ft.FilledButton("Save", icon=ft.icons.SAVE, on_click=update_settings)
-    results_label = ft.Text("Results:")
+    results_label = ft.Text("Results:", weight=ft.FontWeight.BOLD)
     
     # Container for running process cards
     show_running_processes = ft.ListView(expand=1, spacing=10, padding=20)
@@ -995,7 +992,7 @@ def main(page: ft.Page):
     # Actions tab Expansion List items
     clear_space_exp_panel = ft.ExpansionPanel(
         header=ft.ListTile(
-            title=ft.Text("Clear Space")
+            title=ft.Text("Clear Space", weight=ft.FontWeight.BOLD)
         ),
         content=ft.Container(
             content=ft.Column([
@@ -1011,7 +1008,7 @@ def main(page: ft.Page):
     
     printers_exp_panel = ft.ExpansionPanel(
         header=ft.ListTile(
-            title=ft.Text("Printers")
+            title=ft.Text("Printers", weight=ft.FontWeight.BOLD)
         ),
         content=ft.Container(
             content=ft.Row([
@@ -1047,7 +1044,7 @@ def main(page: ft.Page):
     
     programs_exp_panel = ft.ExpansionPanel(
         header=ft.ListTile(
-            title=ft.Text("Programs")
+            title=ft.Text("Programs", weight=ft.FontWeight.BOLD)
         ),
         content=ft.Container(
             content=ft.Column([
@@ -1126,7 +1123,7 @@ def main(page: ft.Page):
             ]),
             ft.VerticalDivider(),
             ft.Column([
-                ft.Text("Enable WinRM before commands:"),
+                ft.Text("Enable WinRM before actions:"),
                 winrm_checkbox
             ], width=150),
             ft.VerticalDivider(),
