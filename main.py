@@ -94,7 +94,7 @@ def main(page: ft.Page):
     page.window_height = window_height
     page.window_min_height = 515
     page.window_min_width = 745
-    page.theme = ft.Theme(color_scheme_seed=app_color)
+    page.dark_theme = ft.Theme(color_scheme_seed=app_color)
     
     def save_page_dimensions(e):
         try:
@@ -108,7 +108,7 @@ def main(page: ft.Page):
                 json.dump(data, settings, indent=4)
         
     page.on_resize = save_page_dimensions
-    page.snack_bar = page.snack_bar = ft.SnackBar(ft.Text("", ), duration=3000)
+    page.snack_bar = ft.SnackBar(ft.Text("", ), duration=3000)
     
     def update_settings(e):
         global app_color
@@ -236,7 +236,8 @@ def main(page: ft.Page):
                 title=ft.Text(title_text),
                 date=date_time(),
                 data=data,
-                id=id
+                id=id,
+                computer=computer
             )
         else:
             card = generate_result_card(
@@ -505,7 +506,8 @@ def main(page: ft.Page):
                             ]),
                             
                         ], expand = 1),
-                        expand = 1
+                        expand = 1,
+                        padding=20
                     ),
                     expand = 1
                 )
@@ -515,16 +517,12 @@ def main(page: ft.Page):
         print_log_card_modal.title = ft.Text(e.control.title.value, )
         show_print_log_card_modal()
     
-    def generate_print_log_result_card(leading, title, date, data, id):
+    def generate_print_log_result_card(leading, title, date, data, id, computer):
         """
         Clickable card that shows in the console.
         Is called from update_results()
         """
-        data_max_length = 60
-        # Format and shorten text
-        subtitle_text = data[0:data_max_length]
-        if len(data) > data_max_length:
-            subtitle_text += "..."
+        subtitle_text = f"Click to open logs for {computer}."
         
         #Define card attributes
         result_card = ft.Card(
@@ -599,7 +597,7 @@ def main(page: ft.Page):
             result = powershell.rename_printer(computer=computer_name.value, printerName=printer_to_change, newName=new_printer_name.value)
             update_results("Rename Printer", result)
             end_of_process(id)
-        printer_wizard(e)
+        printer_wizard(e, refresh=True)
         
     # Rename Printer modal
     def close_printer_dlg(e):
@@ -702,8 +700,15 @@ def main(page: ft.Page):
         more_info_printer_modal.open = True
         page.update()
     
-    def printer_wizard(e):
+    def printer_wizard(e, **kwargs):
         global printer_wiz_target_computer
+        
+        # Check if we are just refreshing list
+        refresh = False
+        for key, value in kwargs.items():
+            if key == "refresh":
+                refresh = value
+                
         if e.control.data == "Last result":
             if len(printer_wiz_listview.controls) > 0:
                 navigate_view(6)
@@ -711,8 +716,11 @@ def main(page: ft.Page):
                 show_message("No previous results.")
         else:
             if check_computer_name():
-                show_message(f"Getting printers on {computer_name.value}")
-                enable_winrm(computer_name.value)
+                if refresh:
+                    show_message(f"Refreshing printers on {computer_name.value}.")
+                else:
+                    show_message(f"Getting printers on {computer_name.value}")
+                    enable_winrm(computer_name.value)
                 printer_wiz_target_computer = computer_name.value
                 id = len(list_of_processes)
                 add_new_process(new_process("Printer Wizard", [computer_name.value], date_time(), id))
@@ -773,9 +781,18 @@ def main(page: ft.Page):
             update_results("Printer Test Page", result)
             end_of_process(id)
     
-    def are_you_sure(e):
+    def are_you_sure(e, text):
+        """
+        Global are you sure modal.
+        Waits in while loop until answered,
+        retuning true or false depending on
+        answer.
+        """
         global said_yes
         global modal_not_dismissed
+        
+        said_yes = False
+        modal_not_dismissed = True
         
         def dismissed(e):
             global modal_not_dismissed
@@ -793,10 +810,10 @@ def main(page: ft.Page):
         
         sure_modal = ft.AlertDialog(
             modal=True,
-            title=ft.Text("Are you sure?"),
+            title=ft.Text("Confirm:"),
             content=ft.Column([
                     ft.Row([
-                        ft.Text(f"Uninstall {e.control.data}?")
+                        ft.Text(f"{text}", weight=ft.FontWeight.BOLD)
                     ])
                 ]),
             actions=[
@@ -829,7 +846,7 @@ def main(page: ft.Page):
             return False 
     
     def uninstall_printer(e):
-        if are_you_sure(e):
+        if are_you_sure(e, f"Uninstall {e.control.data} from {printer_wiz_computer.data}?"):
             id = len(list_of_processes)
             add_new_process(new_process("Uninstall Printer", [printer_wiz_computer.data], date_time(), id))
             show_message(f"Uninstalling printer from {printer_wiz_computer.data}.")
@@ -837,6 +854,7 @@ def main(page: ft.Page):
             result = powershell.uninstall_printer(computer=printer_wiz_computer.data, printerName=e.control.data)
             update_results("Uninstall Printer", result)
             end_of_process(id)
+            printer_wizard(e, refresh=True)
     
     def open_print_logs(e):
         if check_computer_name():
