@@ -2,7 +2,7 @@ import flet as ft
 import the_shell
 import datetime
 import json
-import os
+import os, time
 import socket, pathlib
 
 # Default settings.json values
@@ -117,10 +117,10 @@ def main(page: ft.Page):
             app_color = cg.value
         results_container.bgcolor = app_color
         printer_wiz_list_container.bgcolor = app_color
-        page.theme.color_scheme_seed = app_color
+        page.dark_theme.color_scheme_seed = app_color
         actions_view_container.bgcolor = app_color
         enable_win_rm = winrm_checkbox.value
-        load_settings(e, update=True )
+        load_settings(e, update=True)
         page.update()
     
     def show_message(message):
@@ -155,7 +155,7 @@ def main(page: ft.Page):
             pass
         if index == 6:
             # Print Wizard View
-            rail.selected_index = 3
+            rail.selected_index = 2
             current_view.controls = [print_wizard_view]
         page.update()
     
@@ -195,7 +195,7 @@ def main(page: ft.Page):
     results_label = ft.Text("Results:", weight=ft.FontWeight.BOLD)
     
     # Container for running process cards
-    show_running_processes = ft.ListView(expand=1, spacing=10, padding=20)
+    show_running_processes = ft.ListView(expand_loose=True, spacing=10, padding=20)
     
     # List view for printer wizard
     printer_wiz_listview = ft.ListView(expand=1, spacing=10, padding=20,)
@@ -218,6 +218,8 @@ def main(page: ft.Page):
     
     def update_results(title_text, data, **kwargs):
         print_log_card = False
+        print_wiz_card = False
+        computer = computer_name.value
         for key, value in kwargs.items():
             if key == "print_log":
                 print_log_card = True
@@ -227,11 +229,23 @@ def main(page: ft.Page):
                     computer = socket.gethostname()
             if key == "type":
                 type = value
+            if key == "print_wiz":
+                print_wiz_card = value
         
         id = len(result_data.controls)
         if print_log_card:
             data = f"./results/printers/{computer}-Printers-{type}-logs.json"
             card = generate_print_log_result_card(
+                leading = ft.Icon(ft.icons.TERMINAL),
+                title=ft.Text(title_text),
+                date=date_time(),
+                data=data,
+                id=id,
+                computer=computer
+            )
+        elif print_wiz_card:
+            data = f"./results/printers/{computer}-Printers.json"
+            card = generate_result_card(
                 leading = ft.Icon(ft.icons.TERMINAL),
                 title=ft.Text(title_text),
                 date=date_time(),
@@ -245,7 +259,8 @@ def main(page: ft.Page):
                 title=ft.Text(title_text),
                 date=date_time(),
                 data=data,
-                id=id
+                id=id,
+                computer=computer
             )
         result_data.controls.insert(0, card)
         page.update()
@@ -352,14 +367,6 @@ def main(page: ft.Page):
     
     running_processes_count_text = ft.Text(f"{running_processes_count}", )
     
-    # Local lottie files dont work currently
-    # loading = ft.Lottie(
-    #         src=f"assets/images/loading.json",
-    #         repeat=True,
-    #         reverse=False,
-    #         visible=True,
-    #     )
-    
     loading_gif = ft.Image(
         src=f"assets/images/gifs/loading.gif",
         width=50,
@@ -396,10 +403,13 @@ def main(page: ft.Page):
         """
         result_card_modal.content = ft.Container(
             content=ft.Column([
-                ft.Text(e.control.data, selectable=True)
+                ft.Text(e.control.data["data"], selectable=True)
             ], scroll=True))
         result_card_modal.title = ft.Text(e.control.title.value, )
         show_card_modal()
+    
+    def open_card_print_wiz(e):
+        printer_wizard(e, target_computer=e.control.data["computer"])
     
     def remove_card(e):
         if e.control.data == "all":
@@ -410,7 +420,7 @@ def main(page: ft.Page):
                     result_data.controls.remove(control)
         page.update()
     
-    def generate_result_card(leading, title, date, data, id):
+    def generate_result_card(leading, title, date, data, id, computer):
         """
         Clickable card that shows in the console.
         Is called from update_results()
@@ -421,31 +431,54 @@ def main(page: ft.Page):
         if len(data) > data_max_length:
             subtitle_text += "..."
         
-        # subtitle_text = "Perspiciatis dolores placeat perspiciatis corrupti doloremque esse non. Repellendus hic quis temporibus doloremque velit quidem. Dignissimos quia nihil nisi alias minima nobis. Nisi sed qui sapiente sint voluptas fugiat.Tempore ut ratione perspiciatis et. Veniam eum quis deserunt. Alias animi dolor asperiores autem. Autem iste aut adipisci repellat."
-        
-        #Define card attributes
-        result_card = ft.Card(
-            content=ft.Column([
-                        ft.ListTile(
-                            leading=ft.Column([
-                                leading,
-                                ft.Text(f"{date}")
-                                ], width=85, spacing=1),
-                            trailing=ft.IconButton(
-                                icon=ft.icons.CLOSE,
-                                icon_size=10,
-                                tooltip="Remove",
-                                on_click=remove_card,
-                                data=id
+        if data == f"./results/printers/{computer}-Printers.json":
+            # Make print_wiz_card
+            result_card = ft.Card(
+                content=ft.Column([
+                            ft.ListTile(
+                                leading=ft.Column([
+                                    leading,
+                                    ft.Text(f"{date}")
+                                    ], width=85, spacing=1),
+                                trailing=ft.IconButton(
+                                    icon=ft.icons.CLOSE,
+                                    icon_size=10,
+                                    tooltip="Remove",
+                                    on_click=remove_card,
+                                    data=id
+                                ),
+                                title=title,
+                                subtitle=ft.Text(f"Click to open printers for {computer}."),
+                                on_click=open_card_print_wiz,
+                                data={"data": data, "computer": computer}
                             ),
-                            title=title,
-                            subtitle=ft.Text(subtitle_text),
-                            on_click=open_card,
-                            data=data
-                        ),
-                    ]), 
-            data=id
-        )
+                        ]), 
+                data=id
+            )
+        else:
+            #Define card attributes
+            result_card = ft.Card(
+                content=ft.Column([
+                            ft.ListTile(
+                                leading=ft.Column([
+                                    leading,
+                                    ft.Text(f"{date}")
+                                    ], width=85, spacing=1),
+                                trailing=ft.IconButton(
+                                    icon=ft.icons.CLOSE,
+                                    icon_size=10,
+                                    tooltip="Remove",
+                                    on_click=remove_card,
+                                    data=id
+                                ),
+                                title=title,
+                                subtitle=ft.Text(subtitle_text),
+                                on_click=open_card,
+                                data={"data": data, "computer": computer}
+                            ),
+                        ]), 
+                data=id
+            )
         return result_card
     
     # Define print_log card modal
@@ -478,7 +511,7 @@ def main(page: ft.Page):
             expand=1,
             width= 500
         )
-        log_json_path = e.control.data
+        log_json_path = e.control.data["data"]
         with open(log_json_path, "r") as file:
             data = json.load(file)
             for event in data:
@@ -514,7 +547,7 @@ def main(page: ft.Page):
                 logs_list_view.controls.append(card)
         
         print_log_card_modal.content = card_content
-        print_log_card_modal.title = ft.Text(e.control.title.value, )
+        print_log_card_modal.title = ft.Text(f"{e.control.title.value}, {e.control.data["computer"]}")
         show_print_log_card_modal()
     
     def generate_print_log_result_card(leading, title, date, data, id, computer):
@@ -542,7 +575,7 @@ def main(page: ft.Page):
                             title=title,
                             subtitle=ft.Text(subtitle_text),
                             on_click=open_print_log_card,
-                            data=data
+                            data={"data": data, "computer": computer}
                         ),
                     ]),
             data=id
@@ -622,7 +655,6 @@ def main(page: ft.Page):
             ft.TextButton("Cancel", on_click=close_printer_dlg),
         ],
         actions_alignment=ft.MainAxisAlignment.END,
-        on_dismiss=lambda e: print("Modal dialog dismissed!"),
     )
     
     def open_printer_name_modal(e):
@@ -703,73 +735,86 @@ def main(page: ft.Page):
     def printer_wizard(e, **kwargs):
         global printer_wiz_target_computer
         
-        # Check if we are just refreshing list
         refresh = False
+        computer = computer_name.value
         for key, value in kwargs.items():
+            # Check if we are just refreshing list
             if key == "refresh":
                 refresh = value
-                
-        if e.control.data == "Last result":
-            if len(printer_wiz_listview.controls) > 0:
-                navigate_view(6)
-            else:
-                show_message("No previous results.")
-        else:
-            if check_computer_name():
-                if refresh:
-                    show_message(f"Refreshing printers on {computer_name.value}.")
-                else:
-                    show_message(f"Getting printers on {computer_name.value}")
-                    enable_winrm(computer_name.value)
-                printer_wiz_target_computer = computer_name.value
-                id = len(list_of_processes)
-                add_new_process(new_process("Printer Wizard", [computer_name.value], date_time(), id))
-                powershell = the_shell.Power_Shell()
-                result = powershell.printer_wizard(computer=computer_name.value)
-                print(result) # Debugging purposes only
-                update_results("Printer Wizard", result)
-                printer_wiz_listview.controls.clear()
-                try:
-                    with open(f"./results/printers/{printer_wiz_target_computer}-Printers.json") as file:
-                        printers = json.load(file)
-                    # For each printer in the json file, show a card
-                    # containing text and buttons
-                    for printer in printers:
-                        new_printer = printers[printer]
-                        
-                        p_name = new_printer['Name']
-                        
-                        printer_list_item_card = ft.Card(
-                            content=ft.Container(
-                                content=ft.Column([
-                                    ft.ListTile(
-                                        title=ft.Column([
-                                                ft.Text(p_name, weight=ft.FontWeight.BOLD,),
-                                                ft.Text(f"PortName: {new_printer['Port']}"),
-                                                ft.Text(f"Status: {new_printer['Status']}")
-                                            ], width=200),
-                                        trailing=ft.PopupMenuButton(
-                                            icon=ft.icons.MORE_VERT,
-                                            items=[
-                                                ft.PopupMenuItem(text="Test Page", data=p_name, on_click=printer_wiz_testpage),
-                                                ft.PopupMenuItem(text="Rename", data=p_name, on_click=open_printer_name_modal),
-                                                ft.PopupMenuItem(text=f"Uninstall {p_name}", data=p_name, on_click=uninstall_printer),
-                                            ],
-                                        ),
-                                        data=p_name,
-                                        on_click=open_printer_more_info_modal
-                                    )
-                                ]),
-                            ),
-                        )
+            if key == "target_computer":
+                printer_wiz_target_computer = value
+                computer = printer_wiz_target_computer
+        
+        json_file = f'./results/Printers/{computer}-Printers.json'
+        try:
+            date_refreshed = os.path.getmtime(json_file)
+            date_refreshed = time.ctime(date_refreshed)
+        except FileNotFoundError:
+            print("no existing json")
+            date_refreshed = date_time()
+        
+        def load_printers():
+            """Just load printers from existing json
+            """
+            printer_wiz_listview.controls.clear()
+            try:
+                with open(json_file) as file:
+                    printers = json.load(file)
+                    
+                # For each printer in the json file, show a card
+                # containing text and buttons
+                for printer in printers:
+                    new_printer = printers[printer]
+                    
+                    p_name = new_printer['Name']
+                    
+                    printer_list_item_card = ft.Card(
+                        content=ft.Container(
+                            content=ft.Column([
+                                ft.ListTile(
+                                    title=ft.Column([
+                                            ft.Text(p_name, weight=ft.FontWeight.BOLD,),
+                                            ft.Text(f"PortName: {new_printer['Port']}"),
+                                            ft.Text(f"Status: {new_printer['Status']}")
+                                        ], width=200),
+                                    trailing=ft.PopupMenuButton(
+                                        icon=ft.icons.MORE_VERT,
+                                        items=[
+                                            ft.PopupMenuItem(text="Test Page", data=p_name, on_click=printer_wiz_testpage),
+                                            ft.PopupMenuItem(text="Rename", data=p_name, on_click=open_printer_name_modal),
+                                            ft.PopupMenuItem(text=f"Uninstall {p_name}", data=p_name, on_click=uninstall_printer),
+                                        ],
+                                    ),
+                                    data=p_name,
+                                    on_click=open_printer_more_info_modal
+                                )
+                            ]),
+                        ),
+                    )
 
-                        printer_wiz_listview.controls.append(printer_list_item_card)
-                    printer_wiz_computer.data = computer_name.value
-                    printer_wiz_computer.value = f"{computer_name.value}'s printers:"
-                except FileNotFoundError:
-                    show_message(f"Could not get printers on {computer_name.value}")
-                end_of_process(id)
+                    printer_wiz_listview.controls.append(printer_list_item_card)
+                printer_wiz_computer.data = computer
+                printer_wiz_computer.value = f"{computer}'s printers. Last refreshed {date_refreshed}"
                 navigate_view(6)
+            except FileNotFoundError:
+                show_message(f"Could not get printers on {computer}")
+        
+        if os.path.exists(json_file) and refresh != True:
+            load_printers()
+        else:
+            if refresh:
+                show_message(f"Refreshing printers on {computer}.")
+            else:
+                show_message(f"Getting printers on {computer}")
+                enable_winrm(computer)
+            printer_wiz_target_computer = computer
+            id = len(list_of_processes)
+            add_new_process(new_process("Printer Wizard", [computer], date_time(), id))
+            powershell = the_shell.Power_Shell()
+            result = powershell.printer_wizard(computer=computer)
+            update_results("Printer Wizard", result, print_wiz=True)
+            load_printers()
+            end_of_process(id)
         
     def printer_wiz_testpage(e):
         if check_computer_name():
@@ -809,13 +854,13 @@ def main(page: ft.Page):
             close_sure_dlg(e)
         
         sure_modal = ft.AlertDialog(
-            modal=True,
+            modal=False,
             title=ft.Text("Confirm:"),
             content=ft.Column([
                     ft.Row([
                         ft.Text(f"{text}", weight=ft.FontWeight.BOLD)
                     ])
-                ]),
+                ], height=100),
             actions=[
                 ft.TextButton("Yes", on_click=answer),
                 ft.TextButton("Cancel", on_click=close_sure_dlg),
@@ -848,7 +893,7 @@ def main(page: ft.Page):
             result = powershell.uninstall_printer(computer=printer_wiz_computer.data, printerName=e.control.data)
             update_results("Uninstall Printer", result)
             end_of_process(id)
-            printer_wizard(e, refresh=True)
+            printer_wizard(e, refresh=True, target_computer=printer_wiz_computer.data)
     
     def open_print_logs(e):
         if check_computer_name():
@@ -860,7 +905,7 @@ def main(page: ft.Page):
             show_message(f"Getting {type} print logs from {computer}.")
             powershell = the_shell.Power_Shell()
             result = powershell.print_logs(computer, type)
-            update_results(f"{type} Log", result, print_log=True, computer=computer, type=type)
+            update_results(title_text=f"{type} Log", data=result, print_log=True, computer=computer, type=type)
             end_of_process(id)
 
     # Computer Text Field
@@ -969,6 +1014,19 @@ def main(page: ft.Page):
             list_of_controls.append(script_list_tile)
             
         return list_of_controls
+    
+    # File picker for import printer
+    def pick_files_result(e: ft.FilePickerResultEvent):
+        selected_files = (
+            ", ".join(map(lambda f: f.name, e.files)) if e.files else "Cancelled!"
+        )
+        update_results("Selected Files", selected_files)
+
+    pick_files_dialog = ft.FilePicker(
+        on_result=pick_files_result,
+    )
+
+    page.overlay.append(pick_files_dialog)
 
     # "Views". We swap these in and out of current_view
     # when navigating using the rail.
@@ -1030,12 +1088,13 @@ def main(page: ft.Page):
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.RESTORE, icon_size=50, on_click=printer_wizard, data="Last result"),
-                    ft.Text("Previous Result")
-                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-                ft.VerticalDivider(),
-                ft.Column([
-                    ft.IconButton(icon=ft.icons.UPLOAD_FILE, icon_size=50,),
+                    ft.IconButton(icon=ft.icons.UPLOAD_FILE, icon_size=50,
+                        on_click=lambda _: pick_files_dialog.pick_files(
+                            allow_multiple=True,
+                            allowed_extensions=["printerExport"],
+                            initial_directory=f"{pathlib.Path.home()}"
+                            ),
+                        ),
                     ft.Text("Import Printer")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
@@ -1147,12 +1206,20 @@ def main(page: ft.Page):
     # that printer_wizard was run on
     printer_wiz_computer = ft.Text("None")
     
+    def refresh_printers(e):
+        global printer_wiz_target_computer
+        printer_wizard(e, target_computer=printer_wiz_target_computer, refresh=True)
+    
     print_wizard_view = ft.Column([
         ft.Row([
             printer_wiz_computer,
+            ft.IconButton(
+                icon=ft.icons.REFRESH, 
+                on_click=refresh_printers,
+            ),
         ]),
-            printer_wiz_list_container,
-        ], expand=True)
+        printer_wiz_list_container,
+    ], expand=True)
     
     commands_list_view = ft.ListView(expand=1, spacing=10, padding=20)
     commands_list_view.controls = generate_commands()
