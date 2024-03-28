@@ -835,14 +835,8 @@ def main(page: ft.Page):
             pass
         
         if said_yes:
-            # Reset global tracker variables before exit function
-            # So function doesnt automatically return True next time
-            said_yes = False
-            modal_not_dismissed = True
             return True
         else:
-            said_yes = False
-            modal_not_dismissed = True
             return False 
     
     def uninstall_printer(e):
