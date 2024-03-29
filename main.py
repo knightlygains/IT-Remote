@@ -232,36 +232,22 @@ def main(page: ft.Page):
             if key == "print_wiz":
                 print_wiz_card = value
         
-        id = len(result_data.controls)
         if print_log_card:
-            data = f"./results/printers/{computer}-Printers-{type}-logs.json"
-            card = generate_print_log_result_card(
-                leading = ft.Icon(ft.icons.TERMINAL),
-                title=ft.Text(title_text),
-                date=date_time(),
-                data=data,
-                id=id,
-                computer=computer
-            )
+            data = f"./results/Printers/{computer}-Printers-{type}-logs.json"
         elif print_wiz_card:
-            data = f"./results/printers/{computer}-Printers.json"
-            card = generate_result_card(
-                leading = ft.Icon(ft.icons.TERMINAL),
-                title=ft.Text(title_text),
-                date=date_time(),
-                data=data,
-                id=id,
-                computer=computer
-            )
-        else:
-            card = generate_result_card(
-                leading = ft.Icon(ft.icons.TERMINAL),
-                title=ft.Text(title_text),
-                date=date_time(),
-                data=data,
-                id=id,
-                computer=computer
-            )
+            data = f"./results/Printers/{computer}-Printers.json"
+        
+        id = len(result_data.controls)
+        
+        card = generate_result_card(
+            leading = ft.Icon(ft.icons.TERMINAL),
+            title=ft.Text(title_text),
+            date=date_time(),
+            data=data,
+            id=id,
+            computer=computer
+        )
+        
         result_data.controls.insert(0, card)
         page.update()
     
@@ -431,54 +417,54 @@ def main(page: ft.Page):
         if len(data) > data_max_length:
             subtitle_text += "..."
         
-        if data == f"./results/printers/{computer}-Printers.json":
-            # Make print_wiz_card
-            result_card = ft.Card(
-                content=ft.Column([
-                            ft.ListTile(
-                                leading=ft.Column([
-                                    leading,
-                                    ft.Text(f"{date}")
-                                    ], width=85, spacing=1),
-                                trailing=ft.IconButton(
-                                    icon=ft.icons.CLOSE,
-                                    icon_size=10,
-                                    tooltip="Remove",
-                                    on_click=remove_card,
-                                    data=id
-                                ),
-                                title=title,
-                                subtitle=ft.Text(f"Click to open printers for {computer}."),
-                                on_click=open_card_print_wiz,
-                                data={"data": data, "computer": computer}
-                            ),
-                        ]), 
-                data=id
-            )
+        print_log_options = [
+            f"./results/Printers/{computer}-Printers-Operational-logs.json",
+            f"./results/Printers/{computer}-Printers-Admin-logs.json"
+        ]
+        
+        # Change card_content controls based on type of card
+        # we are making.
+        
+        # Printer_wizard Card
+        if data == f"./results/Printers/{computer}-Printers.json":
+            subtitle_text = f"Click to open printers for {computer}."
+            on_click_function = open_card_print_wiz
+        # Print_Log card
+        elif data in print_log_options:
+            print("print log card")
+            subtitle_text = f"Click to open logs for {computer}."
+            on_click_function = open_print_log_card
+        # Normal Card
         else:
-            #Define card attributes
-            result_card = ft.Card(
-                content=ft.Column([
-                            ft.ListTile(
-                                leading=ft.Column([
-                                    leading,
-                                    ft.Text(f"{date}")
-                                    ], width=85, spacing=1),
-                                trailing=ft.IconButton(
-                                    icon=ft.icons.CLOSE,
-                                    icon_size=10,
-                                    tooltip="Remove",
-                                    on_click=remove_card,
-                                    data=id
-                                ),
-                                title=title,
-                                subtitle=ft.Text(subtitle_text),
-                                on_click=open_card,
-                                data={"data": data, "computer": computer}
-                            ),
-                        ]), 
-                data=id
-            )
+            on_click_function = open_card
+
+        subtitle_content = ft.Text(f"{subtitle_text}")
+        
+        card_content = ft.Column([
+            ft.ListTile(
+                leading=ft.Column([
+                    leading,
+                    ft.Text(f"{date}")
+                    ], width=85, spacing=1),
+                trailing=ft.IconButton(
+                    icon=ft.icons.CLOSE,
+                    icon_size=10,
+                    tooltip="Remove",
+                    on_click=remove_card,
+                    data=id
+                ),
+                title=title,
+                subtitle=subtitle_content,
+                on_click=on_click_function,
+                data={"data": data, "computer": computer}
+            ),
+        ])
+        
+        result_card = ft.Card(
+            content=card_content,
+            data=id
+        )
+        
         return result_card
     
     # Define print_log card modal
@@ -549,38 +535,6 @@ def main(page: ft.Page):
         print_log_card_modal.content = card_content
         print_log_card_modal.title = ft.Text(f"{e.control.title.value}, {e.control.data["computer"]}")
         show_print_log_card_modal()
-    
-    def generate_print_log_result_card(leading, title, date, data, id, computer):
-        """
-        Clickable card that shows in the console.
-        Is called from update_results()
-        """
-        subtitle_text = f"Click to open logs for {computer}."
-        
-        #Define card attributes
-        result_card = ft.Card(
-            content=ft.Column([
-                        ft.ListTile(
-                            leading=ft.Column([
-                                leading,
-                                ft.Text(f"{date}")
-                                ], width=85, spacing=1),
-                            trailing=ft.IconButton(
-                                icon=ft.icons.CLOSE,
-                                icon_size=10,
-                                tooltip="Remove",
-                                on_click=remove_card,
-                                data=id
-                            ),
-                            title=title,
-                            subtitle=ft.Text(subtitle_text),
-                            on_click=open_print_log_card,
-                            data={"data": data, "computer": computer}
-                        ),
-                    ]),
-            data=id
-        )
-        return result_card
     
     def ping(e):
         if check_computer_name():
@@ -984,10 +938,6 @@ def main(page: ft.Page):
             run_operation(computer_name.value)
         elif use_list_checkbox.value == True:
             run_operation("Use-List")
-    
-    def run_custom_command(e):
-        powershell = the_shell.Power_Shell()
-        powershell.custom_command()
     
     def generate_commands():
         global list_of_scripts
