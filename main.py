@@ -6,11 +6,15 @@ import os, time
 import socket, pathlib
 
 # Default settings.json values
-font_size = 16
-app_color = "blue"
-window_width = 745
-window_height = 515
-enable_win_rm = True
+settings_values = {
+    "font_size": 16,
+    "app_color": "blue",
+    "window_width": 745,
+    "window_height": 515,
+    "enable_win_rm": True,
+    "supress_winrm_results": False
+}
+
 running_processes_count = 0
 
 # Used to track the last computer printer wizard was run on,
@@ -28,12 +32,7 @@ modal_not_dismissed = True
 
 # Load user settings
 def load_settings(e, update):
-    global font_size
-    global app_color
-    global window_width
-    global window_height
-    global enable_win_rm
-    
+    global settings_values
     # Check if settings already exists
     if update:
         try:
@@ -41,9 +40,10 @@ def load_settings(e, update):
                 print("settings.json exists, updating")
                 data = json.load(file)
                 data.update({
-                    "font_size": font_size, 
-                    "app_color": app_color,
-                    "enable_winrm": enable_win_rm
+                    "font_size": settings_values["font_size"], 
+                    "app_color": settings_values["app_color"],
+                    "enable_win_rm": settings_values["enable_win_rm"],
+                    "supress_winrm_results": settings_values["supress_winrm_results"]
                     })
         except ValueError as e:
             print(f"Something went wrong, {e}")
@@ -53,28 +53,35 @@ def load_settings(e, update):
             
     # Apply settings
     try:
+        # Check for keys in settings, add non-existing ones
+        # if necessary
+        with open("settings.json", "r") as file:
+            settings_data = json.load(file)
+        for key, value in  settings_values.items():
+            if key not in settings_data:
+                settings_data[key] = value
+        
+        # Save new keys
+        with open("settings.json", "w") as file:
+            json.dump(settings_data, file, indent=4)
+            
+        # Now set dict values equal to values stored in settings
         with open("settings.json", "r") as file:
             try:
                 settings_data = json.load(file)
-                font_size = settings_data["font_size"]
-                app_color = settings_data["app_color"]
-                window_width = settings_data["window_width"]
-                window_height = settings_data["window_height"]
-                enable_win_rm = settings_data["enable_winrm"]
+                settings_values["font_size"] = settings_data["font_size"]
+                settings_values["app_color"] = settings_data["app_color"]
+                settings_values["window_width"] = settings_data["window_width"]
+                settings_values["window_height"] = settings_data["window_height"]
+                settings_values["enable_win_rm"] = settings_data["enable_win_rm"]
+                settings_values["supress_winrm_results"] = settings_data["supress_winrm_results"]
             except json.decoder.JSONDecodeError:
                 print("No settings data found")
     except FileNotFoundError:
         print("No settings.json found. Creating a new one.")
         with open("settings.json", "w") as file:
             print("settings.json created")
-            data = {
-                "font_size": font_size,
-                "app_color": app_color,
-                "window_width": window_width,
-                "window_height": window_height,
-                "enable_winrm": enable_win_rm
-            }
-            json.dump(data, file, indent=4)
+            json.dump(settings_values, file, indent=4)
     
 load_settings(e=None, update=False)
 
@@ -90,11 +97,11 @@ def main(page: ft.Page):
         "Consola": "assets/fonts/Consola.ttf"
     }
     
-    page.window_width = window_width
-    page.window_height = window_height
+    page.window_width = settings_values["window_width"]
+    page.window_height = settings_values["window_height"]
     page.window_min_height = 515
     page.window_min_width = 745
-    page.dark_theme = ft.Theme(color_scheme_seed=app_color)
+    page.dark_theme = ft.Theme(color_scheme_seed=settings_values["app_color"])
     
     def save_page_dimensions(e):
         try:
@@ -111,15 +118,15 @@ def main(page: ft.Page):
     page.snack_bar = ft.SnackBar(ft.Text("", ), duration=3000)
     
     def update_settings(e):
-        global app_color
-        global enable_win_rm
+        global settings_values
         if cg.value:
-            app_color = cg.value
-        results_container.bgcolor = app_color
-        printer_wiz_list_container.bgcolor = app_color
-        page.dark_theme.color_scheme_seed = app_color
-        actions_view_container.bgcolor = app_color
-        enable_win_rm = winrm_checkbox.value
+            settings_values["app_color"] = cg.value
+        results_container.bgcolor = settings_values["app_color"]
+        printer_wiz_list_container.bgcolor = settings_values["app_color"]
+        page.dark_theme.color_scheme_seed = settings_values["app_color"]
+        actions_view_container.bgcolor = settings_values["app_color"]
+        settings_values["enable_win_rm"] = winrm_checkbox.value
+        settings_values["supress_winrm_results"] = winrm_results_checkbox.value
         load_settings(e, update=True)
         page.update()
     
@@ -200,7 +207,7 @@ def main(page: ft.Page):
     # List view for printer wizard
     printer_wiz_listview = ft.ListView(expand=1, spacing=10, padding=20,)
     printer_wiz_list_container = ft.Container(
-        bgcolor=app_color,
+        bgcolor=settings_values["app_color"],
         content=printer_wiz_listview,
         border_radius=20,
         expand=True,
@@ -291,6 +298,8 @@ def main(page: ft.Page):
             loading_gif.visible = False
     
     def end_of_process(id):
+        """Remove process from running_processes by id
+        """
         global running_processes_count
         for process in list_of_processes:
             if process["id"] == id:
@@ -318,7 +327,7 @@ def main(page: ft.Page):
 
     results_container = ft.Container(
                                 content=result_data,
-                                bgcolor=app_color,
+                                bgcolor=settings_values["app_color"],
                                 expand=True,
                                 alignment=ft.alignment.top_left,
                                 border_radius=20
@@ -399,6 +408,7 @@ def main(page: ft.Page):
     
     def remove_card(e):
         if e.control.data == "all":
+            # We clicked the remove all results button
             result_data.controls.clear()
         else:
             for control in result_data.controls:
@@ -547,14 +557,16 @@ def main(page: ft.Page):
             end_of_process(id)
     
     def enable_winrm(computer):
-        if enable_win_rm:
+        global settings_values
+        if settings_values["enable_win_rm"]:
             if computer == None:
                 computer = computer_name.value
             id = len(list_of_processes)
             add_new_process(new_process("WinRM", [computer], date_time(), id))
             powershell = the_shell.Power_Shell()
             result = powershell.enable_winrm(computer)
-            update_results("WinRM", result)
+            if settings_values["supress_winrm_results"] == False:
+                update_results("WinRM", result)
             end_of_process(id)
     
     def check_computer_name():
@@ -1012,7 +1024,8 @@ def main(page: ft.Page):
     # Actions tab Expansion List items
     clear_space_exp_panel = ft.ExpansionPanel(
         header=ft.ListTile(
-            title=ft.Text("Clear Space", weight=ft.FontWeight.BOLD)
+            title=ft.Text("Clear Space", weight=ft.FontWeight.BOLD),
+            trailing=ft.Icon(name=ft.icons.DELETE_FOREVER)
         ),
         content=ft.Container(
             content=ft.Column([
@@ -1028,7 +1041,8 @@ def main(page: ft.Page):
     
     printers_exp_panel = ft.ExpansionPanel(
         header=ft.ListTile(
-            title=ft.Text("Printers", weight=ft.FontWeight.BOLD)
+            title=ft.Text("Printers", weight=ft.FontWeight.BOLD),
+            trailing=ft.Icon(name=ft.icons.PRINT)
         ),
         content=ft.Container(
             content=ft.Row([
@@ -1049,12 +1063,12 @@ def main(page: ft.Page):
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.FILE_OPEN, data="Operational", icon_size=50, on_click=open_print_logs),
+                    ft.IconButton(icon=ft.icons.TEXT_SNIPPET, data="Operational", icon_size=50, on_click=open_print_logs),
                     ft.Text("Operational Logs")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.FILE_OPEN, data="Admin", icon_size=50, on_click=open_print_logs),
+                    ft.IconButton(icon=ft.icons.TEXT_SNIPPET, data="Admin", icon_size=50, on_click=open_print_logs),
                     ft.Text("Admin Logs")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
             ], wrap=True),
@@ -1065,7 +1079,8 @@ def main(page: ft.Page):
     
     programs_exp_panel = ft.ExpansionPanel(
         header=ft.ListTile(
-            title=ft.Text("Programs", weight=ft.FontWeight.BOLD)
+            title=ft.Text("Programs", weight=ft.FontWeight.BOLD),
+            trailing=ft.Icon(name=ft.icons.STORAGE)
         ),
         content=ft.Container(
             content=ft.Column([
@@ -1107,7 +1122,7 @@ def main(page: ft.Page):
             [exp_panel_list],
             padding=20,
         ),
-        bgcolor=app_color,
+        bgcolor=settings_values["app_color"],
         expand = 1,
         border_radius=20
     )
@@ -1132,7 +1147,8 @@ def main(page: ft.Page):
         yellow_color_radio
     ]))
     
-    winrm_checkbox = ft.Checkbox(value=enable_win_rm)
+    winrm_checkbox = ft.Checkbox(value=settings_values["enable_win_rm"])
+    winrm_results_checkbox = ft.Checkbox(value=settings_values["supress_winrm_results"])
     
     settings_view = ft.Column([
         ft.Row([
@@ -1145,7 +1161,9 @@ def main(page: ft.Page):
             ft.VerticalDivider(),
             ft.Column([
                 ft.Text("Enable WinRM before actions:"),
-                winrm_checkbox
+                winrm_checkbox,
+                ft.Text("Supress WinRM results:"),
+                winrm_results_checkbox
             ], width=150),
             ft.VerticalDivider(),
         ], expand=1),

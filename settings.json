@@ -1,7 +1,8 @@
 {
     "font_size": 16,
-    "app_color": "yellow",
-    "window_width": 729.0,
-    "window_height": 504.0,
-    "enable_winrm": true
+    "app_color": "green",
+    "window_width": 730.4,
+    "window_height": 477.6,
+    "enable_win_rm": true,
+    "supress_winrm_results": true
 }
