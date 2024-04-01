@@ -150,6 +150,7 @@ def main(page: ft.Page):
         if index == 0:
             current_view.controls = [settings_view]
         if index == 1:
+            home_notification_badge.label_visible = False
             current_view.controls = [home]
         if index == 2:
             # Actions Tab
@@ -166,6 +167,11 @@ def main(page: ft.Page):
             current_view.controls = [print_wizard_view]
         page.update()
     
+    home_notification_badge = ft.Badge(
+        content=ft.Icon(ft.icons.HOME_OUTLINED),
+        label_visible=False
+    )
+    
     rail = ft.NavigationRail(
         selected_index=1,
         label_type=ft.NavigationRailLabelType.ALL,
@@ -179,7 +185,7 @@ def main(page: ft.Page):
                 label_content=ft.Text("Settings"),
             ),
             ft.NavigationRailDestination(
-                icon=ft.icons.HOME_OUTLINED,
+                icon_content=home_notification_badge,
                 selected_icon_content=ft.Icon(ft.icons.HOME),
                 label_content=ft.Text("Home"),
             ),
@@ -191,7 +197,7 @@ def main(page: ft.Page):
             ft.NavigationRailDestination(
                 icon=ft.icons.DESCRIPTION_OUTLINED,
                 selected_icon_content=ft.Icon(ft.icons.DESCRIPTION),
-                label_content=ft.Text("Custom Scripts"),
+                label_content=ft.Text("My Scripts"),
             ),
         ],
         on_change=navigate_view
@@ -215,6 +221,16 @@ def main(page: ft.Page):
     
     new_printer_name = ft.TextField(expand=True)
     
+    def check_computer_name():
+        if computer_name.value == "":
+            show_message("Please input a computer hostname")
+            return False
+        else:
+            computer_name.value = computer_name.value.replace(" ", "")
+            if computer_name.value.lower() == "localhost":
+                computer_name.value = socket.gethostname()
+            return True
+    
     def date_time():
         x = datetime.datetime.now()
         day = x.strftime("%a")
@@ -226,7 +242,9 @@ def main(page: ft.Page):
     def update_results(title_text, data, **kwargs):
         print_log_card = False
         print_wiz_card = False
+        check_space_card = False
         computer = computer_name.value
+        subtitle=data
         for key, value in kwargs.items():
             if key == "print_log":
                 print_log_card = True
@@ -238,11 +256,17 @@ def main(page: ft.Page):
                 type = value
             if key == "print_wiz":
                 print_wiz_card = value
+            if key == "check_space":
+                check_space_card = value
+            if key == "subtitle":
+                subtitle=value  
         
         if print_log_card:
             data = f"./results/Printers/{computer}-Printers-{type}-logs.json"
         elif print_wiz_card:
             data = f"./results/Printers/{computer}-Printers.json"
+        elif check_space_card:
+            data = f"./results/ClearSpace/{computer}-Space-Available.json"
         
         id = len(result_data.controls)
         
@@ -252,10 +276,12 @@ def main(page: ft.Page):
             date=date_time(),
             data=data,
             id=id,
-            computer=computer
+            computer=computer,
+            subtitle=subtitle
         )
         
         result_data.controls.insert(0, card)
+        home_notification_badge.label_visible = True
         page.update()
     
     def add_new_process(process_object):
@@ -416,14 +442,21 @@ def main(page: ft.Page):
                     result_data.controls.remove(control)
         page.update()
     
-    def generate_result_card(leading, title, date, data, id, computer):
+    def generate_result_card(leading, title, date, data, id, computer, **kwargs):
         """
         Clickable card that shows in the console.
         Is called from update_results()
         """
+        for key,value in kwargs.items():
+            if key == "subtitle":
+                subtitle_data = value
+        
+        if computer.lower() == "localhost":
+            computer = socket.gethostname()
+                
         data_max_length = 60
         # Format and shorten text
-        subtitle_text = data[0:data_max_length]
+        subtitle_text = subtitle_data[0:data_max_length]
         if len(data) > data_max_length:
             subtitle_text += "..."
         
@@ -437,15 +470,15 @@ def main(page: ft.Page):
         
         # Printer_wizard Card
         if data == f"./results/Printers/{computer}-Printers.json":
-            subtitle_text = f"Click to open printers for {computer}."
             on_click_function = open_card_print_wiz
         # Print_Log card
         elif data in print_log_options:
             print("print log card")
-            subtitle_text = f"Click to open logs for {computer}."
             on_click_function = open_print_log_card
-        # Normal Card
+        elif data == f"./results/ClearSpace/{computer}-Space-Available.json" and "Failed" not in subtitle_data:
+            on_click_function = open_space_card
         else:
+            data = subtitle_data
             on_click_function = open_card
 
         subtitle_content = ft.Text(f"{subtitle_text}")
@@ -546,6 +579,49 @@ def main(page: ft.Page):
         print_log_card_modal.title = ft.Text(f"{e.control.title.value}, {e.control.data["computer"]}")
         show_print_log_card_modal()
     
+    def open_space_card(e):
+        """
+        Sets print log card modal content and opens it.
+        """
+        space_list_view = ft.ListView(expand=1, padding= 20)
+        card_content = ft.Container(
+            content=space_list_view,
+            expand=1,
+            width= 500
+        )
+        space_json_path = e.control.data["data"]
+        with open(space_json_path, "r") as file:
+            data = json.load(file)
+            for drive in data:
+                drive_ltr = data[drive]
+                freespace = drive_ltr['FreeSpace']
+                maxsize = drive_ltr['MaxSize']
+                percentfree = drive_ltr['PercentFree']
+                
+                card = ft.Card(
+                    content=ft.Container(
+                        content=ft.Column([
+                            ft.Text(f"{drive}", weight=ft.FontWeight.BOLD),
+                            ft.Row([
+                                ft.Text("Percent Free:", weight=ft.FontWeight.BOLD),
+                                ft.Text(f"{percentfree}", selectable=True),
+                            ], wrap=True),
+                            ft.Row([
+                                ft.Text("Space:", weight=ft.FontWeight.BOLD),
+                                ft.Text(f"{freespace} / {maxsize} GB", selectable=True),
+                            ]),
+                        ], expand = 1),
+                        expand = 1,
+                        padding=20
+                    ),
+                    expand = 1
+                )
+                space_list_view.controls.append(card)
+                
+        print_log_card_modal.content = card_content
+        print_log_card_modal.title = ft.Text(f"{e.control.title.value}, {e.control.data["computer"]}")
+        show_print_log_card_modal()
+        
     def ping(e):
         if check_computer_name():
             id = len(list_of_processes)
@@ -568,13 +644,6 @@ def main(page: ft.Page):
             if settings_values["supress_winrm_results"] == False:
                 update_results("WinRM", result)
             end_of_process(id)
-    
-    def check_computer_name():
-        if computer_name.value == "":
-            show_message("Please input a computer hostname")
-            return False
-        else:
-            return True
     
     def quser(e):
         if check_computer_name():
@@ -711,6 +780,9 @@ def main(page: ft.Page):
                 printer_wiz_target_computer = value
                 computer = printer_wiz_target_computer
         
+        if computer.lower() == "localhost":
+            computer = socket.gethostname()
+        
         json_file = f'./results/Printers/{computer}-Printers.json'
         try:
             date_refreshed = os.path.getmtime(json_file)
@@ -778,7 +850,7 @@ def main(page: ft.Page):
             add_new_process(new_process("Printer Wizard", [computer], date_time(), id))
             powershell = the_shell.Power_Shell()
             result = powershell.printer_wizard(computer=computer)
-            update_results("Printer Wizard", result, print_wiz=True)
+            update_results("Printer Wizard", data=result, print_wiz=True, subtitle=result)
             load_printers()
             end_of_process(id)
         
@@ -871,13 +943,13 @@ def main(page: ft.Page):
             show_message(f"Getting {type} print logs from {computer}.")
             powershell = the_shell.Power_Shell()
             result = powershell.print_logs(computer, type)
-            update_results(title_text=f"{type} Log", data=result, print_log=True, computer=computer, type=type)
+            update_results(title_text=f"{type} Log", data=result, print_log=True, computer=computer, type=type, subtitle=result)
             end_of_process(id)
 
     # Computer Text Field
     computer_name = ft.TextField(label="Computer Name")
     
-    ping_btn = ft.FilledButton(text="Ping", on_click=ping)
+    ping_btn = ft.TextButton(text="Ping", icon=ft.icons.NETWORK_PING, on_click=ping)
     quser_btn = ft.IconButton(
         icon=ft.icons.PERSON,
         icon_size=20,
@@ -977,6 +1049,20 @@ def main(page: ft.Page):
             
         return list_of_controls
     
+    def check_space(e):
+        if check_computer_name():
+            computer = computer_name.value
+            if computer.lower() == "localhost":
+                computer = socket.gethostname()
+            enable_winrm(computer)
+            id = len(list_of_processes)
+            add_new_process(new_process("Check Space", [computer], date_time(), id))
+            show_message(f"Checking space on {computer}")
+            powershell = the_shell.Power_Shell()
+            result = powershell.check_space(computer=computer)
+            update_results("Check Space", result, check_space=True, subtitle=result, computer=computer)
+            end_of_process(id)
+    
     # File picker for import printer
     def pick_files_result(e: ft.FilePickerResultEvent):
         selected_files = (
@@ -1022,6 +1108,12 @@ def main(page: ft.Page):
     ], expand=True)
     
     # Actions tab Expansion List items
+    check_space_btn =  ft.TextButton(
+        text="Check Space", 
+        icon=ft.icons.STORAGE,
+        on_click=check_space
+    )
+    
     clear_space_exp_panel = ft.ExpansionPanel(
         header=ft.ListTile(
             title=ft.Text("Clear Space", weight=ft.FontWeight.BOLD),
@@ -1029,10 +1121,11 @@ def main(page: ft.Page):
         ),
         content=ft.Container(
             content=ft.Column([
+                check_space_btn,
                 delete_users_checkbox,
                 logout_users_checkbox,
                 use_list_checkbox,
-                ft.FilledButton(text="Clear Disk Space", on_click=clear_space)
+                ft.TextButton(text="Clear Disk Space", icon=ft.icons.DELETE_FOREVER, on_click=clear_space)
             ]),
             padding=10
         ),
@@ -1080,7 +1173,7 @@ def main(page: ft.Page):
     programs_exp_panel = ft.ExpansionPanel(
         header=ft.ListTile(
             title=ft.Text("Programs", weight=ft.FontWeight.BOLD),
-            trailing=ft.Icon(name=ft.icons.STORAGE)
+            trailing=ft.Icon(name=ft.icons.WEB_ASSET)
         ),
         content=ft.Container(
             content=ft.Column([

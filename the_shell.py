@@ -50,9 +50,9 @@ class Power_Shell():
     def printer_wizard(self, computer):
         p = subprocess.call([self.pspath, "-File", f"./scripts/PrinterWizard.ps1", f"{computer}" ])
         if p == 0:
-            return f"Got the printers from {computer}."
+            return f"Printers retrieved from {computer}. Click to open"
         else:
-            return f"Failed to get the printers from {computer}. It is offline."
+            return f"Failed to retrieve printers from {computer}. It is offline."
 
     def test_page(self, computer, printerName):
         p = subprocess.call([self.pspath, "-File", f"./scripts/test_page.ps1", f"{computer}", f"{printerName}"])
@@ -73,7 +73,7 @@ class Power_Shell():
                 for event in data:
                     evt = data[event]
                     results += f"________\nMessage:\n{evt['Message']}\n\nTime Created:\n{evt['TimeCreated']}\n\nId: {evt['Id']}\n\nLevel: {evt['Level']}\n________\n"
-            return f"Retreived logs from {computer}.\n{results}"
+            return f"Retreived logs from {computer}. Click to open."
         else:
             return f"Failed to retreive logs from {computer}."
     
@@ -94,3 +94,10 @@ class Power_Shell():
     def clear_space(self, computer, users, logout):
         p = subprocess.getoutput([self.pspath, "-File", f"./scripts/disk_cleanup.ps1", f"{computer}", f"{users}", f"{logout}"])
         return p
+    
+    def check_space(self, computer):
+        p = subprocess.call([self.pspath, "-File", f"./scripts/check_space.ps1", f"{computer}"])
+        if p == 0:
+            return f"Open to view space on {computer}."
+        else:
+            return f"Failed to retrieve space on {computer}."
