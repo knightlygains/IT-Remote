@@ -12,7 +12,8 @@ settings_values = {
     "window_width": 745,
     "window_height": 515,
     "enable_win_rm": True,
-    "supress_winrm_results": False
+    "supress_winrm_results": False,
+    "use_24hr": False
 }
 
 running_processes_count = 0
@@ -43,7 +44,8 @@ def load_settings(e, update):
                     "font_size": settings_values["font_size"], 
                     "app_color": settings_values["app_color"],
                     "enable_win_rm": settings_values["enable_win_rm"],
-                    "supress_winrm_results": settings_values["supress_winrm_results"]
+                    "supress_winrm_results": settings_values["supress_winrm_results"],
+                    "use_24hr": settings_values["use_24hr"]
                     })
         except ValueError as e:
             print(f"Something went wrong, {e}")
@@ -74,7 +76,8 @@ def load_settings(e, update):
                 settings_values["window_width"] = settings_data["window_width"]
                 settings_values["window_height"] = settings_data["window_height"]
                 settings_values["enable_win_rm"] = settings_data["enable_win_rm"]
-                settings_values["supress_winrm_results"] = settings_data["supress_winrm_results"]
+                settings_values["supress_winrm_results"] = settings_data["supress_winrm_results"],
+                settings_values["use_24hr"] = settings_data["use_24hr"]
             except json.decoder.JSONDecodeError:
                 print("No settings data found")
     except FileNotFoundError:
@@ -127,6 +130,7 @@ def main(page: ft.Page):
         actions_view_container.bgcolor = settings_values["app_color"]
         settings_values["enable_win_rm"] = winrm_checkbox.value
         settings_values["supress_winrm_results"] = winrm_results_checkbox.value
+        settings_values["use_24hr"] = use_24hr_checkbox.value
         load_settings(e, update=True)
         page.update()
     
@@ -236,7 +240,12 @@ def main(page: ft.Page):
         day = x.strftime("%a")
         day_num = x.strftime("%d")
         month = x.strftime("%b")
-        time = x.strftime("%X")
+        if settings_values["use_24hr"]:
+            time = x.strftime("%X")
+        else:
+            time = x.strftime("%I:%M:%S %p")
+            if time[0] == "0":
+                time = time.lstrip("0")
         return f"{day} {month} {day_num}, {time}"
     
     def update_results(title_text, data, **kwargs):
@@ -1242,7 +1251,7 @@ def main(page: ft.Page):
     
     winrm_checkbox = ft.Checkbox(value=settings_values["enable_win_rm"])
     winrm_results_checkbox = ft.Checkbox(value=settings_values["supress_winrm_results"])
-    
+    use_24hr_checkbox = ft.Checkbox(value=settings_values["use_24hr"])
     settings_view = ft.Column([
         ft.Row([
             ft.Column([
@@ -1256,7 +1265,9 @@ def main(page: ft.Page):
                 ft.Text("Enable WinRM before actions:"),
                 winrm_checkbox,
                 ft.Text("Supress WinRM results:"),
-                winrm_results_checkbox
+                winrm_results_checkbox,
+                ft.Text("Use 24hr time format:"),
+                use_24hr_checkbox,
             ], width=150),
             ft.VerticalDivider(),
         ], expand=1),
