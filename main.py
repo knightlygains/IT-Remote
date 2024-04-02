@@ -291,7 +291,9 @@ def main(page: ft.Page):
         )
         
         result_data.controls.insert(0, card)
-        home_notification_badge.label_visible = True
+        if rail.selected_index != 1:
+            # If home isnt already selected, add notifcation badge
+            home_notification_badge.label_visible = True
         page.update()
     
     def add_new_process(process_object):
@@ -479,7 +481,7 @@ def main(page: ft.Page):
         # we are making.
         
         # Printer_wizard Card
-        if data == f"./results/Printers/{computer}-Printers.json":
+        if data == f"./results/Printers/{computer}-Printers.json" and "Failed" not in subtitle_data:
             on_click_function = open_card_print_wiz
         # Print_Log card
         elif data in print_log_options:
@@ -769,7 +771,7 @@ def main(page: ft.Page):
         
         more_info_printer_modal = ft.AlertDialog(
             modal=True,
-            title=ft.Text(f"{more_info_printer['Name']}: Additional printer info"),
+            title=ft.Text(f"{more_info_printer['Name']}", selectable=True),
             content=ft.Column([
                 ft.Row([
                     ft.Row([
@@ -819,90 +821,85 @@ def main(page: ft.Page):
     
     def printer_wizard(e, **kwargs):
         global printer_wiz_target_computer
-        
-        refresh = False
-        computer = computer_name.value
-        for key, value in kwargs.items():
-            # Check if we are just refreshing list
-            if key == "refresh":
-                refresh = value
-            if key == "target_computer":
-                printer_wiz_target_computer = value
-                computer = printer_wiz_target_computer
-        
-        if computer.lower() == "localhost":
-            computer = socket.gethostname()
-        
-        json_file = f'./results/Printers/{computer}-Printers.json'
-        try:
-            date_refreshed = os.path.getmtime(json_file)
-            date_refreshed = time.ctime(date_refreshed)
-        except FileNotFoundError:
-            print("no existing json")
-            date_refreshed = date_time()
-        
-        def load_printers():
-            """Just load printers from existing json
-            """
-            printer_wiz_listview.controls.clear()
-            try:
-                with open(json_file) as file:
-                    printers = json.load(file)
-                    
-                # For each printer in the json file, show a card
-                # containing text and buttons
-                for printer in printers:
-                    new_printer = printers[printer]
-                    
-                    p_name = new_printer['Name']
-                    
-                    printer_list_item_card = ft.Card(
-                        content=ft.Container(
-                            content=ft.Column([
-                                ft.ListTile(
-                                    title=ft.Column([
-                                            ft.Text(p_name, weight=ft.FontWeight.BOLD,),
-                                            ft.Text(f"PortName: {new_printer['Port']}"),
-                                            ft.Text(f"Status: {new_printer['Status']}")
-                                        ], width=200),
-                                    trailing=ft.PopupMenuButton(
-                                        icon=ft.icons.MORE_VERT,
-                                        items=[
-                                            ft.PopupMenuItem(text="Test Page", data=p_name, on_click=printer_wiz_testpage),
-                                            ft.PopupMenuItem(text="Rename", data=p_name, on_click=open_printer_name_modal),
-                                            ft.PopupMenuItem(text=f"Uninstall {p_name}", data=p_name, on_click=uninstall_printer),
-                                        ],
-                                    ),
-                                    data=p_name,
-                                    on_click=open_printer_more_info_modal
-                                )
-                            ]),
-                        ),
-                    )
+        if check_computer_name():
+            refresh = False
+            computer = computer_name.value
+            for key, value in kwargs.items():
+                # Check if we are just refreshing list
+                if key == "refresh":
+                    refresh = value
+                if key == "target_computer":
+                    printer_wiz_target_computer = value
+                    computer = printer_wiz_target_computer
+            
+            def load_printers():
+                """Just load printers from existing json
+                """
+                printer_wiz_listview.controls.clear()
+                try:
+                    with open(json_file) as file:
+                        printers = json.load(file)
+                        
+                    # For each printer in the json file, show a card
+                    # containing text and buttons
+                    for printer in printers:
+                        new_printer = printers[printer]
+                        
+                        p_name = new_printer['Name']
+                        
+                        printer_list_item_card = ft.Card(
+                            content=ft.Container(
+                                content=ft.Column([
+                                    ft.ListTile(
+                                        title=ft.Column([
+                                                ft.Text(p_name, weight=ft.FontWeight.BOLD,),
+                                                ft.Text(f"PortName: {new_printer['Port']}"),
+                                                ft.Text(f"Status: {new_printer['Status']}")
+                                            ], width=200),
+                                        trailing=ft.PopupMenuButton(
+                                            icon=ft.icons.MORE_VERT,
+                                            items=[
+                                                ft.PopupMenuItem(text="Test Page", data=p_name, on_click=printer_wiz_testpage),
+                                                ft.PopupMenuItem(text="Rename", data=p_name, on_click=open_printer_name_modal),
+                                                ft.PopupMenuItem(text=f"Uninstall {p_name}", data=p_name, on_click=uninstall_printer),
+                                            ],
+                                        ),
+                                        data=p_name,
+                                        on_click=open_printer_more_info_modal
+                                    )
+                                ]),
+                            ),
+                        )
 
-                    printer_wiz_listview.controls.append(printer_list_item_card)
-                printer_wiz_computer.data = computer
-                printer_wiz_computer.value = f"{computer}'s printers. Last refreshed {date_refreshed}"
-                navigate_view(6)
-            except FileNotFoundError:
-                show_message(f"Could not get printers on {computer}")
-        
-        if os.path.exists(json_file) and refresh != True:
-            load_printers()
-        else:
-            if refresh:
-                show_message(f"Refreshing printers on {computer}.")
+                        printer_wiz_listview.controls.append(printer_list_item_card)
+                    printer_wiz_computer.data = computer
+                    printer_wiz_computer.value = f"{computer}'s printers. Last refreshed {date_refreshed}"
+                    navigate_view(6)
+                except FileNotFoundError:
+                    show_message(f"Could not get printers on {computer}")
+            
+            json_file = f'./results/Printers/{computer}-Printers.json'
+            
+            if os.path.exists(json_file) and refresh != True:
+                # If json file exists and we arent refreshing
+                date_refreshed = os.path.getmtime(json_file)
+                date_refreshed = time.ctime(date_refreshed)
+                load_printers()
             else:
-                show_message(f"Getting printers on {computer}")
-                enable_winrm(computer)
-            printer_wiz_target_computer = computer
-            id = len(list_of_processes)
-            add_new_process(new_process("Printer Wizard", [computer], date_time(), id))
-            powershell = the_shell.Power_Shell()
-            result = powershell.printer_wizard(computer=computer)
-            update_results("Printer Wizard", data=result, print_wiz=True, subtitle=result)
-            load_printers()
-            end_of_process(id)
+                date_refreshed = date_time()
+                if refresh:
+                    show_message(f"Refreshing printers on {computer}.")
+                else:
+                    show_message(f"Getting printers on {computer}")
+                    enable_winrm(computer)
+                printer_wiz_target_computer = computer
+                id = len(list_of_processes)
+                add_new_process(new_process("Printer Wizard", [computer], date_time(), id))
+                powershell = the_shell.Power_Shell()
+                result = powershell.printer_wizard(computer=computer)
+                update_results("Printer Wizard", data=result, print_wiz=True, computer=computer, subtitle=result)
+                load_printers()
+                end_of_process(id)
         
     def printer_wiz_testpage(e):
         if check_computer_name():
@@ -1257,12 +1254,51 @@ def main(page: ft.Page):
         can_tap_header=True,
     )
     
+    comp_info_exp_panel = ft.ExpansionPanel(
+        header=ft.ListTile(
+            title=ft.Text("Computer Info", weight=ft.FontWeight.BOLD),
+            trailing=ft.Icon(name=ft.icons.COMPUTER)
+        ),
+        content=ft.Container(
+            content=ft.Row([
+                ft.Column([
+                    ft.IconButton(icon=ft.icons.PRINT, icon_size=50, on_click=printer_wizard, data=""),
+                    ft.Text("Get Printers")
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                ft.VerticalDivider(),
+                ft.Column([
+                    ft.IconButton(icon=ft.icons.UPLOAD_FILE, icon_size=50,
+                        on_click=lambda _: pick_files_dialog.pick_files(
+                            allow_multiple=True,
+                            allowed_extensions=["printerExport"],
+                            initial_directory=f"{pathlib.Path.home()}"
+                            ),
+                        ),
+                    ft.Text("Import Printer")
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                ft.VerticalDivider(),
+                ft.Column([
+                    ft.IconButton(icon=ft.icons.TEXT_SNIPPET, data="Operational", icon_size=50, on_click=open_print_logs),
+                    ft.Text("Operational Logs")
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                ft.VerticalDivider(),
+                ft.Column([
+                    ft.IconButton(icon=ft.icons.TEXT_SNIPPET, data="Admin", icon_size=50, on_click=open_print_logs),
+                    ft.Text("Admin Logs")
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+            ], wrap=True),
+            padding=10
+        ),
+        can_tap_header=True,
+    )
+    
     exp_panel_list = ft.ExpansionPanelList(
         elevation=8,
         controls=[
             clear_space_exp_panel,
             printers_exp_panel,
-            programs_exp_panel
+            programs_exp_panel,
+            comp_info_exp_panel
         ]
     )
     
@@ -1327,9 +1363,12 @@ def main(page: ft.Page):
     
     def refresh_printers(e):
         global printer_wiz_target_computer
+        printer_wiz_target_computer = printer_wiz_computer.data
         printer_wizard(e, target_computer=printer_wiz_target_computer, refresh=True)
     
     print_wizard_view = ft.Column([
+        computer_top_row,
+        ft.Divider(height=9, thickness=3),
         ft.Row([
             printer_wiz_computer,
             ft.IconButton(
