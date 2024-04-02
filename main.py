@@ -4,6 +4,7 @@ import datetime
 import json
 import os, time
 import socket, pathlib
+from tutorial_btn import TutorialBtn
 
 # Default settings.json values
 settings_values = {
@@ -519,22 +520,26 @@ def main(page: ft.Page):
         
         return result_card
     
-    # Define print_log card modal
-    def show_print_log_card_modal():
-        page.dialog = print_log_card_modal
-        print_log_card_modal.open = True
+    # Dynamic Modal
+    def show_dynamic_modal():
+        page.dialog = dynamic_modal
+        dynamic_modal.open = True
         page.update()
     
-    def close_print_log_card_modal(e):
-        print_log_card_modal.open = False
+    def close_dynamic_modal(e):
+        dynamic_modal.open = False
         page.update()
-        
-    print_log_card_modal = ft.AlertDialog(
+    
+    # The dynamic modal is used to dynamically
+    # assign content to its controls, then
+    # use the show_dynamic_modal function to
+    # display it.
+    dynamic_modal = ft.AlertDialog(
         modal=True,
         title=ft.Text("Title"),
         content=ft.Text("No content"),
         actions=[
-            ft.TextButton("Close", on_click=close_print_log_card_modal),
+            ft.TextButton("Close", on_click=close_dynamic_modal),
         ],
         actions_alignment=ft.MainAxisAlignment.END,
     )
@@ -584,13 +589,14 @@ def main(page: ft.Page):
                 )
                 logs_list_view.controls.append(card)
         
-        print_log_card_modal.content = card_content
-        print_log_card_modal.title = ft.Text(f"{e.control.title.value}, {e.control.data["computer"]}")
-        show_print_log_card_modal()
+        dynamic_modal.content = card_content
+        dynamic_modal.title = ft.Text(f"{e.control.title.value}, {e.control.data["computer"]}")
+        show_dynamic_modal()
     
     def open_space_card(e):
         """
-        Sets print log card modal content and opens it.
+        Uses dynamic modal to show info about the disk
+        space on a computer.
         """
         space_list_view = ft.ListView(expand=1, padding= 20)
         card_content = ft.Container(
@@ -627,9 +633,44 @@ def main(page: ft.Page):
                 )
                 space_list_view.controls.append(card)
                 
-        print_log_card_modal.content = card_content
-        print_log_card_modal.title = ft.Text(f"{e.control.title.value}, {e.control.data["computer"]}")
-        show_print_log_card_modal()
+        dynamic_modal.content = card_content
+        dynamic_modal.title = ft.Text(f"{e.control.title.value}, {e.control.data["computer"]}")
+        show_dynamic_modal()
+        
+    def open_tutorial_modal(e):
+        """ 
+        Uses print_log_card_modal to show help/topic info
+        about features in the app.
+        Uses control data to pass the topic info in a list.
+        topic at index 0, explanatory text at index 1.
+        """
+        card_list_view = ft.ListView(expand=1, padding= 20)
+        card_content = ft.Container(
+            content=card_list_view,
+            expand=1,
+            width= 500
+        )
+        
+        help_topic = e.control.data[0]
+        help_text = e.control.data[1]
+                
+        card = ft.Card(
+            content=ft.Container(
+                content=ft.Column([
+                    ft.Row([
+                        ft.Text(f"{help_text}"),
+                    ], wrap=True)
+                ], expand = 1),
+                expand = 1,
+                padding=20
+            ),
+            expand = 1
+        )
+        card_list_view.controls.append(card)
+                
+        dynamic_modal.content = card_content
+        dynamic_modal.title = ft.Text(f"{help_topic}")
+        show_dynamic_modal()
         
     def ping(e):
         if check_computer_name():
@@ -1179,6 +1220,11 @@ def main(page: ft.Page):
         can_tap_header=True,
     )
     
+    programs_tutorial = TutorialBtn(
+        data=["Programs", "You can use this panel to check for a specific program on a computer, or get a list of all detected installed software.\n\nOnly checking for a specific program can be used with a list."],
+        on_click=open_tutorial_modal
+    )
+    
     programs_exp_panel = ft.ExpansionPanel(
         header=ft.ListTile(
             title=ft.Text("Programs", weight=ft.FontWeight.BOLD),
@@ -1190,6 +1236,7 @@ def main(page: ft.Page):
                         ft.TextField(
                             label="Software name"
                         ),
+                        programs_tutorial
                     ]),
                     ft.Text("Can use with list:"),
                     ft.Row([
@@ -1300,9 +1347,17 @@ def main(page: ft.Page):
         expand=True,
     )
     
+    cust_scripts_tutorial = TutorialBtn(
+        data=["Custom Scripts", "Here you can add your own scripts so they are easily accessible and can be launched at the click of a button."],
+        on_click=open_tutorial_modal
+    )
+    
     custom_scripts_view = ft.Column([
         computer_top_row,
         ft.Divider(height=9, thickness=3),
+        ft.Row([
+            cust_scripts_tutorial
+        ]),
         commands_list_container
     ], expand=True)
     
