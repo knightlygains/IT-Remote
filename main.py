@@ -227,13 +227,13 @@ def main(page: ft.Page):
     new_printer_name = ft.TextField(expand=True)
     
     def check_computer_name():
+        computer_name.value = computer_name.value.replace(" ", "")
+        if computer_name.value.lower() == "localhost":
+            computer_name.value = socket.gethostname()
         if computer_name.value == "":
             show_message("Please input a computer hostname")
             return False
         else:
-            computer_name.value = computer_name.value.replace(" ", "")
-            if computer_name.value.lower() == "localhost":
-                computer_name.value = socket.gethostname()
             return True
     
     def date_time():
@@ -1254,37 +1254,36 @@ def main(page: ft.Page):
         can_tap_header=True,
     )
     
-    comp_info_exp_panel = ft.ExpansionPanel(
+    other_exp_panel = ft.ExpansionPanel(
         header=ft.ListTile(
-            title=ft.Text("Computer Info", weight=ft.FontWeight.BOLD),
+            title=ft.Text("Other Tools", weight=ft.FontWeight.BOLD),
             trailing=ft.Icon(name=ft.icons.COMPUTER)
         ),
         content=ft.Container(
             content=ft.Row([
                 ft.Column([
                     ft.IconButton(icon=ft.icons.PRINT, icon_size=50, on_click=printer_wizard, data=""),
-                    ft.Text("Get Printers")
+                    ft.Text("Open C$ Share")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.UPLOAD_FILE, icon_size=50,
-                        on_click=lambda _: pick_files_dialog.pick_files(
-                            allow_multiple=True,
-                            allowed_extensions=["printerExport"],
-                            initial_directory=f"{pathlib.Path.home()}"
-                            ),
-                        ),
-                    ft.Text("Import Printer")
+                    ft.IconButton(icon=ft.icons.PRINT, icon_size=50, on_click=printer_wizard, data=""),
+                    ft.Text("Check Last Bootup")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
                     ft.IconButton(icon=ft.icons.TEXT_SNIPPET, data="Operational", icon_size=50, on_click=open_print_logs),
-                    ft.Text("Operational Logs")
+                    ft.Text("Event Log")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.TEXT_SNIPPET, data="Admin", icon_size=50, on_click=open_print_logs),
-                    ft.Text("Admin Logs")
+                    ft.IconButton(icon=ft.icons.MEMORY, data="Admin", icon_size=50, on_click=open_print_logs),
+                    ft.Text("MSInfo32")
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                ft.VerticalDivider(),
+                ft.Column([
+                    ft.IconButton(icon=ft.icons.BATTERY_4_BAR, data="Admin", icon_size=50, on_click=open_print_logs),
+                    ft.Text("Battery Status")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
             ], wrap=True),
             padding=10
@@ -1298,7 +1297,7 @@ def main(page: ft.Page):
             clear_space_exp_panel,
             printers_exp_panel,
             programs_exp_panel,
-            comp_info_exp_panel
+            other_exp_panel
         ]
     )
     
