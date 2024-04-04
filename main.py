@@ -94,6 +94,8 @@ for filename in os.listdir("./results/Printers"):
     pathlib.Path(f"./results/Printers/{filename}").unlink()
 for filename in os.listdir("./results/ClearSpace"):
     pathlib.Path(f"./results/ClearSpace/{filename}").unlink()
+for filename in os.listdir("./results/Programs"):
+    pathlib.Path(f"./results/Programs/{filename}").unlink()
 
 # Program
 def main(page: ft.Page):
@@ -253,6 +255,7 @@ def main(page: ft.Page):
         print_log_card = False
         print_wiz_card = False
         check_space_card = False
+        check_software_card = False
         computer = computer_name.value
         subtitle=data
         for key, value in kwargs.items():
@@ -268,6 +271,8 @@ def main(page: ft.Page):
                 print_wiz_card = value
             if key == "check_space":
                 check_space_card = value
+            if key == "check_software":
+                check_software_card = True
             if key == "subtitle":
                 subtitle=value  
         
@@ -992,6 +997,21 @@ def main(page: ft.Page):
             result = powershell.print_logs(computer, type)
             update_results(title_text=f"{type} Log", data=result, print_log=True, computer=computer, type=type, subtitle=result)
             end_of_process(id)
+    
+    def open_c_share(e):
+        pass
+
+    def check_bootup(e):
+        pass
+    
+    def open_event_log(e):
+        pass
+    
+    def open_msinfo32(e):
+        pass
+    
+    def check_battery(e):
+        pass
 
     # Computer Text Field
     computer_name = ft.TextField(label="Computer Name")
@@ -1099,8 +1119,6 @@ def main(page: ft.Page):
     def check_space(e):
         if check_computer_name():
             computer = computer_name.value
-            if computer.lower() == "localhost":
-                computer = socket.gethostname()
             enable_winrm(computer)
             id = len(list_of_processes)
             add_new_process(new_process("Check Space", [computer], date_time(), id))
@@ -1109,6 +1127,30 @@ def main(page: ft.Page):
             result = powershell.check_space(computer=computer)
             update_results("Check Space", result, check_space=True, subtitle=result, computer=computer)
             end_of_process(id)
+    
+    def check_software(e):
+        if programs_use_list_checkbox.value:
+            computer = "Use-List"
+            id = len(list_of_processes)
+            add_new_process(new_process("Check Software", ["Using list"], date_time(), id))
+            show_message(f"Checking software on list of PCs")
+            powershell = the_shell.Power_Shell()
+            result = powershell.check_software(computer=computer, software=software_textfield.value, date=date_time())
+            update_results("Check Software", result, subtitle=result, computer=computer, check_software=True)
+            end_of_process(id)
+        elif check_computer_name():
+            computer = computer_name.value
+            enable_winrm(computer)
+            id = len(list_of_processes)
+            add_new_process(new_process("Check Software", [computer], date_time(), id))
+            show_message(f"Checking software on {computer}")
+            powershell = the_shell.Power_Shell()
+            result = powershell.check_software(computer=computer, software=software_textfield.value, date=date_time())
+            update_results("Check Software", result, check_space=True, subtitle=result, computer=computer, check_software=True)
+            end_of_process(id)
+    
+    def check_all_software(e):
+        pass
     
     # File picker for import printer
     def pick_files_result(e: ft.FilePickerResultEvent):
@@ -1222,6 +1264,15 @@ def main(page: ft.Page):
         on_click=open_tutorial_modal
     )
     
+    programs_use_list_checkbox = ft.Checkbox(
+        label="Use list of PCs",
+        value=False
+    )
+    
+    software_textfield = ft.TextField(
+        label="Software name"
+    )
+    
     programs_exp_panel = ft.ExpansionPanel(
         header=ft.ListTile(
             title=ft.Text("Programs", weight=ft.FontWeight.BOLD),
@@ -1230,26 +1281,51 @@ def main(page: ft.Page):
         content=ft.Container(
             content=ft.Column([
                     ft.Row([
-                        ft.TextField(
-                            label="Software name"
-                        ),
+                        software_textfield,
                         programs_tutorial
-                    ]),
-                    ft.Text("Can use with list:"),
+                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    
                     ft.Row([
                         ft.Column([
-                            ft.Row([
-                                ft.FilledTonalButton(text="Check for software")
-                            ])
+                            programs_use_list_checkbox,
+                            ft.FilledTonalButton(text="Check for software", on_click=check_software),
+
                         ]),
                         ft.Column([
-                            ft.Row([
-                                ft.FilledTonalButton(text="Check for ALL software")
-                            ])
+
+                            ft.FilledTonalButton(text="Check for ALL software")
+
                         ]),
-                    ])
+                    ], vertical_alignment=ft.CrossAxisAlignment.END)
                 ]),
-            padding=20
+            padding=10
+        ),
+        can_tap_header=True,
+    )
+    
+    computer_control_exp_panel = ft.ExpansionPanel(
+        header=ft.ListTile(
+            title=ft.Text("Computer Control", weight=ft.FontWeight.BOLD),
+            trailing=ft.Icon(name=ft.icons.SETTINGS_POWER)
+        ),
+        content=ft.Container(
+            content=ft.Row([
+                ft.Column([
+                    ft.IconButton(icon=ft.icons.RESTART_ALT, icon_size=50, on_click=open_c_share, data=""),
+                    ft.Text("Restart")
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                ft.VerticalDivider(),
+                ft.Column([
+                    ft.IconButton(icon=ft.icons.PEOPLE, icon_size=50, on_click=check_bootup, data=""),
+                    ft.Text("Log Off Users")
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                ft.VerticalDivider(),
+                ft.Column([
+                    ft.IconButton(icon=ft.icons.EDIT_SQUARE, icon_size=50, on_click=open_event_log),
+                    ft.Text("Rename Computer")
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+            ], wrap=True),
+            padding=10
         ),
         can_tap_header=True,
     )
@@ -1262,27 +1338,27 @@ def main(page: ft.Page):
         content=ft.Container(
             content=ft.Row([
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.PRINT, icon_size=50, on_click=printer_wizard, data=""),
-                    ft.Text("Open C$ Share")
+                    ft.IconButton(icon=ft.icons.FOLDER, icon_size=50, on_click=open_c_share, data=""),
+                    ft.Text("C$ Share")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.PRINT, icon_size=50, on_click=printer_wizard, data=""),
+                    ft.IconButton(icon=ft.icons.SCHEDULE, icon_size=50, on_click=check_bootup, data=""),
                     ft.Text("Check Last Bootup")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.TEXT_SNIPPET, data="Operational", icon_size=50, on_click=open_print_logs),
+                    ft.IconButton(icon=ft.icons.TEXT_SNIPPET, icon_size=50, on_click=open_event_log),
                     ft.Text("Event Log")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.MEMORY, data="Admin", icon_size=50, on_click=open_print_logs),
+                    ft.IconButton(icon=ft.icons.MEMORY, icon_size=50, on_click=open_msinfo32),
                     ft.Text("MSInfo32")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.BATTERY_4_BAR, data="Admin", icon_size=50, on_click=open_print_logs),
+                    ft.IconButton(icon=ft.icons.BATTERY_4_BAR, icon_size=50, on_click=check_battery),
                     ft.Text("Battery Status")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
             ], wrap=True),
@@ -1297,6 +1373,7 @@ def main(page: ft.Page):
             clear_space_exp_panel,
             printers_exp_panel,
             programs_exp_panel,
+            computer_control_exp_panel,
             other_exp_panel
         ]
     )
@@ -1391,11 +1468,9 @@ def main(page: ft.Page):
     )
     
     custom_scripts_view = ft.Column([
-        computer_top_row,
-        ft.Divider(height=9, thickness=3),
         ft.Row([
             cust_scripts_tutorial
-        ]),
+        ], spacing=0),
         commands_list_container
     ], expand=True)
     

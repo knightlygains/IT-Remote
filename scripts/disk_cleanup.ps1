@@ -29,8 +29,8 @@ Function Enable-WinRM {
     }
     else {
         Write-Host "Failed to enable WinRM on $Computer."
-    } #end of if
-} #end of else 
+    }
+}
 
 $list = Get-Content ".\lists\computers.txt"
 # If using list, set Computers = to Get-Content for list contents

@@ -101,3 +101,10 @@ class Power_Shell():
             return f"Open to view space on {computer}."
         else:
             return f"Failed to retrieve space on {computer}."
+    
+    def check_software(self, computer, software, date):
+        p = subprocess.call([self.pspath, "-File", f"./scripts/check_software.ps1", f"{computer}", f"{software}", f"{date}"])
+        if p == 0:
+            return f"Open to view software on {computer}."
+        else:
+            return f"Failed to retrieve software on {computer}."
