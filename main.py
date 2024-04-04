@@ -255,7 +255,6 @@ def main(page: ft.Page):
         print_log_card = False
         print_wiz_card = False
         check_space_card = False
-        check_software_card = False
         computer = computer_name.value
         subtitle=data
         for key, value in kwargs.items():
@@ -271,8 +270,6 @@ def main(page: ft.Page):
                 print_wiz_card = value
             if key == "check_space":
                 check_space_card = value
-            if key == "check_software":
-                check_software_card = True
             if key == "subtitle":
                 subtitle=value  
         
@@ -494,6 +491,10 @@ def main(page: ft.Page):
             on_click_function = open_print_log_card
         elif data == f"./results/ClearSpace/{computer}-Space-Available.json" and "Failed" not in subtitle_data:
             on_click_function = open_space_card
+        elif "results/Programs/" in data:
+            print("software card")
+            data = f"{data}"
+            on_click_function = open_software_card
         else:
             data = subtitle_data
             on_click_function = open_card
@@ -632,6 +633,48 @@ def main(page: ft.Page):
                                 ft.Text("Space:", weight=ft.FontWeight.BOLD),
                                 ft.Text(f"{freespace} / {maxsize} GB", selectable=True),
                             ]),
+                        ], expand = 1),
+                        expand = 1,
+                        padding=20
+                    ),
+                    expand = 1
+                )
+                space_list_view.controls.append(card)
+                
+        dynamic_modal.content = card_content
+        dynamic_modal.title = ft.Text(f"{e.control.title.value}, {e.control.data["computer"]}")
+        show_dynamic_modal()
+    
+    def open_software_card(e):
+        space_list_view = ft.ListView(expand=1, padding= 20)
+        card_content = ft.Container(
+            content=space_list_view,
+            expand=1,
+            width= 500
+        )
+        software_json_path = e.control.data["data"]
+        with open(software_json_path, "r") as file:
+            data = json.load(file)
+            for r in data:
+                comp = data[r]
+                
+                list_of_controls = []
+                for program in comp['Programs']:
+                    new_control = ft.Row([
+                            ft.Column([
+                                ft.Text(f"{program['Name']}")
+                        ])
+                    ])
+                    list_of_controls.append(new_control)
+                
+                card = ft.Card(
+                    content=ft.Container(
+                        content=ft.Column([
+                            ft.Text(f"{comp}", weight=ft.FontWeight.BOLD),
+                            ft.Column(
+                                list_of_controls, 
+                                wrap=True
+                            )
                         ], expand = 1),
                         expand = 1,
                         padding=20
@@ -1136,7 +1179,14 @@ def main(page: ft.Page):
             show_message(f"Checking software on list of PCs")
             powershell = the_shell.Power_Shell()
             result = powershell.check_software(computer=computer, software=software_textfield.value, date=date_time())
-            update_results("Check Software", result, subtitle=result, computer=computer, check_software=True)
+            
+            date = date_time()
+            date_formatted = date.replace(",", "_")
+            date_formatted = date_formatted.replace(" ", "_")
+            date_formatted = date_formatted.replace(":", "-")
+            data = f"./results/Programs/Programs-{date_formatted}.json"
+            
+            update_results("Check Software", result, subtitle=result, computer=computer)
             end_of_process(id)
         elif check_computer_name():
             computer = computer_name.value
@@ -1145,8 +1195,11 @@ def main(page: ft.Page):
             add_new_process(new_process("Check Software", [computer], date_time(), id))
             show_message(f"Checking software on {computer}")
             powershell = the_shell.Power_Shell()
-            result = powershell.check_software(computer=computer, software=software_textfield.value, date=date_time())
-            update_results("Check Software", result, check_space=True, subtitle=result, computer=computer, check_software=True)
+            
+            data = f"./results/Programs/{computer}-Programs.json"
+            result = powershell.check_software(computer=computer, software=software_textfield.value, date=date)
+            
+            update_results("Check Software", data=data, subtitle=result, computer=computer)
             end_of_process(id)
     
     def check_all_software(e):
