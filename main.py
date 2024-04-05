@@ -466,8 +466,8 @@ def main(page: ft.Page):
             if key == "subtitle":
                 subtitle_data = value
         
-        if computer.lower() == "localhost":
-            computer = socket.gethostname()
+        # if computer.lower() == "localhost":
+        #     computer = socket.gethostname()
                 
         data_max_length = 60
         # Format and shorten text
@@ -664,8 +664,12 @@ def main(page: ft.Page):
                 for program in comp['Programs']:
                     new_control = ft.Row([
                             ft.Column([
-                                ft.Text(f"{program['Name']}")
-                        ])
+                                ft.Text(f"{program['Name']}"),
+                                ft.Text(f"Computer: {program['ComputerName']}"),
+                                ft.Text(f"Version: {program['Version']}"),
+                                ft.Text(f"Install date: {program['InstallDate']}"),
+                                ft.Text(f"Registry path: {program['RegPath']}", no_wrap=False),
+                        ], wrap=True)
                     ])
                     list_of_controls.append(new_control)
         modal = DynamicModal(
@@ -1165,7 +1169,7 @@ def main(page: ft.Page):
             add_new_process(new_process("Check Software", ["Using list"], date_time(), id))
             show_message(f"Checking software on list of PCs")
             powershell = the_shell.Power_Shell()
-            result = powershell.check_software(computer=computer, software=software_textfield.value, date=date_time())
+            result = powershell.check_software(computer=computer, software=software_textfield.value, date=date)
             data = f"./results/Programs/Programs-{date_formatted}.json"
             update_results("Check Software", result, subtitle=result, computer=computer)
             end_of_process(id)
@@ -1342,6 +1346,11 @@ def main(page: ft.Page):
         ),
         content=ft.Container(
             content=ft.Row([
+                ft.Column([
+                    ft.IconButton(icon=ft.icons.POWER_SETTINGS_NEW, icon_size=50, on_click=open_c_share, data=""),
+                    ft.Text("Shut Down")
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                ft.VerticalDivider(),
                 ft.Column([
                     ft.IconButton(icon=ft.icons.RESTART_ALT, icon_size=50, on_click=open_c_share, data=""),
                     ft.Text("Restart")

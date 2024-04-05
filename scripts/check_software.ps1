@@ -186,9 +186,6 @@ foreach ($pc in $list) {
 $found_software = Get-Variable -Name "softwareObject_*_" -ValueOnly
 
 if ($Computer -eq "Use-List") {
-    $date = $date.Replace(",", "_")
-    $date = $date.Replace(" ", "_")
-    $date = $date.Replace(":", "-")
     $filename = "Programs-$date.json"
     New-Item -Path ".\results\Programs\$filename" -ItemType "file" -Force | Out-Null
 
