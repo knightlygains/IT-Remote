@@ -205,10 +205,9 @@ else {
     New-Item -Path ".\results\Programs\$filename" -ItemType "file" -Force | Out-Null
 }
 
-$variableNumber = 1
-
 if ($Computer -eq "Use-List") {
 
+    # Object to store all results and convert to json
     $results = [PSCustomObject]@{
 
     }
@@ -221,29 +220,24 @@ if ($Computer -eq "Use-List") {
 
         foreach ($program in $this_PCs_software) {
 
-            if ($program.Name -like "*NOT found") {
-                $programs += "None"
+            try {
+                $regPath = $($program.RegPath).Replace("\", "\\")
             }
-            else {
-                try {
-                    $regPath = $($program.RegPath).Replace("\", "\\")
-                }
-                catch {
-                    Write-Host $_
-                    $regPath = "None"
-                }
+            catch {
+                Write-Host $_
+                $regPath = "None"
+            }
                 
     
-                $software_obj = @{
-                    ComputerName = $program.ComputerName
-                    Name         = $program.Name
-                    Version      = $program.Version
-                    InstallDate  = $program.InstallDate
-                    RegPath      = $regPath
-                }
-    
-                $programs += $software_obj
+            $software_obj = @{
+                ComputerName = $program.ComputerName
+                Name         = $program.Name
+                Version      = $program.Version
+                InstallDate  = $program.InstallDate
+                RegPath      = $regPath
             }
+    
+            $programs += $software_obj
             
         }
 
@@ -256,8 +250,6 @@ if ($Computer -eq "Use-List") {
 
     Set-Content -Path ".\results\Programs\$filename" -Value (ConvertTo-Json $results -Depth 4)
 }
-    
-
 else {
     # Log each software found to json
     $results = [PSCustomObject]@{
@@ -270,28 +262,23 @@ else {
 
     foreach ($program in $this_PCs_software) {
 
-        if ($program.Name -like "*NOT found") {
-            $programs += "None"
+        try {
+            $regPath = $($program.RegPath).Replace("\", "\\")
         }
-        else {
-            try {
-                $regPath = $($program.RegPath).Replace("\", "\\")
-            }
-            catch {
-                Write-Host $_
-                $regPath = "None"
-            }
-
-            $software_obj = @{
-                ComputerName = $program.ComputerName
-                Name         = $program.Name
-                Version      = $program.Version
-                InstallDate  = $program.InstallDate
-                RegPath      = $regPath
-            }
-
-            $programs += $software_obj
+        catch {
+            Write-Host $_
+            $regPath = "None"
         }
+
+        $software_obj = @{
+            ComputerName = $program.ComputerName
+            Name         = $program.Name
+            Version      = $program.Version
+            InstallDate  = $program.InstallDate
+            RegPath      = $regPath
+        }
+
+        $programs += $software_obj
         
     }
 
@@ -302,5 +289,4 @@ else {
 
     Set-Content -Path ".\results\Programs\$filename" -Value (ConvertTo-Json $results -Depth 4)
 }
-
 return $filename

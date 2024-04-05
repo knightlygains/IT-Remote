@@ -5,6 +5,7 @@ import json
 import os, time
 import socket, pathlib
 from tutorial_btn import TutorialBtn
+from dynamic_modal import DynamicModal
 
 # Default settings.json values
 settings_values = {
@@ -529,13 +530,18 @@ def main(page: ft.Page):
         return result_card
     
     # Dynamic Modal
+    def show_dynamic_modal_class(alertDlg):
+        page.dialog = alertDlg
+        alertDlg.open = True
+        page.update()
+    
     def show_dynamic_modal():
         page.dialog = dynamic_modal
         dynamic_modal.open = True
         page.update()
     
     def close_dynamic_modal(e):
-        dynamic_modal.open = False
+        page.dialog.open = False
         page.update()
     
     # The dynamic modal is used to dynamically
@@ -646,16 +652,12 @@ def main(page: ft.Page):
         show_dynamic_modal()
     
     def open_software_card(e):
-        space_list_view = ft.ListView(expand=1, padding= 20)
-        card_content = ft.Container(
-            content=space_list_view,
-            expand=1,
-            width= 500
-        )
         software_json_path = e.control.data["data"]
         with open(software_json_path, "r") as file:
             data = json.load(file)
             for r in data:
+                # r is equal to computer name.
+                # comp is equal to 'Programs'.
                 comp = data[r]
                 
                 list_of_controls = []
@@ -666,26 +668,14 @@ def main(page: ft.Page):
                         ])
                     ])
                     list_of_controls.append(new_control)
-                
-                card = ft.Card(
-                    content=ft.Container(
-                        content=ft.Column([
-                            ft.Text(f"{comp}", weight=ft.FontWeight.BOLD),
-                            ft.Column(
-                                list_of_controls, 
-                                wrap=True
-                            )
-                        ], expand = 1),
-                        expand = 1,
-                        padding=20
-                    ),
-                    expand = 1
-                )
-                space_list_view.controls.append(card)
-                
-        dynamic_modal.content = card_content
-        dynamic_modal.title = ft.Text(f"{e.control.title.value}, {e.control.data["computer"]}")
-        show_dynamic_modal()
+        modal = DynamicModal(
+            title=f"{e.control.title.value}, {e.control.data["computer"]}",
+            content=ft.Column(list_of_controls), 
+            close_modal_func=close_dynamic_modal
+        )
+        page.dialog = modal.get_modal()
+        page.dialog.open = True
+        page.update()
         
     def open_tutorial_modal(e):
         """ 
@@ -694,33 +684,25 @@ def main(page: ft.Page):
         Uses control data to pass the topic info in a list.
         topic at index 0, explanatory text at index 1.
         """
-        card_list_view = ft.ListView(expand=1, padding= 20)
-        card_content = ft.Container(
-            content=card_list_view,
-            expand=1,
-            width= 500
-        )
         
         help_topic = e.control.data[0]
         help_text = e.control.data[1]
-                
-        card = ft.Card(
-            content=ft.Container(
-                content=ft.Column([
-                    ft.Row([
-                        ft.Text(f"{help_text}"),
-                    ], wrap=True)
-                ], expand = 1),
-                expand = 1,
-                padding=20
-            ),
-            expand = 1
+        
+        content = ft.Column([
+            ft.Row([
+                ft.Text(f"{help_text}"),
+            ], wrap=True)
+        ], expand = 1)
+        
+        modal = DynamicModal(
+            title=f"{help_topic}",
+            content=content,
+            close_modal_func=close_dynamic_modal
         )
-        card_list_view.controls.append(card)
-                
-        dynamic_modal.content = card_content
-        dynamic_modal.title = ft.Text(f"{help_topic}")
-        show_dynamic_modal()
+        
+        page.dialog = modal.get_modal()
+        page.dialog.open = True
+        page.update()
         
     def ping(e):
         if check_computer_name():
@@ -1172,6 +1154,11 @@ def main(page: ft.Page):
             end_of_process(id)
     
     def check_software(e):
+        date = date_time()
+        date_formatted = date.replace(",", "_")
+        date_formatted = date_formatted.replace(" ", "_")
+        date_formatted = date_formatted.replace(":", "-")
+        
         if programs_use_list_checkbox.value:
             computer = "Use-List"
             id = len(list_of_processes)
@@ -1179,13 +1166,7 @@ def main(page: ft.Page):
             show_message(f"Checking software on list of PCs")
             powershell = the_shell.Power_Shell()
             result = powershell.check_software(computer=computer, software=software_textfield.value, date=date_time())
-            
-            date = date_time()
-            date_formatted = date.replace(",", "_")
-            date_formatted = date_formatted.replace(" ", "_")
-            date_formatted = date_formatted.replace(":", "-")
             data = f"./results/Programs/Programs-{date_formatted}.json"
-            
             update_results("Check Software", result, subtitle=result, computer=computer)
             end_of_process(id)
         elif check_computer_name():
@@ -1195,10 +1176,8 @@ def main(page: ft.Page):
             add_new_process(new_process("Check Software", [computer], date_time(), id))
             show_message(f"Checking software on {computer}")
             powershell = the_shell.Power_Shell()
-            
             data = f"./results/Programs/{computer}-Programs.json"
             result = powershell.check_software(computer=computer, software=software_textfield.value, date=date)
-            
             update_results("Check Software", data=data, subtitle=result, computer=computer)
             end_of_process(id)
     
