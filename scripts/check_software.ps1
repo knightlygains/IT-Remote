@@ -1,8 +1,11 @@
 param (
     [string]$Computer,
     [string]$SoftwareName,
-    [string]$date
+    [string]$date,
+    [string]$all
 )
+
+Write-Host $date
 
 Function Enable-WinRM {
     [CmdletBinding()]
@@ -86,16 +89,18 @@ Function Get-InstalledSoftware {
                 if ($null -ne $regKey) {
                     foreach ($subName in $regKey.GetSubkeyNames()) {
                         foreach ($sub in $regKey.OpenSubkey($subName)) {
-                            $masterKeys += (New-Object PSObject -Property @{
-                                    "ComputerName"     = "$Computer"
-                                    "Name"             = $sub.GetValue("displayname")
-                                    "SystemComponent"  = $sub.GetValue("systemcomponent")
-                                    "ParentKeyName"    = $sub.GetValue("parentkeyname")
-                                    "Version"          = $sub.GetValue("DisplayVersion")
-                                    "UninstallCommand" = $sub.GetValue("UninstallString")
-                                    "InstallDate"      = $sub.GetValue("InstallDate")
-                                    "RegPath"          = $sub.ToString()
-                                })
+                            if (-not($null -eq $sub.GetValue("displayname"))) {
+                                $masterKeys += (New-Object PSObject -Property @{
+                                        "ComputerName"     = "$Computer"
+                                        "Name"             = $sub.GetValue("displayname")
+                                        "SystemComponent"  = $sub.GetValue("systemcomponent")
+                                        "ParentKeyName"    = $sub.GetValue("parentkeyname")
+                                        "Version"          = $sub.GetValue("DisplayVersion")
+                                        "UninstallCommand" = $sub.GetValue("UninstallString")
+                                        "InstallDate"      = $sub.GetValue("InstallDate")
+                                        "RegPath"          = $sub.ToString()
+                                    })
+                            }
                         }
                     }
                 }
@@ -107,16 +112,19 @@ Function Get-InstalledSoftware {
 
                     foreach ($subName in $regKey.getsubkeynames()) {
                         foreach ($sub in $regKey.opensubkey($subName)) {
-                            $masterKeys += (New-Object PSObject -Property @{
-                                    "ComputerName"     = "$Computer"
-                                    "Name"             = $sub.GetValue("displayname")
-                                    "SystemComponent"  = $sub.GetValue("systemcomponent")
-                                    "ParentKeyName"    = $sub.GetValue("parentkeyname")
-                                    "Version"          = $sub.GetValue("DisplayVersion")
-                                    "UninstallCommand" = $sub.GetValue("UninstallString")
-                                    "InstallDate"      = $sub.GetValue("InstallDate")
-                                    "RegPath"          = $sub.ToString()
-                                })
+                            if (-not($null -eq $sub.GetValue("displayname"))) {
+                                $masterKeys += (New-Object PSObject -Property @{
+                                        "ComputerName"     = "$Computer"
+                                        "Name"             = $sub.GetValue("displayname")
+                                        "SystemComponent"  = $sub.GetValue("systemcomponent")
+                                        "ParentKeyName"    = $sub.GetValue("parentkeyname")
+                                        "Version"          = $sub.GetValue("DisplayVersion")
+                                        "UninstallCommand" = $sub.GetValue("UninstallString")
+                                        "InstallDate"      = $sub.GetValue("InstallDate")
+                                        "RegPath"          = $sub.ToString()
+                                    })
+                            }
+                            
                         }
                     }
                 }
@@ -124,7 +132,14 @@ Function Get-InstalledSoftware {
 
             $woFilter = { $null -ne $_.name -AND $_.SystemComponent -ne "1" -AND $null -eq $_.ParentKeyName -AND $_.name -match "$SoftwareName" }
             $props = 'Name', 'Version', 'ComputerName', 'Installdate', 'RegPath'
-            $masterKeys = ($masterKeys | Where-Object $woFilter | Select-Object $props | Sort-Object Name) # | Out-GridView -Title "$Computer's Installed Programs"
+            
+            if ($all -eq "True") {
+                $masterKeys = ($masterKeys | Select-Object $props | Sort-Object Name)
+            }
+            else {
+                $masterKeys = ($masterKeys | Where-Object $woFilter | Select-Object $props | Sort-Object Name)
+            }
+           
             #$masterKeys
             if ($null -eq $masterKeys) {
                 $notFoundObject = [PSCustomObject]@{

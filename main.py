@@ -653,7 +653,7 @@ def main(page: ft.Page):
     
     def open_software_card(e):
         software_json_path = e.control.data["data"]
-        with open(software_json_path, "r") as file:
+        with open(software_json_path, "r", encoding='utf-8') as file:
             data = json.load(file)
             for r in data:
                 # r is equal to computer name.
@@ -662,16 +662,23 @@ def main(page: ft.Page):
                 
                 list_of_controls = []
                 for program in comp['Programs']:
-                    new_control = ft.Row([
-                            ft.Column([
-                                ft.Text(f"{program['Name']}"),
-                                ft.Text(f"Computer: {program['ComputerName']}"),
-                                ft.Text(f"Version: {program['Version']}"),
-                                ft.Text(f"Install date: {program['InstallDate']}"),
-                                ft.Text(f"Registry path: {program['RegPath']}", no_wrap=False),
-                        ], wrap=True)
-                    ])
+                    new_control = ft.Card(
+                        content= ft.Container(
+                            content= ft.Row([
+                                ft.Column([
+                                        ft.Text(f"{program['Name']}", selectable=True, weight=ft.FontWeight.BOLD),
+                                        ft.Text(f"Computer: {program['ComputerName']}", selectable=True),
+                                        ft.Text(f"Version: {program['Version']}", selectable=True),
+                                        ft.Text(f"Install date: {program['InstallDate']}", selectable=True),
+                                        ft.Text(f"Registry path: {program['RegPath']}", no_wrap=False, selectable=True),
+                                ])
+                            ], wrap=True, spacing=10),
+                            padding=20
+                        )
+                    )
                     list_of_controls.append(new_control)
+                length = len(list_of_controls)
+                list_of_controls.insert(0,ft.Text(f"{length} results:", weight=ft.FontWeight.BOLD))
         modal = DynamicModal(
             title=f"{e.control.title.value}, {e.control.data["computer"]}",
             content=ft.Column(list_of_controls), 
@@ -1163,27 +1170,25 @@ def main(page: ft.Page):
         date_formatted = date_formatted.replace(" ", "_")
         date_formatted = date_formatted.replace(":", "-")
         
+        all = e.control.data
+        
+        id = len(list_of_processes)
+        powershell = the_shell.Power_Shell()
         if programs_use_list_checkbox.value:
             computer = "Use-List"
-            id = len(list_of_processes)
             add_new_process(new_process("Check Software", ["Using list"], date_time(), id))
             show_message(f"Checking software on list of PCs")
-            powershell = the_shell.Power_Shell()
-            result = powershell.check_software(computer=computer, software=software_textfield.value, date=date)
+            result = powershell.check_software(computer=computer, software=software_textfield.value, date=date_formatted, all=all)
             data = f"./results/Programs/Programs-{date_formatted}.json"
-            update_results("Check Software", result, subtitle=result, computer=computer)
-            end_of_process(id)
         elif check_computer_name():
             computer = computer_name.value
             enable_winrm(computer)
-            id = len(list_of_processes)
             add_new_process(new_process("Check Software", [computer], date_time(), id))
             show_message(f"Checking software on {computer}")
-            powershell = the_shell.Power_Shell()
             data = f"./results/Programs/{computer}-Programs.json"
-            result = powershell.check_software(computer=computer, software=software_textfield.value, date=date)
-            update_results("Check Software", data=data, subtitle=result, computer=computer)
-            end_of_process(id)
+            result = powershell.check_software(computer=computer, software=software_textfield.value, date=date_formatted, all=all)
+        update_results("Check Software", data=data, subtitle=result, computer=computer)
+        end_of_process(id)
     
     def check_all_software(e):
         pass
@@ -1329,7 +1334,7 @@ def main(page: ft.Page):
                         ]),
                         ft.Column([
 
-                            ft.FilledTonalButton(text="Check for ALL software")
+                            ft.FilledTonalButton(text="Check for ALL software", data="True", on_click=check_software)
 
                         ]),
                     ], vertical_alignment=ft.CrossAxisAlignment.END)

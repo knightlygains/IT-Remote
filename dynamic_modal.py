@@ -9,25 +9,29 @@ class DynamicModal(ft.AlertDialog):
     """
     def __init__(self, title, content, close_modal_func):
         super().__init__()
-        self.list_view = ft.ListView(expand=1, padding= 20)
-        self.card_content = ft.Container(
-            content=self.list_view,
-            expand=1,
-            width= 500
-        )
+        # Create a list view
+        self.list_view = ft.ListView(expand=1, width= 500, spacing=5)
+        
+        # Make a new container that holds content arugments
         self.content_container=ft.Container(
             content=content,
             padding=15,
             expand=1
         )
-        self.card = ft.Card(
-            content=self.content_container
+        
+        # append the content_container to the list view
+        self.list_view.controls.append(self.content_container)
+        
+        # Put list view inside a container
+        self.modal_content = ft.Container(
+            content=self.list_view,
+            padding=15
         )
-        self.list_view.controls.append(self.card)
+        
         self.modal = ft.AlertDialog(
             modal=True,
             title=ft.Text(f"{title}"),
-            content=self.card_content,
+            content=self.modal_content,
             actions=[
                 ft.TextButton("Close", on_click=close_modal_func),
             ],
