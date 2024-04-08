@@ -682,7 +682,7 @@ def main(page: ft.Page):
         page.update()
         
     def open_tutorial_modal(e):
-        """ 
+        """
         Uses print_log_card_modal to show help/topic info
         about features in the app.
         Uses control data to pass the topic info in a list.
@@ -1362,7 +1362,7 @@ def main(page: ft.Page):
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.EDIT_SQUARE, icon_size=50, on_click=open_event_log),
+                    ft.IconButton(icon=ft.icons.EDIT_SQUARE, icon_size=40, on_click=open_event_log),
                     ft.Text("Rename Computer")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
             ], wrap=True),
