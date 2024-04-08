@@ -6,6 +6,7 @@ import os, time
 import socket, pathlib
 from tutorial_btn import TutorialBtn
 from dynamic_modal import DynamicModal
+import uuid
 
 # Default settings.json values
 settings_values = {
@@ -146,6 +147,9 @@ def main(page: ft.Page):
     # Store list of runing processes here for tooltip
     list_of_processes = []
     
+    # Store a list of computernames we have run actions on.
+    list_of_computernames = []
+    
     #Left pane navigation rail
     def navigate_view(e):
         #If called by a control set equal to control value
@@ -252,7 +256,7 @@ def main(page: ft.Page):
                 time = time.lstrip("0")
         return f"{day} {month} {day_num}, {time}"
     
-    def update_results(title_text, data, **kwargs):
+    def update_results(title_text, data, id, **kwargs):
         print_log_card = False
         print_wiz_card = False
         check_space_card = False
@@ -274,14 +278,16 @@ def main(page: ft.Page):
             if key == "subtitle":
                 subtitle=value  
         
+        if computer not in list_of_computernames:
+            list_of_computernames.append(computer)
+            comp_checkboxes.append(ft.Checkbox(label=f"{computer}", value=True, data=f"{computer}"))
+        
         if print_log_card:
             data = f"./results/Printers/{computer}-Printers-{type}-logs.json"
         elif print_wiz_card:
             data = f"./results/Printers/{computer}-Printers.json"
         elif check_space_card:
             data = f"./results/ClearSpace/{computer}-Space-Available.json"
-        
-        id = len(result_data.controls)
         
         card = generate_result_card(
             leading = ft.Icon(ft.icons.TERMINAL),
@@ -297,7 +303,8 @@ def main(page: ft.Page):
         if rail.selected_index != 1:
             # If home isnt already selected, add notifcation badge
             home_notification_badge.label_visible = True
-        page.update()
+        
+        apply_results_filter(filter_out_PCs, False)
     
     def add_new_process(process_object):
         global running_processes_count
@@ -362,17 +369,93 @@ def main(page: ft.Page):
             "id": id
         }
         return new_process
+        
     
     # Console text output
     result_data = ft.ListView(expand=1, spacing=10, padding=20)
 
     results_container = ft.Container(
-                                content=result_data,
-                                bgcolor=settings_values["app_color"],
-                                expand=True,
-                                alignment=ft.alignment.top_left,
-                                border_radius=20
-                                )
+        content=result_data,
+        bgcolor=settings_values["app_color"],
+        expand=True,
+        alignment=ft.alignment.top_left,
+        border_radius=20
+    )
+    
+    
+    filtered_out_results = []
+    filter_out_PCs = []
+    remove_these_controls = []
+    comp_checkboxes = []
+    
+    def apply_results_filter(filter, clear_filter):
+        
+        print(f"Filters: {filter}")
+        print(f"result_data controls: {result_data.controls}")
+        for control in result_data.controls:
+            print(f"Filtering card @index {result_data.controls.index(control)}")
+            if clear_filter:
+                filter_out_PCs.clear()
+    
+                # If the controls data is equal to a computer in the filters list
+                # Remove it and add it to another list
+            if control.data["Computer"] in filter:
+                print(f"{control.data["Computer"]} in filters")
+                filtered_out_results.append(control)
+                # result_data.controls.remove(control)
+               
+        for control in filtered_out_results:
+            # If the controls computer isnt in the filter,
+            # we want to re-add it to result_data
+            if control.data["Computer"] not in filter:
+                print(f"Trying to insert card {control.data["Computer"]}")
+                result_data.controls.append(control)
+                remove_these_controls.append(control)
+            else:
+                result_data.controls.remove(control)
+            
+            
+        for control in remove_these_controls:
+            filtered_out_results.remove(control)
+        
+        remove_these_controls.clear()
+        print(f"filtered_out_results: {filtered_out_results}")
+        
+        result_data.controls.sort(key=lambda control: control.data["Date"], reverse=True)
+        page.update()
+
+    def filter_results(e):
+        # Set up modal
+        
+        content = ft.Column(comp_checkboxes, expand=1, spacing=20)
+        
+        modal = DynamicModal(
+            title=f"Filter results:",
+            content=content,
+            close_modal_func=close_dynamic_modal
+        )
+        
+        page.dialog = modal.get_modal()
+        page.dialog.open = True
+        page.update()
+        
+        while page.dialog.open:
+            pass
+        
+        for checkbox in comp_checkboxes:
+            print(f"{checkbox.value} {checkbox.data}")
+            
+            # If computer is checked and was previously filtered out,
+            # remove from filtered out list
+            if checkbox.value and checkbox.data in filter_out_PCs:
+                filter_out_PCs.remove(checkbox.data)
+            
+            # Else if computer is not in filtered out list and box isnt checked
+            elif checkbox.data not in filter_out_PCs and checkbox.value == False:
+                filter_out_PCs.append(checkbox.data)
+        
+        result_data.update()
+        apply_results_filter(filter_out_PCs, False)
     
     # Running Processes Modal \/
     def show_processes_modal(e):
@@ -448,12 +531,13 @@ def main(page: ft.Page):
         printer_wizard(e, target_computer=e.control.data["computer"])
     
     def remove_card(e):
-        if e.control.data == "all":
+        id = e.control.data
+        if id == "all":
             # We clicked the remove all results button
             result_data.controls.clear()
         else:
             for control in result_data.controls:
-                if e.control.data == control.data:
+                if id == control.data["Id"]:
                     result_data.controls.remove(control)
         page.update()
     
@@ -524,7 +608,7 @@ def main(page: ft.Page):
         
         result_card = ft.Card(
             content=card_content,
-            data=id
+            data={"Id": id, "Computer": computer, "Date": date}
         )
         
         return result_card
@@ -717,12 +801,12 @@ def main(page: ft.Page):
         
     def ping(e):
         if check_computer_name():
-            id = len(list_of_processes)
+            id = uuid.uuid4()
             add_new_process(new_process("Ping", [computer_name.value], date_time(), id))
             show_message(f"Pinging {computer_name.value}")
             powershell = the_shell.Power_Shell()
             result = powershell.ping(computer=computer_name.value)
-            update_results("Ping", result)
+            update_results("Ping", result, id)
             end_of_process(id)
     
     def enable_winrm(computer):
@@ -730,33 +814,33 @@ def main(page: ft.Page):
         if settings_values["enable_win_rm"]:
             if computer == None:
                 computer = computer_name.value
-            id = len(list_of_processes)
+            id = uuid.uuid4()
             add_new_process(new_process("WinRM", [computer], date_time(), id))
             powershell = the_shell.Power_Shell()
             result = powershell.enable_winrm(computer)
             if settings_values["supress_winrm_results"] == False:
-                update_results("WinRM", result)
+                update_results("WinRM", result, id)
             end_of_process(id)
     
     def quser(e):
         if check_computer_name():
-            id = len(list_of_processes)
+            id = uuid.uuid4()
             add_new_process(new_process("QUSER", [computer_name.value], date_time(), id))
             show_message(f"Querying logged in users on {computer_name.value}")
             powershell = the_shell.Power_Shell()
             result = powershell.quser(computer=computer_name.value)
-            update_results("QUser", result)
+            update_results("QUser", result, id)
             end_of_process(id)
             
     def rename_printer(e):
         if check_computer_name():
             close_printer_dlg(e)
-            id = len(list_of_processes)
+            id = uuid.uuid4()
             add_new_process(new_process("Rename Printer", [computer_name.value], date_time(), id))
             show_message(f"Renaming printer on {computer_name.value}")
             powershell = the_shell.Power_Shell()
             result = powershell.rename_printer(computer=computer_name.value, printerName=printer_to_change, newName=new_printer_name.value)
-            update_results("Rename Printer", result)
+            update_results("Rename Printer", result, id)
             end_of_process(id)
         printer_wizard(e, refresh=True)
         
@@ -934,17 +1018,17 @@ def main(page: ft.Page):
                     show_message(f"Getting printers on {computer}")
                     enable_winrm(computer)
                 printer_wiz_target_computer = computer
-                id = len(list_of_processes)
+                id = uuid.uuid4()
                 add_new_process(new_process("Printer Wizard", [computer], date_time(), id))
                 powershell = the_shell.Power_Shell()
                 result = powershell.printer_wizard(computer=computer)
-                update_results("Printer Wizard", data=result, print_wiz=True, computer=computer, subtitle=result)
+                update_results("Printer Wizard", data=result, id=id, print_wiz=True, computer=computer, subtitle=result)
                 load_printers()
                 end_of_process(id)
         
     def printer_wiz_testpage(e):
         if check_computer_name():
-            id = len(list_of_processes)
+            id = uuid.uuid4()
             add_new_process(new_process("Test Page", [computer_name.value], date_time(), id))
             show_message(f"Printing test page from {computer_name.value}.")
             powershell = the_shell.Power_Shell()
@@ -1012,12 +1096,12 @@ def main(page: ft.Page):
     
     def uninstall_printer(e):
         if are_you_sure(e, f"Uninstall {e.control.data} from {printer_wiz_computer.data}?"):
-            id = len(list_of_processes)
+            id = uuid.uuid4()
             add_new_process(new_process("Uninstall Printer", [printer_wiz_computer.data], date_time(), id))
             show_message(f"Uninstalling printer from {printer_wiz_computer.data}.")
             powershell = the_shell.Power_Shell()
             result = powershell.uninstall_printer(computer=printer_wiz_computer.data, printerName=e.control.data)
-            update_results("Uninstall Printer", result)
+            update_results("Uninstall Printer", result, id)
             end_of_process(id)
             printer_wizard(e, refresh=True, target_computer=printer_wiz_computer.data)
     
@@ -1026,12 +1110,12 @@ def main(page: ft.Page):
             computer = computer_name.value
             type = e.control.data
             enable_winrm(computer)
-            id = len(list_of_processes)
+            id = uuid.uuid4()
             add_new_process(new_process(f"{type} Log", [computer], date_time(), id))
             show_message(f"Getting {type} print logs from {computer}.")
             powershell = the_shell.Power_Shell()
             result = powershell.print_logs(computer, type)
-            update_results(title_text=f"{type} Log", data=result, print_log=True, computer=computer, type=type, subtitle=result)
+            update_results(title_text=f"{type} Log", data=result, id=id, print_log=True, computer=computer, type=type, subtitle=result)
             end_of_process(id)
     
     def open_c_share(e):
@@ -1088,7 +1172,7 @@ def main(page: ft.Page):
                 enable_winrm(computer)
             # else skip winrm here, it will be done in script
             
-            id = len(list_of_processes)
+            id = uuid.uuid4()
             
             # If we are using a list of pcs,
             # get each pc from list and create
@@ -1112,12 +1196,12 @@ def main(page: ft.Page):
                 for pc in list_of_pcs:
                     pc_result = open(f"./results/ClearSpace/{pc}-ClearSpace.txt", "r")
                     read_pc_result = pc_result.readlines()
-                    update_results("Clear Space", read_pc_result)
+                    update_results("Clear Space", read_pc_result, id)
                     pc_result.close()
             else:
                 results = open(f"./results/ClearSpace/{computer}-ClearSpace.txt", "r")
                 result = results.read()
-                update_results("Clear Space", result)
+                update_results("Clear Space", result, id)
             
             end_of_process(id)
             
@@ -1156,12 +1240,12 @@ def main(page: ft.Page):
         if check_computer_name():
             computer = computer_name.value
             enable_winrm(computer)
-            id = len(list_of_processes)
+            id = uuid.uuid4()
             add_new_process(new_process("Check Space", [computer], date_time(), id))
             show_message(f"Checking space on {computer}")
             powershell = the_shell.Power_Shell()
             result = powershell.check_space(computer=computer)
-            update_results("Check Space", result, check_space=True, subtitle=result, computer=computer)
+            update_results("Check Space", result, id=id, check_space=True, subtitle=result, computer=computer)
             end_of_process(id)
     
     def check_software(e):
@@ -1172,7 +1256,7 @@ def main(page: ft.Page):
         
         all = e.control.data
         
-        id = len(list_of_processes)
+        id = uuid.uuid4()
         powershell = the_shell.Power_Shell()
         if programs_use_list_checkbox.value:
             computer = "Use-List"
@@ -1187,18 +1271,16 @@ def main(page: ft.Page):
             show_message(f"Checking software on {computer}")
             data = f"./results/Programs/{computer}-Programs.json"
             result = powershell.check_software(computer=computer, software=software_textfield.value, date=date_formatted, all=all)
-        update_results("Check Software", data=data, subtitle=result, computer=computer)
+        update_results("Check Software", data=data, id=id, subtitle=result, computer=computer)
         end_of_process(id)
-    
-    def check_all_software(e):
-        pass
     
     # File picker for import printer
     def pick_files_result(e: ft.FilePickerResultEvent):
         selected_files = (
             ", ".join(map(lambda f: f.name, e.files)) if e.files else "Cancelled!"
         )
-        update_results("Selected Files", selected_files)
+        id = uuid.uuid4()
+        update_results("Selected Files", selected_files, id=id)
 
     pick_files_dialog = ft.FilePicker(
         on_result=pick_files_result,
@@ -1225,15 +1307,34 @@ def main(page: ft.Page):
     home = ft.Column([
         computer_top_row,
         ft.Row([
-            results_label,
-            ft.IconButton(
-                icon=ft.icons.CLOSE,
-                icon_size=10,
-                tooltip="Clear Results",
-                on_click=remove_card,
-                data="all"
-            ),
-        ]),
+            
+            ft.Column([
+                ft.Row([
+                    ft.Text("Filter"),
+                    ft.IconButton(
+                        icon=ft.icons.FILTER_ALT,
+                        icon_size=10,
+                        tooltip="Filter",
+                        on_click=filter_results,
+                    ),
+                ])
+            ]),
+            
+            ft.Column([
+                ft.Row([
+                    results_label,
+                    ft.IconButton(
+                        icon=ft.icons.CLOSE,
+                        icon_size=10,
+                        tooltip="Clear Results",
+                        on_click=remove_card,
+                        data="all"
+                    ),
+                ])
+            ]),
+            
+            
+        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
         results_container
     ], expand=True)
     

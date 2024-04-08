@@ -5,8 +5,6 @@ param (
     [string]$all
 )
 
-Write-Host $date
-
 Function Enable-WinRM {
     [CmdletBinding()]
     param (
