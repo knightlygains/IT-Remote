@@ -614,11 +614,6 @@ def main(page: ft.Page):
         return result_card
     
     # Dynamic Modal
-    def show_dynamic_modal_class(alertDlg):
-        page.dialog = alertDlg
-        alertDlg.open = True
-        page.update()
-    
     def show_dynamic_modal():
         page.dialog = dynamic_modal
         dynamic_modal.open = True
@@ -1313,7 +1308,7 @@ def main(page: ft.Page):
                     ft.Text("Filter"),
                     ft.IconButton(
                         icon=ft.icons.FILTER_ALT,
-                        icon_size=10,
+                        icon_size=13,
                         tooltip="Filter",
                         on_click=filter_results,
                     ),
@@ -1325,7 +1320,7 @@ def main(page: ft.Page):
                     results_label,
                     ft.IconButton(
                         icon=ft.icons.CLOSE,
-                        icon_size=10,
+                        icon_size=13,
                         tooltip="Clear Results",
                         on_click=remove_card,
                         data="all"
