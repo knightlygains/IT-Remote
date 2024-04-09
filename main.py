@@ -1134,9 +1134,6 @@ def main(page: ft.Page):
     def open_event_log(e):
         pass
     
-    def open_msinfo32(e):
-        pass
-    
     def check_battery(e):
         pass
 
@@ -1271,6 +1268,8 @@ def main(page: ft.Page):
             show_message(f"Checking software on list of PCs")
             result = powershell.check_software(computer=computer, software=software_textfield.value, date=date_formatted, all=all)
             data = f"./results/Programs/Programs-{date_formatted}.json"
+            update_results("Check Software", data=data, id=id, subtitle=result, computer=computer)
+            end_of_process(id)
         elif check_computer_name():
             computer = computer_name.value
             enable_winrm(computer)
@@ -1278,8 +1277,20 @@ def main(page: ft.Page):
             show_message(f"Checking software on {computer}")
             data = f"./results/Programs/{computer}-Programs.json"
             result = powershell.check_software(computer=computer, software=software_textfield.value, date=date_formatted, all=all)
-        update_results("Check Software", data=data, id=id, subtitle=result, computer=computer)
-        end_of_process(id)
+            update_results("Check Software", data=data, id=id, subtitle=result, computer=computer)
+            end_of_process(id)
+    
+    def msinfo_32(e):
+        if check_computer_name():
+            id = uuid.uuid4()
+            powershell = the_shell.Power_Shell()
+            computer = computer_name.value
+            enable_winrm(computer)
+            add_new_process(new_process("MsInfo32", [computer], date_time(), id))
+            show_message(f"Opening MsInfo32 for {computer}")
+            result = powershell.msinfo_32(computer)
+            update_results("Check Software", data=result, id=id, subtitle=result, computer=computer)
+            end_of_process(id)
     
     # File picker for import printer
     def pick_files_result(e: ft.FilePickerResultEvent):
@@ -1509,7 +1520,7 @@ def main(page: ft.Page):
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.MEMORY, icon_size=50, on_click=open_msinfo32),
+                    ft.IconButton(icon=ft.icons.MEMORY, icon_size=50, on_click=msinfo_32),
                     ft.Text("MSInfo32")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),

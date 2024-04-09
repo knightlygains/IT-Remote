@@ -35,7 +35,7 @@ class Power_Shell():
         if p == 0:
             return f"{computer} is online."
         elif p == 2:
-            return f"Conneciton to {computer} timed out."
+            return f"Connection to {computer} timed out."
         else:
             return f"Couldn't ping {computer}."
     
@@ -108,3 +108,10 @@ class Power_Shell():
             return f"Open to view software on {computer}."
         else:
             return f"Failed to retrieve software on {computer}."
+    
+    def msinfo_32(self, computer):
+        p = subprocess.run([self.pspath, "-command", f"msinfo32.exe /computer \\\\{computer}"])
+        if p.returncode == 0:
+            return f"Launched msinfo32 for {computer}."
+        else:
+            return f"Failed to launch msinfo32 for {computer}."
