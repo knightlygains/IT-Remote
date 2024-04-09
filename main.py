@@ -382,10 +382,16 @@ def main(page: ft.Page):
         border_radius=20
     )
     
-    
+    # Holds controls we removed from result_data
     filtered_out_results = []
+    
+    # Computernames we want to filter out
     filter_out_PCs = []
+    
+    # temp list to hold controls that we removed from result_data
     remove_these_controls = []
+    
+    # Store all checkboxes generated for PCs we ran actions on
     comp_checkboxes = []
     
     def apply_results_filter(filter, clear_filter):
@@ -422,6 +428,12 @@ def main(page: ft.Page):
         print(f"filtered_out_results: {filtered_out_results}")
         
         result_data.controls.sort(key=lambda control: control.data["Date"], reverse=True)
+        if len(filter_out_PCs) > 0:
+            filter_btn.icon = ft.icons.FILTER_ALT
+            filter_btn.tooltip = "On"
+        else:
+            filter_btn.icon = ft.icons.FILTER_ALT_OFF
+            filter_btn.tooltip = "Off"
         page.update()
 
     def filter_results(e):
@@ -1299,6 +1311,13 @@ def main(page: ft.Page):
         running_processes_count_text,
     ])
     
+    filter_btn = ft.IconButton(
+        icon=ft.icons.FILTER_ALT_OFF,
+        icon_size=13,
+        tooltip="Off",
+        on_click=filter_results,
+    )
+    
     home = ft.Column([
         computer_top_row,
         ft.Row([
@@ -1306,12 +1325,7 @@ def main(page: ft.Page):
             ft.Column([
                 ft.Row([
                     ft.Text("Filter"),
-                    ft.IconButton(
-                        icon=ft.icons.FILTER_ALT,
-                        icon_size=13,
-                        tooltip="Filter",
-                        on_click=filter_results,
-                    ),
+                    filter_btn,
                 ])
             ]),
             
