@@ -1040,7 +1040,7 @@ def main(page: ft.Page):
             show_message(f"Printing test page from {computer_name.value}.")
             powershell = the_shell.Power_Shell()
             result = powershell.test_page(computer=computer_name.value, printerName=e.control.data)
-            update_results("Printer Test Page", result)
+            update_results("Printer Test Page", result, id=id)
             end_of_process(id)
     
     def are_you_sure(e, text):
