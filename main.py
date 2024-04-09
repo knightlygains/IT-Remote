@@ -91,13 +91,22 @@ def load_settings(e, update):
     
 load_settings(e=None, update=False)
 
+# Create recent_computers.json
+recent_computers_path = "./results/recent_computers.txt"
+if os.path.exists(recent_computers_path) == False:
+    with open(recent_computers_path, "w") as file:
+        print("recent_computers.txt created")
+
 #Cleanup old files
-for filename in os.listdir("./results/Printers"):
-    pathlib.Path(f"./results/Printers/{filename}").unlink()
-for filename in os.listdir("./results/ClearSpace"):
-    pathlib.Path(f"./results/ClearSpace/{filename}").unlink()
-for filename in os.listdir("./results/Programs"):
-    pathlib.Path(f"./results/Programs/{filename}").unlink()
+if os.path.exists("./results/Printers"):
+    for filename in os.listdir("./results/Printers"):
+        pathlib.Path(f"./results/Printers/{filename}").unlink()
+if os.path.exists("./results/ClearSpace"):   
+    for filename in os.listdir("./results/ClearSpace"):
+        pathlib.Path(f"./results/ClearSpace/{filename}").unlink()
+if os.path.exists("./results/Programs"):  
+    for filename in os.listdir("./results/Programs"):
+        pathlib.Path(f"./results/Programs/{filename}").unlink()
 
 # Program
 def main(page: ft.Page):
@@ -138,6 +147,67 @@ def main(page: ft.Page):
         settings_values["use_24hr"] = use_24hr_checkbox.value
         load_settings(e, update=True)
         page.update()
+    
+    recent_computers_file = "./results/recent_computers.txt"
+    def update_recent_computers(computer):
+        try:
+            open_recent = open(recent_computers_file, "r")
+            
+            g = open_recent.readlines()
+
+            if len(g) == 0:
+                g.insert(0,f"{computer}\n")
+            elif len(g) < 20:
+                g.insert(0,f"{computer}\n")
+            else:
+                g.pop()
+                g.insert(0,f"{computer}\n")
+            write_recent = open(recent_computers_file, "w")
+            write_recent.writelines(g)
+        except ValueError as e:
+            print(f"Something went wrong. {e}")  
+    
+    def load_recent_computers(e):
+        # Store list of recent computers
+        recent_computers = []
+        
+        open_recent = open(recent_computers_file, "r")
+        g = open_recent.readlines()
+        for item in g:
+            i = item.replace("\n", "")
+            i = item.strip()
+            if i not in recent_computers:
+                recent_computers.append(i)
+        
+        list_of_recent_pcs_radios = []
+        
+        for pc in recent_computers:
+            radio = ft.Radio(value=pc, label=pc)
+            list_of_recent_pcs_radios.append(radio)
+        
+        recent_pc_radio_grp = ft.RadioGroup(
+            content=ft.Column(
+                list_of_recent_pcs_radios
+            )
+        )
+        
+        modal = DynamicModal(
+            title="Select a recent computer:",
+            content=recent_pc_radio_grp,
+            close_modal_func=close_dynamic_modal
+        )
+        
+        page.dialog = modal.get_modal()
+        page.dialog.open = True
+        page.update()
+        
+        while page.dialog.open:
+            pass
+        
+        if recent_pc_radio_grp.value != None:
+            computer_name.value = recent_pc_radio_grp.value
+        
+        computer_name.update()
     
     def show_message(message):
         page.snack_bar.content.value = message
@@ -235,6 +305,7 @@ def main(page: ft.Page):
     
     def check_computer_name():
         computer_name.value = computer_name.value.replace(" ", "")
+        computer_name.value = computer_name.value.replace("\n", "")
         if computer_name.value.lower() == "localhost":
             computer_name.value = socket.gethostname()
         if computer_name.value == "":
@@ -281,6 +352,8 @@ def main(page: ft.Page):
         if computer not in list_of_computernames:
             list_of_computernames.append(computer)
             comp_checkboxes.append(ft.Checkbox(label=f"{computer}", value=True, data=f"{computer}"))
+        
+        update_recent_computers(computer)
         
         if print_log_card:
             data = f"./results/Printers/{computer}-Printers-{type}-logs.json"
@@ -369,7 +442,6 @@ def main(page: ft.Page):
             "id": id
         }
         return new_process
-        
     
     # Console text output
     result_data = ft.ListView(expand=1, spacing=10, padding=20)
@@ -878,7 +950,7 @@ def main(page: ft.Page):
     
     def open_printer_name_modal(e):
         global printer_to_change
-        printer_to_change = e.control.data
+        printer_to_change = e.control.data["printer"]
         page.dialog = printer_name_modal
         printer_name_modal.open = True
         page.update()
@@ -979,6 +1051,8 @@ def main(page: ft.Page):
                         
                         p_name = new_printer['Name']
                         
+                        control_data = {"printer": p_name, "computer": printer_wiz_computer.value}
+                        
                         printer_list_item_card = ft.Card(
                             content=ft.Container(
                                 content=ft.Column([
@@ -991,9 +1065,9 @@ def main(page: ft.Page):
                                         trailing=ft.PopupMenuButton(
                                             icon=ft.icons.MORE_VERT,
                                             items=[
-                                                ft.PopupMenuItem(text="Test Page", data=p_name, on_click=printer_wiz_testpage),
-                                                ft.PopupMenuItem(text="Rename", data=p_name, on_click=open_printer_name_modal),
-                                                ft.PopupMenuItem(text=f"Uninstall {p_name}", data=p_name, on_click=uninstall_printer),
+                                                ft.PopupMenuItem(text="Test Page", data=control_data, on_click=printer_wiz_testpage),
+                                                ft.PopupMenuItem(text="Rename", data=control_data, on_click=open_printer_name_modal),
+                                                ft.PopupMenuItem(text=f"Uninstall {p_name}", data=control_data, on_click=uninstall_printer),
                                             ],
                                         ),
                                         data=p_name,
@@ -1036,10 +1110,10 @@ def main(page: ft.Page):
     def printer_wiz_testpage(e):
         if check_computer_name():
             id = uuid.uuid4()
-            add_new_process(new_process("Test Page", [computer_name.value], date_time(), id))
-            show_message(f"Printing test page from {computer_name.value}.")
+            add_new_process(new_process("Test Page", [e.control.data["computer"]], date_time(), id))
+            show_message(f"Printing test page from {e.control.data["computer"]}.")
             powershell = the_shell.Power_Shell()
-            result = powershell.test_page(computer=computer_name.value, printerName=e.control.data)
+            result = powershell.test_page(computer=e.control.data["computer"], printerName=e.control.data["printer"])
             update_results("Printer Test Page", result, id=id)
             end_of_process(id)
     
@@ -1102,15 +1176,15 @@ def main(page: ft.Page):
             return False 
     
     def uninstall_printer(e):
-        if are_you_sure(e, f"Uninstall {e.control.data} from {printer_wiz_computer.data}?"):
+        if are_you_sure(e, f"Uninstall {e.control.data["printer"]} from {e.control.data["computer"]}?"):
             id = uuid.uuid4()
-            add_new_process(new_process("Uninstall Printer", [printer_wiz_computer.data], date_time(), id))
-            show_message(f"Uninstalling printer from {printer_wiz_computer.data}.")
+            add_new_process(new_process("Uninstall Printer", [e.control.data["computer"]], date_time(), id))
+            show_message(f"Uninstalling printer from {e.control.data["computer"]}.")
             powershell = the_shell.Power_Shell()
-            result = powershell.uninstall_printer(computer=printer_wiz_computer.data, printerName=e.control.data)
+            result = powershell.uninstall_printer(computer=e.control.data["computer"], printerName=e.control.data["printer"])
             update_results("Uninstall Printer", result, id)
             end_of_process(id)
-            printer_wizard(e, refresh=True, target_computer=printer_wiz_computer.data)
+            printer_wizard(e, refresh=True, target_computer=e.control.data["computer"])
     
     def open_print_logs(e):
         if check_computer_name():
@@ -1151,13 +1225,6 @@ def main(page: ft.Page):
     def open_pc_list(e):
         powershell = the_shell.Power_Shell()
         powershell.open_pc_list()
-
-    computer_list_btn = ft.IconButton(
-        icon=ft.icons.LIST,
-        icon_size=20,
-        on_click=open_pc_list,
-        tooltip="Open list of PCs"
-    )
     
     delete_users_checkbox = ft.Checkbox(label="Remove user profiles", value=False)
     logout_users_checkbox = ft.Checkbox(label="Logout users before deletion", value=False)
@@ -1308,8 +1375,25 @@ def main(page: ft.Page):
 
     # "Views". We swap these in and out of current_view
     # when navigating using the rail.
+    computer_list_btn = ft.IconButton(
+        icon=ft.icons.LIST,
+        icon_size=20,
+        on_click=open_pc_list,
+        tooltip="Open list of PCs"
+    )
     
-    computer_top_row = ft.Row([computer_list_btn,
+    recent_computers_btn = ft.IconButton(
+        icon=ft.icons.HISTORY,
+        icon_size=20,
+        on_click=load_recent_computers,
+        tooltip="Recent computers"
+    )
+    
+    computer_top_row = ft.Row([
+        ft.Column([
+            computer_list_btn,
+            recent_computers_btn,
+        ], alignment=ft.MainAxisAlignment.SPACE_AROUND),
         computer_name,
         ping_btn,
         quser_btn,
