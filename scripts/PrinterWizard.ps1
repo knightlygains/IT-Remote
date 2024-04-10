@@ -20,6 +20,7 @@ Function getPrinters {
         Invoke-Command -ComputerName $Computer $enable_log_sb -ErrorAction Stop
     }
     catch {
+        Write-Host $_
         return "Fail"
     }
     
@@ -29,6 +30,7 @@ Function getPrinters {
         $printers = Get-CimInstance -Class Win32_Printer -ComputerName $Computer | Select-Object Name, PrinterStatus, Type, PortName, DriverName, Shared, Published -ErrorAction Stop
     }
     catch {
+        Write-Host $_
         return "Fail"
     }
     
@@ -97,66 +99,5 @@ if (Test-Connection $Computer) {
     }
 }
 else {
-    exit 1
+    exit 2
 }
-
-
-
-# Do{ #Start of printer modification
-#     getPrinters #Call function to create variables of the printers
-
-#     $answer = Read-Host "Which printer do you want to change? (Type the number seen after 'Printer')"
-#     $printerSelection = Get-Variable -Name "Printer_$answer|*"
-
-#     Write-Host "Printer selected: $($printerSelection.Value)."
-
-#     Do{#Get answer for what we will do with the printer
-#         $answer2 = Read-Host "What will we do? U(Uninstall), R(Rename), T(Print test page)"
-#         if(-not($answer2 -eq "u" -OR $answer2 -eq "r" -OR $answer2 -eq "t")){
-#             Write-Host "Invalid answer."
-#         }
-#     }Until($answer2 -eq "u" -OR $answer2 -eq "r" -OR $answer2 -eq "t")
-
-#     $printerToChange = $printerSelection.Value
-
-#     if($answer2 -eq "r"){ #Rename printer
-#         $newName = Read-Host "What will the new name be?" #Get new name
-
-#         Invoke-Command -ComputerName $Computer -ScriptBlock {
-#             param($printerToChange, $newName)
-#             Start-Process powershell -Wait -ArgumentList "Rename-Printer", "-Name", "'$printerToChange'", "-NewName", "'$newName'"
-#         } -ArgumentList ($printerToChange, $newName)
-
-#         Write-Host "Changed printer $printerToChange name to: $newName."
-#     }
-#     if($answer2 -eq "t"){ #Print a test page
-#         Invoke-Command -ComputerName $Computer -ScriptBlock {
-#             param($printerToChange)
-#             $printer = Get-WmiObject Win32_Printer | where {$_.name -eq "$printerToChange"}
-#             $printer.PrintTestPage()
-#         } -ArgumentList ($printerToChange)
-#         Write-Host "Test page sent from printer $printerToChange on computer $Computer."
-#     } if($answer2 -eq "u"){ #Uninstall printer
-#         $areYouSure = Read-Host "Are you sure you want to uninstall $($printerSelection.Value) from $Computer? (Y/N)"
-#         if($areYouSure -eq "y"){
-#             Write-Host "Variables: $printerToChange, $Computer"
-#             Invoke-Command -ComputerName $Computer -ScriptBlock {
-#                 param($printerToChange)
-#                 Start-Process powershell -Wait -ArgumentList "Remove-Printer", "-Name", "'$printerToChange'"
-#             } -ArgumentList ($printerToChange)
-#             Write-Host "Removed printer: $printerToChange."
-#         } else {
-#             Write-Host "Cancelled removal."
-#         }
-#     }
-
-#     Do{ #Get answer for if we will modify another printer
-#         $continue = Read-Host "Would you like to modify another printer? (Y/N)"
-#         if(-not($continue -eq "y" -OR $continue -eq "n")){
-#             Write-Host "Invalid answer."
-#         }
-#     }Until($continue -eq "y" -OR $continue -eq "n")
-
-# Write-Host ""
-    
-# }Until($continue -eq "n") #End of printer modification and script

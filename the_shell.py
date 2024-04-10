@@ -52,12 +52,14 @@ class Power_Shell():
         if p == 0:
             return f"Printers retrieved from {computer}. Click to open"
         else:
-            return f"Failed to retrieve printers from {computer}. It is offline."
+            return f"Failed to retrieve printers from {computer}."
 
     def test_page(self, computer, printerName):
         p = subprocess.call([self.pspath, "-File", f"./scripts/test_page.ps1", f"{computer}", f"{printerName}"])
         if p == 0:
             return f"Test page sent to {computer}."
+        elif p == 2:
+            return f"Test page failed to send to {computer}. It is offline."
         else:
             return f"Test page failed to send to {computer}."
     

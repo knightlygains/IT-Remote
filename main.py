@@ -92,10 +92,12 @@ def load_settings(e, update):
 load_settings(e=None, update=False)
 
 # Create recent_computers.json
-recent_computers_path = "./results/recent_computers.txt"
+recent_computers_path = "./results/recent_computers.json"
 if os.path.exists(recent_computers_path) == False:
     with open(recent_computers_path, "w") as file:
-        print("recent_computers.txt created")
+        print(f"{recent_computers_path} created")
+        init_data = {"computers":[]}
+        json.dump(init_data, file, indent=4)
 
 #Cleanup old files
 if os.path.exists("./results/Printers"):
@@ -148,53 +150,85 @@ def main(page: ft.Page):
         load_settings(e, update=True)
         page.update()
     
-    recent_computers_file = "./results/recent_computers.txt"
-    def update_recent_computers(computer):
+    recent_computers_file = "./results/recent_computers.json"
+    def update_recent_computers(computer, date, last_action):
+        # We need to convert to json.
+        # For each computer in data["Computers"]
         try:
-            open_recent = open(recent_computers_file, "r")
+            with open(recent_computers_file, "r") as file:
+                
+                recent_pc = {
+                    "name": computer,
+                    "date": date,
+                    "last_action": last_action
+                }
+                
+                g = json.load(file)
+                
+                if len(g["computers"]) < 20:
+                    g["computers"].insert(0,recent_pc)
+                else:
+                    g["computers"].pop()
+                    g["computers"].insert(0,recent_pc)
             
-            g = open_recent.readlines()
-
-            if len(g) == 0:
-                g.insert(0,f"{computer}\n")
-            elif len(g) < 20:
-                g.insert(0,f"{computer}\n")
-            else:
-                g.pop()
-                g.insert(0,f"{computer}\n")
-            write_recent = open(recent_computers_file, "w")
-            write_recent.writelines(g)
         except ValueError as e:
-            print(f"Something went wrong. {e}")  
+            print(f"Something went wrong. {e}")
+        finally:
+            with open(recent_computers_file, "w") as file:
+                json.dump(g, file, indent=4)
     
     def load_recent_computers(e):
         # Store list of recent computers
-        recent_computers = []
+        recent_computer_names = []
+        recent_computer_items = []
         
-        open_recent = open(recent_computers_file, "r")
-        g = open_recent.readlines()
-        for item in g:
-            i = item.replace("\n", "")
-            i = item.strip()
-            if i not in recent_computers:
-                recent_computers.append(i)
+        with open(recent_computers_file, "r") as file:
+            data = json.load(file)
+            for item in data["computers"]:
+                if item["name"] not in recent_computer_names:
+                    recent_computer_items.append(item)
+                    recent_computer_names.append(item["name"])
         
         list_of_recent_pcs_radios = []
         
-        for pc in recent_computers:
-            radio = ft.Radio(value=pc, label=pc)
+        for pc in recent_computer_items:
+            name = pc["name"]
+            date = pc["date"]
+            last_action = pc["last_action"]
+            radio = ft.Row([
+                ft.Column([
+                    ft.Radio(value=name),
+                    ft.Text(""),
+                    ft.Text(""),
+                ]),
+                ft.Column([
+                    ft.Text(f"{name}", weight=ft.FontWeight.BOLD),
+                    ft.Row([
+                        ft.Text(f"Date:", weight=ft.FontWeight.BOLD),
+                        ft.Text(f"{date}")
+                    ]),
+                    ft.Row([
+                        ft.Text(f"Last Action:", weight=ft.FontWeight.BOLD),
+                        ft.Text(f"{last_action}")
+                    ])
+                ])
+            ], width=260)
             list_of_recent_pcs_radios.append(radio)
         
         recent_pc_radio_grp = ft.RadioGroup(
-            content=ft.Column(
-                list_of_recent_pcs_radios
+            content=ft.Row(
+                list_of_recent_pcs_radios,
+                wrap=True,
+                width=800,
+                scroll=ft.ScrollMode.ADAPTIVE
             )
         )
         
         modal = DynamicModal(
             title="Select a recent computer:",
             content=recent_pc_radio_grp,
-            close_modal_func=close_dynamic_modal
+            close_modal_func=close_dynamic_modal,
+            nolistview=True
         )
         
         page.dialog = modal.get_modal()
@@ -353,7 +387,7 @@ def main(page: ft.Page):
             list_of_computernames.append(computer)
             comp_checkboxes.append(ft.Checkbox(label=f"{computer}", value=True, data=f"{computer}"))
         
-        update_recent_computers(computer)
+        update_recent_computers(computer, date_time(), title_text)
         
         if print_log_card:
             data = f"./results/Printers/{computer}-Printers-{type}-logs.json"
@@ -862,16 +896,15 @@ def main(page: ft.Page):
         help_topic = e.control.data[0]
         help_text = e.control.data[1]
         
-        content = ft.Column([
-            ft.Row([
+        content = ft.Row([
                 ft.Text(f"{help_text}"),
-            ], wrap=True)
-        ], expand = 1)
-        
+            ], wrap=True, width=500)
+
         modal = DynamicModal(
             title=f"{help_topic}",
             content=content,
-            close_modal_func=close_dynamic_modal
+            close_modal_func=close_dynamic_modal,
+            nolistview=True
         )
         
         page.dialog = modal.get_modal()
