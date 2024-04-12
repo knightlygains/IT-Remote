@@ -240,8 +240,7 @@ def main(page: ft.Page):
         
         if recent_pc_radio_grp.value != None:
             computer_name.value = recent_pc_radio_grp.value
-        
-        computer_name.update()
+            computer_name.update()
     
     def show_message(message):
         page.snack_bar.content.value = message
@@ -383,11 +382,12 @@ def main(page: ft.Page):
             if key == "subtitle":
                 subtitle=value  
         
-        if computer not in list_of_computernames:
+        if computer not in list_of_computernames and computer != "Use-List":
             list_of_computernames.append(computer)
             comp_checkboxes.append(ft.Checkbox(label=f"{computer}", value=True, data=f"{computer}"))
         
-        update_recent_computers(computer, date_time(), title_text)
+        if computer != "Use-List":
+            update_recent_computers(computer, date_time(), title_text)
         
         if print_log_card:
             data = f"./results/Printers/{computer}-Printers-{type}-logs.json"
@@ -502,17 +502,13 @@ def main(page: ft.Page):
     
     def apply_results_filter(filter, clear_filter):
         
-        print(f"Filters: {filter}")
-        print(f"result_data controls: {result_data.controls}")
         for control in result_data.controls:
-            print(f"Filtering card @index {result_data.controls.index(control)}")
             if clear_filter:
                 filter_out_PCs.clear()
     
                 # If the controls data is equal to a computer in the filters list
                 # Remove it and add it to another list
             if control.data["Computer"] in filter:
-                print(f"{control.data["Computer"]} in filters")
                 filtered_out_results.append(control)
                 # result_data.controls.remove(control)
                
@@ -520,7 +516,6 @@ def main(page: ft.Page):
             # If the controls computer isnt in the filter,
             # we want to re-add it to result_data
             if control.data["Computer"] not in filter:
-                print(f"Trying to insert card {control.data["Computer"]}")
                 result_data.controls.append(control)
                 remove_these_controls.append(control)
             else:
@@ -531,7 +526,6 @@ def main(page: ft.Page):
             filtered_out_results.remove(control)
         
         remove_these_controls.clear()
-        print(f"filtered_out_results: {filtered_out_results}")
         
         result_data.controls.sort(key=lambda control: control.data["Date"], reverse=True)
         if len(filter_out_PCs) > 0:
@@ -850,6 +844,13 @@ def main(page: ft.Page):
     
     def open_software_card(e):
         software_json_path = e.control.data["data"]
+        list_of_pcs = {}
+        
+        expansion_list = ft.ExpansionPanelList(
+            elevation=8,
+            controls=[]
+        )
+        
         with open(software_json_path, "r", encoding='utf-8') as file:
             data = json.load(file)
             for r in data:
@@ -857,28 +858,49 @@ def main(page: ft.Page):
                 # comp is equal to 'Programs'.
                 comp = data[r]
                 
-                list_of_controls = []
                 for program in comp['Programs']:
-                    new_control = ft.Card(
-                        content= ft.Container(
-                            content= ft.Row([
-                                ft.Column([
-                                        ft.Text(f"{program['Name']}", selectable=True, weight=ft.FontWeight.BOLD),
-                                        ft.Text(f"Computer: {program['ComputerName']}", selectable=True),
-                                        ft.Text(f"Version: {program['Version']}", selectable=True),
-                                        ft.Text(f"Install date: {program['InstallDate']}", selectable=True),
-                                        ft.Text(f"Registry path: {program['RegPath']}", no_wrap=False, selectable=True),
-                                ])
-                            ], wrap=True, spacing=10),
-                            padding=20
+                    
+                    pc = program['ComputerName']
+
+                    # First get PC and define an expansiontile for it
+                    if pc not in list_of_pcs:
+                        exp_panel = ft.ExpansionPanel(
+                                header=ft.ListTile(
+                                title=ft.Text(f"{pc}", weight=ft.FontWeight.BOLD),
+                                trailing=ft.Icon(name=ft.icons.COMPUTER)
+                            ),
+                            content=ft.Row(wrap=True, spacing=10),
+                            can_tap_header=True
                         )
+                        
+                        # Add dict key of pc name with value of expansiontile
+                        list_of_pcs.update({f"{pc}": exp_panel})
+                    
+                    text = f"""Version: {program['Version']}
+Install date: {program['InstallDate']}
+Registry path: {program['RegPath']}"""
+                    
+                    # Then add program info to corresponding PCs in the dict
+                    new_control = ft.Container(
+                        content=ft.Column([
+                            ft.Text(f"{program['Name']}", selectable=True, weight=ft.FontWeight.BOLD),
+                            ft.Text(f"{text}", selectable=True),
+                        ]),
+                        padding=20
                     )
-                    list_of_controls.append(new_control)
-                length = len(list_of_controls)
-                list_of_controls.insert(0,ft.Text(f"{length} results:", weight=ft.FontWeight.BOLD))
+                    
+                    list_of_pcs[f"{pc}"].content.controls.append(new_control)
+
+        # Loop through expansionpanels in list and append them to expansion_list
+        for pc in list_of_pcs:
+            expansion_list.controls.append(list_of_pcs[f"{pc}"])
+        
         modal = DynamicModal(
             title=f"{e.control.title.value}, {e.control.data["computer"]}",
-            content=ft.Column(list_of_controls), 
+            content=ft.Column(controls=[
+                expansion_list,
+                ft.TextButton("Export results")
+            ]),
             close_modal_func=close_dynamic_modal
         )
         page.dialog = modal.get_modal()

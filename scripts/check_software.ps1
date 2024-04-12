@@ -173,7 +173,10 @@ $list = Get-Content ".\lists\computers.txt"
 # If using list, set Computers = to Get-Content for list contents
 if ($Computer -eq "Use-List") {
     foreach ($Comp in $list) {
-        Enable-WinRM -Computer $Comp
+        if (Test-Connection -ComputerName $Comp) {
+            Enable-WinRM -Computer $Comp
+        }
+        
     }
 }
 else {
