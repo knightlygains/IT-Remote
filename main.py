@@ -532,7 +532,7 @@ def main(page: ft.Page):
         
         remove_these_controls.clear()
         
-        result_data.controls.sort(key=lambda control: control.data["Date"], reverse=True)
+        result_data.controls.sort(key=lambda control: control.data["SortDate"], reverse=True)
         if len(filter_out_PCs) > 0:
             filter_btn.icon = ft.icons.FILTER_ALT
             filter_btn.tooltip = "On"
@@ -725,7 +725,7 @@ def main(page: ft.Page):
         
         result_card = ft.Card(
             content=card_content,
-            data={"Id": id, "Computer": computer, "Date": date_time(force_24=True)}
+            data={"Id": id, "Computer": computer, "SortDate": date_time(force_24=True)}
         )
         
         return result_card
