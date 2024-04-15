@@ -1,15 +1,9 @@
 {
     "font_size": 16,
-    "app_color": "red",
-    "window_width": 842.0,
+    "app_color": "blue",
+    "window_width": 729.0,
     "window_height": 476.0,
     "enable_win_rm": true,
-    "supress_winrm_results": [
-        [
-            [
-                false
-            ]
-        ]
-    ],
+    "supress_winrm_results": false,
     "use_24hr": false
 }

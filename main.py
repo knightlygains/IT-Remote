@@ -50,11 +50,10 @@ def load_settings(e, update):
                     "supress_winrm_results": settings_values["supress_winrm_results"],
                     "use_24hr": settings_values["use_24hr"]
                     })
-        except ValueError as e:
-            print(f"Something went wrong, {e}")
-        finally:
             with open("settings.json", "w") as settings:
                 json.dump(data, settings, indent=4)
+        except ValueError as e:
+            print(f"Something went wrong, {e}")
             
     # Apply settings
     try:
@@ -1567,7 +1566,7 @@ Registry path: {program['RegPath']}"""
     )
     
     programs_tutorial = TutorialBtn(
-        data=["Programs", "You can use this panel to check for a specific program on a computer, or get a list of all detected installed software.\n\nOnly checking for a specific program can be used with a list."],
+        data=["Programs", "You can use this panel to check for a specific program on a computer, or get a list of all detected installed software."],
         on_click=open_tutorial_modal
     )
     
