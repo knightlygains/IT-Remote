@@ -27,7 +27,7 @@ Function getPrinters {
 
     try {
         #Variable that allows us to loop through and get all printers on a remote computer.
-        $printers = Get-CimInstance -Class Win32_Printer -ComputerName $Computer | Select-Object Name, PrinterStatus, Type, PortName, DriverName, Shared, Published -ErrorAction Stop
+        $printers = Get-CimInstance -Class Win32_Printer -ComputerName $Computer -ErrorAction Stop | Select-Object Name, PrinterStatus, Type, PortName, DriverName, Shared, Published
     }
     catch {
         Write-Host $_
