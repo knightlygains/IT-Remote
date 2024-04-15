@@ -347,7 +347,7 @@ def main(page: ft.Page):
         else:
             return True
     
-    def date_time():
+    def date_time(**kwargs):
         x = datetime.datetime.now()
         day = x.strftime("%a")
         day_num = x.strftime("%d")
@@ -358,6 +358,11 @@ def main(page: ft.Page):
             time = x.strftime("%I:%M:%S %p")
             if time[0] == "0":
                 time = time.lstrip("0")
+                
+        for key, value in kwargs.items():
+            if key == "force_24" and value == True:
+                return x.strftime("%X")
+            
         return f"{day} {month} {day_num}, {time}"
     
     def update_results(title_text, data, id, **kwargs):
@@ -510,7 +515,6 @@ def main(page: ft.Page):
                 # Remove it and add it to another list
             if control.data["Computer"] in filter:
                 filtered_out_results.append(control)
-                # result_data.controls.remove(control)
                
         for control in filtered_out_results:
             # If the controls computer isnt in the filter,
@@ -519,8 +523,10 @@ def main(page: ft.Page):
                 result_data.controls.append(control)
                 remove_these_controls.append(control)
             else:
-                result_data.controls.remove(control)
-            
+                try:
+                    result_data.controls.remove(control)
+                except ValueError:  # The control was already removed
+                    pass
             
         for control in remove_these_controls:
             filtered_out_results.remove(control)
@@ -566,7 +572,7 @@ def main(page: ft.Page):
             elif checkbox.data not in filter_out_PCs and checkbox.value == False:
                 filter_out_PCs.append(checkbox.data)
         
-        result_data.update()
+        # result_data.update()
         apply_results_filter(filter_out_PCs, False)
     
     # Running Processes Modal \/
@@ -720,7 +726,7 @@ def main(page: ft.Page):
         
         result_card = ft.Card(
             content=card_content,
-            data={"Id": id, "Computer": computer, "Date": date}
+            data={"Id": id, "Computer": computer, "Date": date_time(force_24=True)}
         )
         
         return result_card
