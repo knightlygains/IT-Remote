@@ -7,6 +7,7 @@ import socket, pathlib
 from tutorial_btn import TutorialBtn
 from dynamic_modal import DynamicModal
 import uuid
+from functools import partial
 
 # Default settings.json values
 settings_values = {
@@ -319,7 +320,7 @@ def main(page: ft.Page):
     
     # Other controls
     settings_save_btn = ft.FilledButton("Save", icon=ft.icons.SAVE, on_click=update_settings)
-    results_label = ft.Text("Results:", weight=ft.FontWeight.BOLD)
+    results_label = ft.Text("Clear Results:", weight=ft.FontWeight.BOLD)
     
     # Container for running process cards
     show_running_processes = ft.ListView(expand_loose=True, spacing=10, padding=20)
@@ -1111,7 +1112,7 @@ Registry path: {program['RegPath']}"""
                         
                         p_name = new_printer['Name']
                         
-                        control_data = {"printer": p_name, "computer": printer_wiz_computer.value}
+                        control_data = {"printer": p_name, "computer": printer_wiz_target_computer}
                         
                         printer_list_item_card = ft.Card(
                             content=ft.Container(
@@ -1163,7 +1164,8 @@ Registry path: {program['RegPath']}"""
                 add_new_process(new_process("Printer Wizard", [computer], date_time(), id))
                 powershell = the_shell.Power_Shell()
                 result = powershell.printer_wizard(computer=computer)
-                update_results("Printer Wizard", data=result, id=id, print_wiz=True, computer=computer, subtitle=result)
+                if refresh == False:
+                    update_results("Printer Wizard", data=result, id=id, print_wiz=True, computer=computer, subtitle=result)
                 load_printers()
                 end_of_process(id)
         
@@ -1269,6 +1271,77 @@ Registry path: {program['RegPath']}"""
         pass
     
     def check_battery(e):
+        pass
+    
+    
+    def open_restart_modal(e):
+
+        use_list_checkbox = ft.Checkbox(label="Use list of computers", value=False)
+        
+        def show_schedule_options(e):
+            value = e.control.value
+            time_button.visible = value
+            date_button.visible = value
+            page.update()
+        
+        time_button = ft.ElevatedButton(
+            "Pick time",
+            icon=ft.icons.SCHEDULE,
+            on_click=lambda _: time_picker.pick_time(),
+            visible=False
+        )
+        
+        date_button = ft.ElevatedButton(
+            "Pick date",
+            icon=ft.icons.CALENDAR_MONTH,
+            on_click=lambda _: date_picker.pick_date(),
+            visible=False
+        )
+        
+        schedule_checkbox = ft.Checkbox(
+            label="Schedule restart", 
+            value=False,
+            on_change=show_schedule_options
+        )
+        
+        time_picker = ft.TimePicker(
+            confirm_text="Confirm",
+            error_invalid_text="Time out of range",
+            help_text="Choose a time to restart",
+        )
+        
+        date_picker = ft.DatePicker(
+            first_date=datetime.datetime.now(),
+            last_date=datetime.datetime(2099, 10, 1),
+        )
+        
+        page.overlay.append(time_picker)
+        page.overlay.append(date_picker)
+        
+        content = ft.Column([
+            use_list_checkbox,
+            schedule_checkbox,
+            time_button,
+            date_button
+        ])
+        
+        modal = DynamicModal(
+            title=f"Restart",
+            content=content,
+            close_modal_func=close_dynamic_modal,
+            nolistview=True
+        )
+        
+        page.dialog = modal.get_modal()
+        page.dialog.open = True
+        page.update()
+        
+        while page.dialog.open:
+            pass
+        
+        print(date_picker.value)
+    
+    def restart(e):
         pass
 
     # Computer Text Field
@@ -1479,7 +1552,7 @@ Registry path: {program['RegPath']}"""
             
             ft.Column([
                 ft.Row([
-                    ft.Text("Filter"),
+                    ft.Text("Filter:", weight=ft.FontWeight.BOLD),
                     filter_btn,
                 ])
             ]),
@@ -1496,8 +1569,6 @@ Registry path: {program['RegPath']}"""
                     ),
                 ])
             ]),
-            
-            
         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
         results_container
     ], expand=True)
@@ -1622,7 +1693,7 @@ Registry path: {program['RegPath']}"""
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.RESTART_ALT, icon_size=50, on_click=open_c_share, data=""),
+                    ft.IconButton(icon=ft.icons.RESTART_ALT, icon_size=50, on_click=open_restart_modal, data=""),
                     ft.Text("Restart")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
