@@ -7,7 +7,6 @@ import socket, pathlib
 from tutorial_btn import TutorialBtn
 from dynamic_modal import DynamicModal
 import uuid
-from functools import partial
 
 # Default settings.json values
 settings_values = {
@@ -302,7 +301,7 @@ def main(page: ft.Page):
             ft.NavigationRailDestination(
                 icon_content=home_notification_badge,
                 selected_icon_content=ft.Icon(ft.icons.HOME),
-                label_content=ft.Text("Home"),
+                label_content=ft.Text("Results"),
             ),
             ft.NavigationRailDestination(
                 icon=ft.icons.TERMINAL_OUTLINED,
