@@ -171,7 +171,7 @@ Function Get-InstalledSoftware {
 
 $list = Get-Content ".\lists\computers.txt"
 # If using list, set Computers = to Get-Content for list contents
-if ($Computer -eq "Use-List") {
+if ($Computer -eq "list of computers") {
     foreach ($Comp in $list) {
         if (Test-Connection -ComputerName $Comp) {
             Enable-WinRM -Computer $Comp
@@ -201,7 +201,7 @@ foreach ($pc in $list) {
 
 $found_software = Get-Variable -Name "softwareObject_*_" -ValueOnly
 
-if ($Computer -eq "Use-List") {
+if ($Computer -eq "list of computers") {
     $filename = "Programs-$date.json"
     New-Item -Path ".\results\Programs\$filename" -ItemType "file" -Force | Out-Null
 
@@ -218,7 +218,7 @@ else {
     New-Item -Path ".\results\Programs\$filename" -ItemType "file" -Force | Out-Null
 }
 
-if ($Computer -eq "Use-List") {
+if ($Computer -eq "list of computers") {
 
     # Object to store all results and convert to json
     $results = [PSCustomObject]@{

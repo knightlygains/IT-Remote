@@ -53,7 +53,7 @@ def load_settings(e, update):
             with open("settings.json", "w") as settings:
                 json.dump(data, settings, indent=4)
         except ValueError as e:
-            print(f"Something went wrong, {e}")
+            print(f"Something went wrong updating settings, {e}")
             
     # Apply settings
     try:
@@ -131,8 +131,8 @@ def main(page: ft.Page):
                 data.update({"window_width": page.width, "window_height": page.height})
             with open("settings.json", "w") as settings:
                 json.dump(data, settings, indent=4)
-        except ValueError:
-            print("Something went wrong with saving page dimensions")   
+        except ValueError as e:
+            print(f"Something went wrong with saving page dimensions, {e}")   
         
     page.on_resize = save_page_dimensions
     page.snack_bar = ft.SnackBar(ft.Text("", ), duration=3000)
@@ -387,11 +387,11 @@ def main(page: ft.Page):
             if key == "subtitle":
                 subtitle=value  
         
-        if computer not in list_of_computernames and computer != "Use-List":
+        if computer not in list_of_computernames and computer != "list of computers":
             list_of_computernames.append(computer)
             comp_checkboxes.append(ft.Checkbox(label=f"{computer}", value=True, data=f"{computer}"))
         
-        if computer != "Use-List":
+        if computer != "list of computers":
             update_recent_computers(computer, date_time(), title_text)
         
         if print_log_card:
@@ -1299,7 +1299,7 @@ Registry path: {program['RegPath']}"""
         )
         
         schedule_checkbox = ft.Checkbox(
-            label="Schedule restart", 
+            label="Schedule it", 
             value=False,
             on_change=show_schedule_options
         )
@@ -1348,7 +1348,7 @@ Registry path: {program['RegPath']}"""
             
         ])
         
-        restarting = False
+        doing_action = False
         date = None
         year = None
         month = None
@@ -1358,7 +1358,7 @@ Registry path: {program['RegPath']}"""
         shutdown_only = False
         list = False
         def finalize(e):
-            nonlocal restarting
+            nonlocal doing_action
             nonlocal date
             nonlocal year
             nonlocal month
@@ -1377,7 +1377,7 @@ Registry path: {program['RegPath']}"""
                         # print(date_picker.value)
                         # print(time_picker.value)
                         scheduled = schedule_checkbox.value
-                        restarting = True
+                        doing_action = True
                         list = use_list_checkbox.value
                         date = str(date_picker.value).split()
                         date = date[0]
@@ -1394,7 +1394,7 @@ Registry path: {program['RegPath']}"""
                         show_message("Picke a date and time")
                 else:
                     print("no times picked")
-                    restarting = True
+                    doing_action = True
                     scheduled = schedule_checkbox.value
                     list = use_list_checkbox.value
                     date = datetime.datetime.now()
@@ -1408,11 +1408,11 @@ Registry path: {program['RegPath']}"""
                 
         
         modal = DynamicModal(
-            title=f"Restart",
+            title=f"Shutdown/Restart",
             content=content,
             close_modal_func=close_dynamic_modal,
             nolistview=True,
-            add_action=ft.TextButton("Restart", on_click=finalize)
+            add_action=ft.TextButton("Shutdown/Restart", on_click=finalize)
         )
         
         page.dialog = modal.get_modal()
@@ -1423,14 +1423,17 @@ Registry path: {program['RegPath']}"""
             pass
         
         if list:
-            computer = "Use-List"
+            computer = "list of computers"
         else:
             computer = computer_name.value
         
-        if restarting:
+        if doing_action and shutdown_only == False:
             print(f"restarting {computer}")
             restart(scheduled, shutdown_only, computer, month=month, day=day, year=year, time=time)
-
+        elif doing_action and shutdown_only:
+            print(f"Shutting down {computer}")
+            restart(scheduled, shutdown_only, computer, month=month, day=day, year=year, time=time)
+       
     
     def restart(scheduled, shutdown, computer, **kwargs):
         for key, value in kwargs.items():
@@ -1447,7 +1450,7 @@ Registry path: {program['RegPath']}"""
                 minute = int(time[1])
                 seconds = int(float(time[2]))
         
-        if computer != "Use-List":
+        if computer != "list of computers":
             enable_winrm(computer)
         else:
             print(f"Computer is use-lsit {computer}")
@@ -1458,7 +1461,7 @@ Registry path: {program['RegPath']}"""
         powershell = the_shell.Power_Shell()
         result = powershell.restart(id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds)
         
-        update_results("Restart", result, id)
+        update_results("Restart", result, id, computer=computer)
         end_of_process(id)
         print("restarted")
 
@@ -1490,7 +1493,7 @@ Registry path: {program['RegPath']}"""
             logout = "True"
             
         def run_operation(computer):
-            if computer != "Use-List":
+            if computer != "list of computers":
                 enable_winrm(computer)
             # else skip winrm here, it will be done in script
             
@@ -1499,7 +1502,7 @@ Registry path: {program['RegPath']}"""
             # If we are using a list of pcs,
             # get each pc from list and create
             # an array of them.
-            if computer == "Use-List":
+            if computer == "list of computers":
                 list_of_pcs = []
                 list = open("./lists/computers.txt", "r")
                 computers = list.readlines()
@@ -1530,7 +1533,7 @@ Registry path: {program['RegPath']}"""
         if check_computer_name() and use_list_checkbox.value == False:
             run_operation(computer_name.value)
         elif use_list_checkbox.value == True:
-            run_operation("Use-List")
+            run_operation("list of computers")
     
     def generate_commands():
         global list_of_scripts
@@ -1581,7 +1584,7 @@ Registry path: {program['RegPath']}"""
         id = uuid.uuid4()
         powershell = the_shell.Power_Shell()
         if programs_use_list_checkbox.value:
-            computer = "Use-List"
+            computer = "list of computers"
             add_new_process(new_process("Check Software", ["Using list"], date_time(), id))
             show_message(f"Checking software on list of PCs")
             result = powershell.check_software(computer=computer, software=software_textfield.value, date=date_formatted, all=all)
@@ -1807,7 +1810,7 @@ Registry path: {program['RegPath']}"""
             content=ft.Row([
                 ft.Column([
                     ft.IconButton(icon=ft.icons.RESTART_ALT, icon_size=50, on_click=open_restart_modal, data=""),
-                    ft.Text("Shutdown|Restart")
+                    ft.Text("Shutdown/Restart")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([

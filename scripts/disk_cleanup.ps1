@@ -34,7 +34,7 @@ Function Enable-WinRM {
 
 $list = Get-Content ".\lists\computers.txt"
 # If using list, set Computers = to Get-Content for list contents
-if ($Computers -eq "Use-List") {
+if ($Computers -eq "list of computers") {
     foreach ($Computer in $list) {
         Enable-WinRM -Computer $Computer
     }
