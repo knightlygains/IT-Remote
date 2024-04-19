@@ -36,7 +36,6 @@ $list = Get-Content ".\lists\computers.txt"
 # If using list, set Computers = to Get-Content for list contents
 if ($Computers -eq "Use-List") {
     foreach ($Computer in $list) {
-        Write-Host "Unga $Computer"
         Enable-WinRM -Computer $Computer
     }
 }

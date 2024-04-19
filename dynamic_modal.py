@@ -19,20 +19,24 @@ class DynamicModal(ft.AlertDialog):
             expand=1,
         )
         
+        self.actions = [
+            ft.TextButton("Close", on_click=close_modal_func)
+        ]
+        
         self.content = self.list_view
         self.list_view.controls.append(self.content_container)
         
         for key, value in kwargs.items():
             if key == "nolistview" and value == True:
                 self.content = self.content_container
+            if key == "add_action":
+                self.actions.insert(0, value)
         
         self.modal = ft.AlertDialog(
             modal=True,
             title=ft.Text(f"{title}"),
             content=self.content,
-            actions=[
-                ft.TextButton("Close", on_click=close_modal_func),
-            ],
+            actions=self.actions,
             actions_alignment=ft.MainAxisAlignment.END,
         )
         

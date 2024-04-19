@@ -108,6 +108,9 @@ if os.path.exists("./results/ClearSpace"):
 if os.path.exists("./results/Programs"):  
     for filename in os.listdir("./results/Programs"):
         pathlib.Path(f"./results/Programs/{filename}").unlink()
+if os.path.exists("./results/Restart"):  
+    for filename in os.listdir("./results/Restart"):
+        pathlib.Path(f"./results/Restart/{filename}").unlink()
 
 # Program
 def main(page: ft.Page):
@@ -126,17 +129,15 @@ def main(page: ft.Page):
             with open("settings.json", "r") as settings:
                 data = json.load(settings)
                 data.update({"window_width": page.width, "window_height": page.height})
-        except ValueError:
-            print("Something went wrong")
-        finally:
             with open("settings.json", "w") as settings:
                 json.dump(data, settings, indent=4)
+        except ValueError:
+            print("Something went wrong with saving page dimensions")   
         
     page.on_resize = save_page_dimensions
     page.snack_bar = ft.SnackBar(ft.Text("", ), duration=3000)
     
     def update_settings(e):
-        global settings_values
         if cg.value:
             settings_values["app_color"] = cg.value
         results_container.bgcolor = settings_values["app_color"]
@@ -171,7 +172,7 @@ def main(page: ft.Page):
                     g["computers"].insert(0,recent_pc)
             
         except ValueError as e:
-            print(f"Something went wrong. {e}")
+            print(f"Something went wrong updating recent computers file. {e}")
         finally:
             with open(recent_computers_file, "w") as file:
                 json.dump(g, file, indent=4)
@@ -949,7 +950,6 @@ Registry path: {program['RegPath']}"""
             end_of_process(id)
     
     def enable_winrm(computer):
-        global settings_values
         if settings_values["enable_win_rm"]:
             if computer == None:
                 computer = computer_name.value
@@ -957,7 +957,8 @@ Registry path: {program['RegPath']}"""
             add_new_process(new_process("WinRM", [computer], date_time(), id))
             powershell = the_shell.Power_Shell()
             result = powershell.enable_winrm(computer)
-            if settings_values["supress_winrm_results"] == False:
+            if settings_values["supress_winrm_results"] != True:
+                print("adding winrm result")
                 update_results("WinRM", result, id)
             end_of_process(id)
     
@@ -1276,7 +1277,7 @@ Registry path: {program['RegPath']}"""
     def open_restart_modal(e):
 
         use_list_checkbox = ft.Checkbox(label="Use list of computers", value=False)
-        
+        shutdown_checkbox = ft.Checkbox(label="Shutdown only", value=False)
         def show_schedule_options(e):
             value = e.control.value
             time_button.visible = value
@@ -1303,32 +1304,115 @@ Registry path: {program['RegPath']}"""
             on_change=show_schedule_options
         )
         
+        def set_time_text(e):
+            time_text.value = e.control.value
+            page.update()
+            
+        def set_date_text(e):
+            text = str(e.control.value).split()
+            text = text[0]
+            date_text.value = text
+            page.update()
+        
         time_picker = ft.TimePicker(
             confirm_text="Confirm",
             error_invalid_text="Time out of range",
             help_text="Choose a time to restart",
+            on_change=set_time_text
         )
         
         date_picker = ft.DatePicker(
             first_date=datetime.datetime.now(),
             last_date=datetime.datetime(2099, 10, 1),
+            on_change=set_date_text
         )
         
         page.overlay.append(time_picker)
         page.overlay.append(date_picker)
         
+        time_text = ft.Text("")
+        date_text = ft.Text("")
+        
         content = ft.Column([
             use_list_checkbox,
+            shutdown_checkbox,
             schedule_checkbox,
-            time_button,
-            date_button
+            ft.Row([
+                time_button,
+                time_text
+            ]),
+            ft.Row([
+                date_button,
+                date_text
+            ])
+            
         ])
+        
+        restarting = False
+        date = None
+        year = None
+        month = None
+        day = None
+        time = None
+        scheduled = False
+        shutdown_only = False
+        list = False
+        def finalize(e):
+            nonlocal restarting
+            nonlocal date
+            nonlocal year
+            nonlocal month
+            nonlocal day
+            nonlocal time
+            nonlocal scheduled
+            nonlocal list
+            nonlocal shutdown_only
+            if use_list_checkbox.value == False and check_computer_name() == False:
+                close_dynamic_modal(e)
+            else:
+                if shutdown_checkbox.value:
+                    shutdown_only = True
+                if schedule_checkbox.value:
+                    try:
+                        # print(date_picker.value)
+                        # print(time_picker.value)
+                        scheduled = schedule_checkbox.value
+                        restarting = True
+                        list = use_list_checkbox.value
+                        date = str(date_picker.value).split()
+                        date = date[0]
+                        date = date.split("-")
+                        year = date[0]
+                        month = date[1]
+                        day = date[2]
+                        time = time_picker.value
+                        print(f"Date: {date}")
+                        print(f"Time: {time}")
+                        close_dynamic_modal(e)
+                    except AttributeError:
+                        close_dynamic_modal(e)
+                        show_message("Picke a date and time")
+                else:
+                    print("no times picked")
+                    restarting = True
+                    scheduled = schedule_checkbox.value
+                    list = use_list_checkbox.value
+                    date = datetime.datetime.now()
+                    year = date.year
+                    month = date.month
+                    day = date.day
+                    time = str(date).split()
+                    time = time[1]
+                    close_dynamic_modal(e)
+                    
+                
         
         modal = DynamicModal(
             title=f"Restart",
             content=content,
             close_modal_func=close_dynamic_modal,
-            nolistview=True
+            nolistview=True,
+            add_action=ft.TextButton("Restart", on_click=finalize)
         )
         
         page.dialog = modal.get_modal()
@@ -1338,10 +1422,45 @@ Registry path: {program['RegPath']}"""
         while page.dialog.open:
             pass
         
-        print(date_picker.value)
+        if list:
+            computer = "Use-List"
+        else:
+            computer = computer_name.value
+        
+        if restarting:
+            print(f"restarting {computer}")
+            restart(scheduled, shutdown_only, computer, month=month, day=day, year=year, time=time)
+
     
-    def restart(e):
-        pass
+    def restart(scheduled, shutdown, computer, **kwargs):
+        for key, value in kwargs.items():
+            if key == "month":
+                month = int(value)
+            if key == "day":
+                day = int(value)
+            if key == "year":
+                year = int(value)
+            if key == "time":
+                time = str(value)
+                time = time.split(":")
+                hour = int(time[0])
+                minute = int(time[1])
+                seconds = int(float(time[2]))
+        
+        if computer != "Use-List":
+            enable_winrm(computer)
+        else:
+            print(f"Computer is use-lsit {computer}")
+        
+        id = uuid.uuid4()
+        add_new_process(new_process("Restart", [computer], date_time(), id))
+        show_message(f"Restarting {computer}")
+        powershell = the_shell.Power_Shell()
+        result = powershell.restart(id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds)
+        
+        update_results("Restart", result, id)
+        end_of_process(id)
+        print("restarted")
 
     # Computer Text Field
     computer_name = ft.TextField(label="Computer Name")
@@ -1687,13 +1806,8 @@ Registry path: {program['RegPath']}"""
         content=ft.Container(
             content=ft.Row([
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.POWER_SETTINGS_NEW, icon_size=50, on_click=open_c_share, data=""),
-                    ft.Text("Shut Down")
-                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-                ft.VerticalDivider(),
-                ft.Column([
                     ft.IconButton(icon=ft.icons.RESTART_ALT, icon_size=50, on_click=open_restart_modal, data=""),
-                    ft.Text("Restart")
+                    ft.Text("Shutdown|Restart")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([

@@ -117,3 +117,43 @@ class Power_Shell():
             return f"Launched msinfo32 for {computer}."
         else:
             return f"Failed to launch msinfo32 for {computer}."
+    
+    def restart(self, id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds):
+        action = "restart"
+        
+        if scheduled:
+            scheduled = "True"
+        else:
+            scheduled = "False"
+            
+        if shutdown:
+            shutdown = "True"
+            action = "shutdown"
+        else:
+            shutdown = "False"
+        print(f"print {computer}, shutdown {shutdown}")
+        p = subprocess.call([
+            self.pspath, 
+            "-File", 
+            f"./scripts/restart.ps1",
+            f"{id}",
+            f"{shutdown}",
+            f"{scheduled}", 
+            f"{computer}", 
+            f"{month}",
+            f"{day}",
+            f"{year}",
+            f"{hour}",
+            f"{minute}",
+            f"{seconds}"
+        ])
+        # scheduled_time = f"{month}/{day}/{year}, {hour}:{minute}:{seconds}"
+        if p == 0:
+            with open(f"./results/Restart/{id}-Restart.txt") as results:
+                content = results.readlines()
+            result = ""
+            for line in content:
+                result += line
+            return f"{result}"
+        else:
+            return f"Failed to {action} {computer}."
