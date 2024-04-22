@@ -1161,11 +1161,11 @@ Registry path: {program['RegPath']}"""
                     enable_winrm(computer)
                 printer_wiz_target_computer = computer
                 id = uuid.uuid4()
-                add_new_process(new_process("Printer Wizard", [computer], date_time(), id))
+                add_new_process(new_process("Get Printers", [computer], date_time(), id))
                 powershell = the_shell.Power_Shell()
                 result = powershell.printer_wizard(computer=computer)
                 if refresh == False:
-                    update_results("Printer Wizard", data=result, id=id, print_wiz=True, computer=computer, subtitle=result)
+                    update_results("Get Printers", data=result, id=id, print_wiz=True, computer=computer, subtitle=result)
                 load_printers()
                 end_of_process(id)
         
@@ -1614,15 +1614,15 @@ Registry path: {program['RegPath']}"""
             end_of_process(id)
     
     # File picker for import printer
-    def pick_files_result(e: ft.FilePickerResultEvent):
-        selected_files = (
-            ", ".join(map(lambda f: f.name, e.files)) if e.files else "Cancelled!"
-        )
-        id = uuid.uuid4()
-        update_results("Selected Files", selected_files, id=id)
+    def select_files(e: ft.FilePickerResultEvent):
+        list_of_files = []
+        if e.files != None:
+            files = e.files
+            for file in files:
+                list_of_files.append(file.path)
 
     pick_files_dialog = ft.FilePicker(
-        on_result=pick_files_result,
+        on_result=select_files,
     )
 
     page.overlay.append(pick_files_dialog)
@@ -1729,17 +1729,6 @@ Registry path: {program['RegPath']}"""
                 ft.Column([
                     ft.IconButton(icon=ft.icons.PRINT, icon_size=50, on_click=printer_wizard, data=""),
                     ft.Text("Get Printers")
-                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-                ft.VerticalDivider(),
-                ft.Column([
-                    ft.IconButton(icon=ft.icons.UPLOAD_FILE, icon_size=50,
-                        on_click=lambda _: pick_files_dialog.pick_files(
-                            allow_multiple=True,
-                            allowed_extensions=["printerExport"],
-                            initial_directory=f"{pathlib.Path.home()}"
-                            ),
-                        ),
-                    ft.Text("Import Printer")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
