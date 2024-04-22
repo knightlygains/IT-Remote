@@ -1367,9 +1367,12 @@ Registry path: {program['RegPath']}"""
             nonlocal scheduled
             nonlocal list
             nonlocal shutdown_only
+            
+            # If we arent using list and we dont have a computername entered, close
             if use_list_checkbox.value == False and check_computer_name() == False:
                 close_dynamic_modal(e)
             else:
+                # Schedule restart
                 if shutdown_checkbox.value:
                     shutdown_only = True
                 if schedule_checkbox.value:
@@ -1403,6 +1406,7 @@ Registry path: {program['RegPath']}"""
                     day = date.day
                     time = str(date).split()
                     time = time[1]
+                    print(f"{year},{month},{day},{time}")
                     close_dynamic_modal(e)
                     
                 
@@ -1459,7 +1463,7 @@ Registry path: {program['RegPath']}"""
         add_new_process(new_process("Restart", [computer], date_time(), id))
         show_message(f"Restarting {computer}")
         powershell = the_shell.Power_Shell()
-        result = powershell.restart(id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds)
+        result = powershell.restart(id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds, settings_values["use_24hr"])
         
         update_results("Restart", result, id, computer=computer)
         end_of_process(id)

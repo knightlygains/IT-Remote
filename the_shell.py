@@ -118,8 +118,13 @@ class Power_Shell():
         else:
             return f"Failed to launch msinfo32 for {computer}."
     
-    def restart(self, id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds):
+    def restart(self, id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds, use_24hr):
         action = "restart"
+        
+        if use_24hr:
+            timeFormat = "24"
+        else:
+            timeFormat = "12"
         
         if scheduled:
             scheduled = "True"
@@ -145,9 +150,11 @@ class Power_Shell():
             f"{year}",
             f"{hour}",
             f"{minute}",
-            f"{seconds}"
+            f"{seconds}",
+            f"{timeFormat}"
         ])
-        # scheduled_time = f"{month}/{day}/{year}, {hour}:{minute}:{seconds}"
+        scheduled_time = f"{month}/{day}/{year}, {hour}:{minute}:{seconds}"
+        print(f"Scheduled time {scheduled_time}")
         if p == 0:
             with open(f"./results/Restart/{id}-Restart.txt") as results:
                 content = results.readlines()

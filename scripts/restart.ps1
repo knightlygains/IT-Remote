@@ -8,7 +8,8 @@ param(
     [int]$dateYear,
     [int]$dateHour,
     [int]$dateMinute,
-    [int]$dateSeconds
+    [int]$dateSeconds,
+    [string]$timeFormat
 )
 
 Function Enable-WinRM {
@@ -66,9 +67,6 @@ Function Restart-PCs {
         #Find difference between current date/time and our scheduled date/time
         $timeAdjusted = New-TimeSpan -Start $currentDate -End $restartDate
 
-        #Store calculated date in a variable. Adding total seconds to the date = our future scheduled time
-        $restartTime = (Get-Date).AddSeconds($timeAdjusted.TotalSeconds)
-
         #Get total seconds converted from the difference between the two dates
         $secondsToWait = [int]$timeAdjusted.TotalSeconds
     }
@@ -78,6 +76,38 @@ Function Restart-PCs {
         if ($secondsToWait -lt 0) {
             $secondsToWait = 0
         }
+
+        Function Format-Time {
+            if ($scheduled -eq "True") {
+                $hour = $dateHour
+                $minute = $dateMinute
+                $seconds = $dateSeconds
+            }
+            else {
+                $hour = $currentDate.Hour
+                $minute = $currentDate.Minute
+                $seconds = $currentDate.Second
+            }
+            if ($minute -lt 10) {
+                $minute = "0$minute"
+            }
+            if ($seconds -lt 10) {
+                $seconds = "0$seconds"
+            }
+            
+            $am_pm = "am"
+            if ($timeFormat -eq "12" -AND [int]$hour -gt 12) {
+                $hour = [int]$hour - 12
+                $am_pm = "pm"
+            }
+            return  "$($hour):$($minute):$($seconds)$am_pm"
+        }
+
+        $formatted_time = Format-Time
+
+        $restartTime = "$dateMonth/$dateDay/$dateYear, $formatted_time"
+
+        Write-Host "Seconds to wait $secondsToWait"
         
         $action = "restart"
 
