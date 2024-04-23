@@ -1276,7 +1276,7 @@ Registry path: {program['RegPath']}"""
     
     def open_restart_modal(e):
 
-        use_list_checkbox = ft.Checkbox(label="Use list of computers", value=False)
+        use_list_checkbox = ft.Checkbox(label="Use list of PCs", value=False)
         shutdown_checkbox = ft.Checkbox(label="Shutdown only", value=False)
         def show_schedule_options(e):
             value = e.control.value
@@ -1486,7 +1486,7 @@ Registry path: {program['RegPath']}"""
     
     delete_users_checkbox = ft.Checkbox(label="Remove user profiles", value=False)
     logout_users_checkbox = ft.Checkbox(label="Logout users before deletion", value=False)
-    use_list_checkbox = ft.Checkbox(label="Use list of computers", value=False)
+    use_list_checkbox = ft.Checkbox(label="Use list of PCs", value=False)
     
     def clear_space(e):
         users = "False"
@@ -1630,7 +1630,77 @@ Registry path: {program['RegPath']}"""
     )
 
     page.overlay.append(pick_files_dialog)
+    
+    def get_user_ids(e):
+        if check_computer_name():
+            id = uuid.uuid4()
+            powershell = the_shell.Power_Shell()
+            computer = computer_name.value
+            enable_winrm(computer)
+            add_new_process(new_process("User IDs", [computer], date_time(), id))
+            show_message(f"Getting user IDs on {computer}")
+            result = powershell.get_user_ids(computer)
+            update_results("User IDs", data=result, id=id, subtitle=result, computer=computer)
+            end_of_process(id)
+            
+            if os.path.exists(f"./results/Users/{computer}-Users.json"):
+                open_logoff_modal(computer)    
 
+    def log_off_user(e):
+        user_id = e.control.data["ID"]
+        computer = e.control.data["computer"]
+        name = e.control.data["name"]
+        
+        id = uuid.uuid4()
+        powershell = the_shell.Power_Shell()
+        computer = computer_name.value
+        add_new_process(new_process("Log Off User", [computer], date_time(), id))
+        show_message(f"Logging off {name} on {computer}")
+        result = powershell.log_off_user(computer, user_id, name)
+        update_results("Log Off Users", data=result, id=id, subtitle=result, computer=computer)
+        end_of_process(id)
+
+    def open_logoff_modal(computer):
+        
+        with open(f"./results/Users/{computer}-Users.json", "r") as file:
+            users = json.load(file)
+        
+        list_of_users = []
+        for user in users:
+            u = users[user]
+            id = u["ID"]
+            new_user = ft.Container(
+                content=ft.Row([
+                    ft.Text(f"{user}", selectable=True),
+                    ft.TextButton(
+                        f"Log off", 
+                        data={"ID": id, "name": user, "computer": computer}, 
+                        on_click=log_off_user
+                    )
+                ])
+            )
+            list_of_users.append(new_user)
+        
+        if len(list_of_users) == 0:
+            none_found = ft.Text("No logged in users.")
+            list_of_users.append(none_found)
+        
+        # Set up modal
+        content = ft.Column(list_of_users, expand=1, spacing=20)
+        
+        modal = DynamicModal(
+            title=f"Logged in users for {computer}:",
+            content=content,
+            close_modal_func=close_dynamic_modal
+        )
+        
+        page.dialog = modal.get_modal()
+        page.dialog.open = True
+        page.update()
+        
+        while page.dialog.open:
+            pass
+        
     # "Views". We swap these in and out of current_view
     # when navigating using the rail.
     computer_list_btn = ft.IconButton(
@@ -1807,7 +1877,7 @@ Registry path: {program['RegPath']}"""
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.PEOPLE, icon_size=50, on_click=check_bootup, data=""),
+                    ft.IconButton(icon=ft.icons.PEOPLE, icon_size=50, on_click=get_user_ids, data=""),
                     ft.Text("Log Off Users")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),

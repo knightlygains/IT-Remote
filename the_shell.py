@@ -118,6 +118,20 @@ class Power_Shell():
         else:
             return f"Failed to launch msinfo32 for {computer}."
     
+    def log_off_user(self, computer, id, name):
+        p = subprocess.call([self.pspath, "-File", f"./scripts/log_off_user.ps1", f"{computer}", f"{id}"])
+        if p == 0:
+            return f"Logged out {name} on {computer}."
+        else:
+            return f"Failed to log out {name} on {computer}."
+    
+    def get_user_ids(self, computer):
+        p = subprocess.call([self.pspath, "-File", f"./scripts/get_user_ids.ps1", f"{computer}"])
+        if p == 0:
+            return f"Got user IDs from {computer}."
+        else:
+            return f"Failed to get user IDs from {computer}."
+    
     def restart(self, id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds, use_24hr):
         action = "restart"
         
