@@ -1665,17 +1665,24 @@ Registry path: {program['RegPath']}"""
         with open(f"./results/Users/{computer}-Users.json", "r") as file:
             users = json.load(file)
         
+        
+        def clicked(e):
+            log_off_user(e)
+            e.control.visible = False
+            page.update()
+        
         list_of_users = []
         for user in users:
             u = users[user]
             id = u["ID"]
+            
             new_user = ft.Container(
                 content=ft.Row([
                     ft.Text(f"{user}", selectable=True),
                     ft.TextButton(
                         f"Log off", 
                         data={"ID": id, "name": user, "computer": computer}, 
-                        on_click=log_off_user
+                        on_click=clicked
                     )
                 ])
             )
