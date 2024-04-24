@@ -16,7 +16,8 @@ settings_values = {
     "window_height": 515,
     "enable_win_rm": True,
     "supress_winrm_results": False,
-    "use_24hr": False
+    "use_24hr": False,
+    "warn_about_profile_deletion": True
 }
 
 running_processes_count = 0
@@ -36,20 +37,25 @@ modal_not_dismissed = True
 
 # Load user settings
 def load_settings(e, update):
-    global settings_values
     # Check if settings already exists
     if update:
         try:
             with open("settings.json", "r") as file:
                 print("settings.json exists, updating")
                 data = json.load(file)
-                data.update({
-                    "font_size": settings_values["font_size"], 
-                    "app_color": settings_values["app_color"],
-                    "enable_win_rm": settings_values["enable_win_rm"],
-                    "supress_winrm_results": settings_values["supress_winrm_results"],
-                    "use_24hr": settings_values["use_24hr"]
+                for key, value in settings_values.items():
+                    print(f"{key} is now set to {value}")
+                    data.update({
+                        f"{key}": value
                     })
+                # data.update({
+                #     "font_size": settings_values["font_size"], 
+                #     "app_color": settings_values["app_color"],
+                #     "enable_win_rm": settings_values["enable_win_rm"],
+                #     "supress_winrm_results": settings_values["supress_winrm_results"],
+                #     "use_24hr": settings_values["use_24hr"],
+                #     "warn_about_profile_deletion": settings_values["warn_about_profile_deletion"]
+                # })
             with open("settings.json", "w") as settings:
                 json.dump(data, settings, indent=4)
         except ValueError as e:
@@ -78,8 +84,9 @@ def load_settings(e, update):
                 settings_values["window_width"] = settings_data["window_width"]
                 settings_values["window_height"] = settings_data["window_height"]
                 settings_values["enable_win_rm"] = settings_data["enable_win_rm"]
-                settings_values["supress_winrm_results"] = settings_data["supress_winrm_results"],
+                settings_values["supress_winrm_results"] = settings_data["supress_winrm_results"]
                 settings_values["use_24hr"] = settings_data["use_24hr"]
+                settings_values["warn_about_profile_deletion"] = settings_data["warn_about_profile_deletion"]
             except json.decoder.JSONDecodeError:
                 print("No settings data found")
     except FileNotFoundError:
@@ -120,8 +127,12 @@ def main(page: ft.Page):
     
     page.window_width = settings_values["window_width"]
     page.window_height = settings_values["window_height"]
-    page.window_min_height = 515
     page.window_min_width = 745
+    page.window_min_height = 515
+    if page.window_width < page.window_min_width:
+        page.window_width = page.window_min_width
+    if page.window_height < page.window_min_height:
+        page.window_height = page.window_min_height
     page.dark_theme = ft.Theme(color_scheme_seed=settings_values["app_color"])
     
     def save_page_dimensions(e):
@@ -147,6 +158,7 @@ def main(page: ft.Page):
         settings_values["enable_win_rm"] = winrm_checkbox.value
         settings_values["supress_winrm_results"] = winrm_results_checkbox.value
         settings_values["use_24hr"] = use_24hr_checkbox.value
+        settings_values["warn_about_profile_deletion"] = warn_checkbox.value
         load_settings(e, update=True)
         page.update()
     
@@ -1179,13 +1191,19 @@ Registry path: {program['RegPath']}"""
             update_results("Printer Test Page", result, id=id)
             end_of_process(id)
     
-    def are_you_sure(e, text):
+    def are_you_sure(e, text, **kwargs):
         """
+        add_content: a control you wish to add.
         Global are you sure modal.
         Waits in while loop until answered,
         retuning true or false depending on
         answer.
         """
+        additional_content = ft.Text("None", visible=False)
+        for key, value in kwargs.items():
+            if key == "add_content":
+                additional_content = value
+                additional_content.visible = True
         global said_yes
         global modal_not_dismissed
         
@@ -1212,7 +1230,8 @@ Registry path: {program['RegPath']}"""
             content=ft.Column([
                     ft.Row([
                         ft.Text(f"{text}", weight=ft.FontWeight.BOLD)
-                    ])
+                    ]),
+                    additional_content
                 ], height=100),
             actions=[
                 ft.TextButton("Yes", on_click=answer),
@@ -1497,6 +1516,16 @@ Registry path: {program['RegPath']}"""
             logout = "True"
             
         def run_operation(computer):
+            
+            if delete_users_checkbox.value and settings_values["warn_about_profile_deletion"]:
+                
+                are_you_sure(
+                    e, 
+                    "Are you sure you want to remove profiles? Users could lose valuable data."
+                )
+                
+                update_settings(e)
+            
             if computer != "list of computers":
                 enable_winrm(computer)
             # else skip winrm here, it will be done in script
@@ -1633,12 +1662,12 @@ Registry path: {program['RegPath']}"""
     
     def get_user_ids(e):
         if check_computer_name():
+            computer = computer_name.value
+            show_message(f"Getting user IDs on {computer}")
             id = uuid.uuid4()
             powershell = the_shell.Power_Shell()
-            computer = computer_name.value
             enable_winrm(computer)
             add_new_process(new_process("User IDs", [computer], date_time(), id))
-            show_message(f"Getting user IDs on {computer}")
             result = powershell.get_user_ids(computer)
             update_results("User IDs", data=result, id=id, subtitle=result, computer=computer)
             end_of_process(id)
@@ -1646,10 +1675,10 @@ Registry path: {program['RegPath']}"""
             if os.path.exists(f"./results/Users/{computer}-Users.json"):
                 open_logoff_modal(computer)    
 
-    def log_off_user(e):
-        user_id = e.control.data["ID"]
-        computer = e.control.data["computer"]
-        name = e.control.data["name"]
+    def log_off_user(data):
+        user_id = data["ID"]
+        computer = ["computer"]
+        name = data["name"]
         
         id = uuid.uuid4()
         powershell = the_shell.Power_Shell()
@@ -1667,10 +1696,13 @@ Registry path: {program['RegPath']}"""
         
         
         def clicked(e):
-            log_off_user(e)
-            e.control.visible = False
+            # e.control.visible = False
+            data = e.control.data
+            e.control.text = "logoff sent"
+            e.control.on_click = (lambda _: print("Already logged off"))
             page.update()
-        
+            log_off_user(data)
+            
         list_of_users = []
         for user in users:
             u = users[user]
@@ -1976,9 +2008,10 @@ Registry path: {program['RegPath']}"""
         yellow_color_radio
     ]))
     
-    winrm_checkbox = ft.Checkbox(value=settings_values["enable_win_rm"])
-    winrm_results_checkbox = ft.Checkbox(value=settings_values["supress_winrm_results"])
-    use_24hr_checkbox = ft.Checkbox(value=settings_values["use_24hr"])
+    winrm_checkbox = ft.Checkbox("Enable WinRM before actions", value=settings_values["enable_win_rm"])
+    winrm_results_checkbox = ft.Checkbox("Supress WinRM results", value=settings_values["supress_winrm_results"])
+    use_24hr_checkbox = ft.Checkbox("Use 24hr time format", value=settings_values["use_24hr"])
+    warn_checkbox = ft.Checkbox("Warn before clearing profiles", value=settings_values["warn_about_profile_deletion"])
     settings_view = ft.Column([
         ft.Row([
             ft.Column([
@@ -1989,13 +2022,11 @@ Registry path: {program['RegPath']}"""
             ]),
             ft.VerticalDivider(),
             ft.Column([
-                ft.Text("Enable WinRM before actions:"),
                 winrm_checkbox,
-                ft.Text("Supress WinRM results:"),
                 winrm_results_checkbox,
-                ft.Text("Use 24hr time format:"),
                 use_24hr_checkbox,
-            ], width=150),
+                warn_checkbox
+            ]),
             ft.VerticalDivider(),
         ], expand=1),
         ft.Row([settings_save_btn], alignment=ft.MainAxisAlignment.CENTER)
