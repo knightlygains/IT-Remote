@@ -1,7 +1,3 @@
-param (
-    [string]$Computer
-)
-
 Function Enable-WinRM {
     [CmdletBinding()]
     param (
@@ -17,15 +13,16 @@ Function Enable-WinRM {
         psservice.exe \\"$Computer" -nobanner restart WinRM
         # $result = winrm id -r:$Computer 2>$null
         if ($LastExitCode -eq 0) { 
-            exit 0
+            return $true
         }
         else {
-            exit 1
+            return $false
+        }
+        while ($true) {
+            continue
         }
     }
     else {
-        exit 1
+        return $false
     }
 }
-
-Enable-WinRM $Computer

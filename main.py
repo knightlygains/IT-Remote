@@ -1614,8 +1614,8 @@ Registry path: {program['RegPath']}"""
             computer = "list of computers"
             add_new_process(new_process("Check Software", ["Using list"], date_time(), id))
             show_message(f"Checking software on list of PCs")
-            result = powershell.check_software(computer=computer, software=software_textfield.value, date=date_formatted, all=all)
-            data = f"./results/Programs/Programs-{date_formatted}.json"
+            result = powershell.check_software(computer=computer, software=software_textfield.value, id=id, all=all)
+            data = f"./results/Programs/Programs-{id}.json"
             update_results("Check Software", data=data, id=id, subtitle=result, computer=computer)
             end_of_process(id)
         elif check_computer_name():
@@ -1624,7 +1624,7 @@ Registry path: {program['RegPath']}"""
             add_new_process(new_process("Check Software", [computer], date_time(), id))
             show_message(f"Checking software on {computer}")
             data = f"./results/Programs/{computer}-Programs.json"
-            result = powershell.check_software(computer=computer, software=software_textfield.value, date=date_formatted, all=all)
+            result = powershell.check_software(computer=computer, software=software_textfield.value, id=id, all=all)
             update_results("Check Software", data=data, id=id, subtitle=result, computer=computer)
             end_of_process(id)
     
@@ -1811,7 +1811,7 @@ Registry path: {program['RegPath']}"""
     clear_space_tut = TutorialBtn(
         data=[
             "Clear Space", 
-            "By default this action will clear recycle bin data, Windows\Temp, and Windows\Prefetch. It will also remove any user profiles it finds if you specify."
+            "By default this action will clear recycle bin data, Windows\\Temp, and Windows\\Prefetch. It will also remove any user profiles it finds if you specify."
         ],
         on_click=open_tutorial_modal
     )
