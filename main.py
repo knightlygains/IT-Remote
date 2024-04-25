@@ -10,7 +10,6 @@ import uuid
 
 # Default settings.json values
 settings_values = {
-    "font_size": 16,
     "app_color": "blue",
     "window_width": 745,
     "window_height": 515,
@@ -43,19 +42,13 @@ def load_settings(e, update):
             with open("settings.json", "r") as file:
                 print("settings.json exists, updating")
                 data = json.load(file)
+                # Update each setting with value
+                # stored in settings_values
                 for key, value in settings_values.items():
                     print(f"{key} is now set to {value}")
                     data.update({
                         f"{key}": value
                     })
-                # data.update({
-                #     "font_size": settings_values["font_size"], 
-                #     "app_color": settings_values["app_color"],
-                #     "enable_win_rm": settings_values["enable_win_rm"],
-                #     "supress_winrm_results": settings_values["supress_winrm_results"],
-                #     "use_24hr": settings_values["use_24hr"],
-                #     "warn_about_profile_deletion": settings_values["warn_about_profile_deletion"]
-                # })
             with open("settings.json", "w") as settings:
                 json.dump(data, settings, indent=4)
         except ValueError as e:
@@ -69,6 +62,7 @@ def load_settings(e, update):
             settings_data = json.load(file)
         for key, value in  settings_values.items():
             if key not in settings_data:
+                # This line creates the key and assigns the value
                 settings_data[key] = value
         
         # Save new keys
@@ -1814,6 +1808,14 @@ Registry path: {program['RegPath']}"""
         on_click=check_space
     )
     
+    clear_space_tut = TutorialBtn(
+        data=[
+            "Clear Space", 
+            "By default this action will clear recycle bin data, Windows\Temp, and Windows\Prefetch. It will also remove any user profiles it finds if you specify."
+        ],
+        on_click=open_tutorial_modal
+    )
+    
     clear_space_exp_panel = ft.ExpansionPanel(
         header=ft.ListTile(
             title=ft.Text("Clear Space", weight=ft.FontWeight.BOLD),
@@ -1821,7 +1823,11 @@ Registry path: {program['RegPath']}"""
         ),
         content=ft.Container(
             content=ft.Column([
-                check_space_btn,
+                ft.Row([
+                    check_space_btn,
+                    clear_space_tut
+                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                
                 delete_users_checkbox,
                 logout_users_checkbox,
                 use_list_checkbox,
