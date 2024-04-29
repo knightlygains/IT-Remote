@@ -7,6 +7,7 @@ import socket, pathlib
 from tutorial_btn import TutorialBtn
 from dynamic_modal import DynamicModal
 import uuid
+from are_you_sure import YouSure
 
 # Default settings.json values
 settings_values = {
@@ -353,6 +354,14 @@ def main(page: ft.Page):
         else:
             return True
     
+    def check_process(name, computer):
+        for process in list_of_processes:
+            if computer in process["computers"] and process["name"] == name:
+                # Proc is running on computer already
+                show_message(f"Already running {name} on {computer}")
+                return False
+        return True
+    
     def date_time(**kwargs):
         x = datetime.datetime.now()
         day = x.strftime("%a")
@@ -551,12 +560,18 @@ def main(page: ft.Page):
     def filter_results(e):
         # Set up modal
         
-        content = ft.Column(comp_checkboxes, expand=1, spacing=20)
+        content = ft.Row(
+            comp_checkboxes,  
+            wrap=True,
+            width=500,
+            scroll=ft.ScrollMode.ADAPTIVE
+        )
         
         modal = DynamicModal(
             title=f"Filter results:",
             content=content,
-            close_modal_func=close_dynamic_modal
+            close_modal_func=close_dynamic_modal,
+            nolistview=True
         )
         
         page.dialog = modal.get_modal()
@@ -946,7 +961,7 @@ Registry path: {program['RegPath']}"""
         page.update()
         
     def ping(e):
-        if check_computer_name():
+        if check_computer_name() and check_process("Ping", computer_name.value):
             id = uuid.uuid4()
             add_new_process(new_process("Ping", [computer_name.value], date_time(), id))
             show_message(f"Pinging {computer_name.value}")
@@ -969,7 +984,7 @@ Registry path: {program['RegPath']}"""
             end_of_process(id)
     
     def quser(e):
-        if check_computer_name():
+        if check_computer_name() and check_process("QUSER", computer_name.value):
             id = uuid.uuid4()
             add_new_process(new_process("QUSER", [computer_name.value], date_time(), id))
             show_message(f"Querying logged in users on {computer_name.value}")
@@ -979,7 +994,7 @@ Registry path: {program['RegPath']}"""
             end_of_process(id)
             
     def rename_printer(e):
-        if check_computer_name():
+        if check_computer_name() and check_process("Rename Printer", computer_name.value):
             close_printer_dlg(e)
             id = uuid.uuid4()
             add_new_process(new_process("Rename Printer", [computer_name.value], date_time(), id))
@@ -1092,7 +1107,7 @@ Registry path: {program['RegPath']}"""
     
     def printer_wizard(e, **kwargs):
         global printer_wiz_target_computer
-        if check_computer_name():
+        if check_computer_name() and check_process("Get Printers", computer_name.value):
             refresh = False
             computer = computer_name.value
             for key, value in kwargs.items():
@@ -1176,7 +1191,7 @@ Registry path: {program['RegPath']}"""
                 end_of_process(id)
         
     def printer_wiz_testpage(e):
-        if check_computer_name():
+        if check_computer_name() and check_process("Test Page", computer_name.value):
             id = uuid.uuid4()
             add_new_process(new_process("Test Page", [e.control.data["computer"]], date_time(), id))
             show_message(f"Printing test page from {e.control.data["computer"]}.")
@@ -1185,70 +1200,17 @@ Registry path: {program['RegPath']}"""
             update_results("Printer Test Page", result, id=id)
             end_of_process(id)
     
-    def are_you_sure(e, text, **kwargs):
-        """
-        add_content: a control you wish to add.
-        Global are you sure modal.
-        Waits in while loop until answered,
-        retuning true or false depending on
-        answer.
-        """
-        additional_content = ft.Text("None", visible=False)
-        for key, value in kwargs.items():
-            if key == "add_content":
-                additional_content = value
-                additional_content.visible = True
-        global said_yes
-        global modal_not_dismissed
-        
-        said_yes = False
-        modal_not_dismissed = True
-        
-        def dismissed(e):
-            global modal_not_dismissed
-            modal_not_dismissed = False
-        
-        def close_sure_dlg(e):
-            sure_modal.open = False
+    def are_you_sure(e, text):
+            sure_modal = YouSure(text, close_dynamic_modal)
+            page.dialog = sure_modal.get_modal()
+            page.dialog.open = True
             page.update()
-            return
-        
-        def answer(e):
-            global said_yes
-            said_yes = True
-            close_sure_dlg(e)
-        
-        sure_modal = ft.AlertDialog(
-            modal=False,
-            title=ft.Text("Confirm:"),
-            content=ft.Column([
-                    ft.Row([
-                        ft.Text(f"{text}", weight=ft.FontWeight.BOLD)
-                    ]),
-                    additional_content
-                ], height=100),
-            actions=[
-                ft.TextButton("Yes", on_click=answer),
-                ft.TextButton("Cancel", on_click=close_sure_dlg),
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
-            on_dismiss=dismissed
-        )
-        
-        page.dialog = sure_modal
-        sure_modal.open = True
-        page.update()
-        
-        # Have to sit here in while loop
-        # to make sure function doesnt exit
-        # early.
-        while modal_not_dismissed:
-            pass
-        
-        if said_yes:
-            return True
-        else:
-            return False 
+            answer = False
+            while page.dialog.open:
+                answer = sure_modal.said_yes
+                if answer:
+                    close_dynamic_modal(e)
+            return answer
     
     def uninstall_printer(e):
         if are_you_sure(e, f"Uninstall {e.control.data["printer"]} from {e.control.data["computer"]}?"):
@@ -1262,9 +1224,9 @@ Registry path: {program['RegPath']}"""
             printer_wizard(e, refresh=True, target_computer=e.control.data["computer"])
     
     def open_print_logs(e):
-        if check_computer_name():
+        type = e.control.data
+        if check_computer_name() and check_process(f"{type} Log", computer_name.value):
             computer = computer_name.value
-            type = e.control.data
             enable_winrm(computer)
             id = uuid.uuid4()
             add_new_process(new_process(f"{type} Log", [computer], date_time(), id))
@@ -1542,13 +1504,13 @@ Registry path: {program['RegPath']}"""
                 show_message(f"Clearing space on {computer}.")
                 
             powershell = the_shell.Power_Shell()
-            powershell.clear_space(computer=computer, users=users, logout=logout)
+            powershell.clear_space(computer=computer, users=users, logout=logout, winRM=settings_values["enable_win_rm"])
             
             if use_list_checkbox.value == True:
                 for pc in list_of_pcs:
                     pc_result = open(f"./results/ClearSpace/{pc}-ClearSpace.txt", "r")
-                    read_pc_result = pc_result.readlines()
-                    update_results("Clear Space", read_pc_result, id)
+                    read_pc_result = pc_result.read()
+                    update_results("Clear Space", read_pc_result, id, computer=computer)
                     pc_result.close()
             else:
                 results = open(f"./results/ClearSpace/{computer}-ClearSpace.txt", "r")
@@ -1557,7 +1519,7 @@ Registry path: {program['RegPath']}"""
             
             end_of_process(id)
             
-        if check_computer_name() and use_list_checkbox.value == False:
+        if check_computer_name() and use_list_checkbox.value == False and check_process("Clear Space", computer_name.value):
             run_operation(computer_name.value)
         elif use_list_checkbox.value == True:
             run_operation("list of computers")
@@ -1589,7 +1551,7 @@ Registry path: {program['RegPath']}"""
         return list_of_controls
     
     def check_space(e):
-        if check_computer_name():
+        if check_computer_name() and check_process("Check Space", computer_name.value):
             computer = computer_name.value
             enable_winrm(computer)
             id = uuid.uuid4()
@@ -1629,7 +1591,7 @@ Registry path: {program['RegPath']}"""
             end_of_process(id)
     
     def msinfo_32(e):
-        if check_computer_name():
+        if check_computer_name() and check_process("MsInfo32", computer_name.value):
             id = uuid.uuid4()
             powershell = the_shell.Power_Shell()
             computer = computer_name.value
@@ -1637,7 +1599,7 @@ Registry path: {program['RegPath']}"""
             add_new_process(new_process("MsInfo32", [computer], date_time(), id))
             show_message(f"Opening MsInfo32 for {computer}")
             result = powershell.msinfo_32(computer)
-            update_results("Check Software", data=result, id=id, subtitle=result, computer=computer)
+            update_results("MsInfo32", data=result, id=id, subtitle=result, computer=computer)
             end_of_process(id)
     
     # File picker for import printer
@@ -1655,7 +1617,7 @@ Registry path: {program['RegPath']}"""
     page.overlay.append(pick_files_dialog)
     
     def get_user_ids(e):
-        if check_computer_name():
+        if check_computer_name() and check_process("User IDs", computer_name.value):
             computer = computer_name.value
             show_message(f"Getting user IDs on {computer}")
             id = uuid.uuid4()
@@ -1674,28 +1636,30 @@ Registry path: {program['RegPath']}"""
         computer = ["computer"]
         name = data["name"]
         
-        id = uuid.uuid4()
-        powershell = the_shell.Power_Shell()
-        computer = computer_name.value
-        add_new_process(new_process("Log Off User", [computer], date_time(), id))
-        show_message(f"Logging off {name} on {computer}")
-        result = powershell.log_off_user(computer, user_id, name)
-        update_results("Log Off Users", data=result, id=id, subtitle=result, computer=computer)
-        end_of_process(id)
+        if check_process("Log Off User", computer):
+            id = uuid.uuid4()
+            powershell = the_shell.Power_Shell()
+            computer = computer_name.value
+            add_new_process(new_process("Log Off User", [computer], date_time(), id))
+            show_message(f"Logging off {name} on {computer}")
+            result = powershell.log_off_user(computer, user_id, name)
+            update_results("Log Off Users", data=result, id=id, subtitle=result, computer=computer)
+            end_of_process(id)
+            return True
+        return False
 
     def open_logoff_modal(computer):
         
         with open(f"./results/Users/{computer}-Users.json", "r") as file:
             users = json.load(file)
         
-        
         def clicked(e):
             # e.control.visible = False
             data = e.control.data
-            e.control.text = "logoff sent"
-            e.control.on_click = (lambda _: print("Already logged off"))
             page.update()
-            log_off_user(data)
+            if log_off_user(data):
+                e.control.text = "logoff sent"
+                e.control.on_click = (lambda _: print("Already logged off"))
             
         list_of_users = []
         for user in users:

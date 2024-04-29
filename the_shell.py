@@ -93,8 +93,8 @@ class Power_Shell():
         else:
             return f"Failed to uninstall {printerName} on {computer}."
     
-    def clear_space(self, computer, users, logout):
-        p = subprocess.getoutput([self.pspath, "-File", f"./scripts/disk_cleanup.ps1", f"{computer}", f"{users}", f"{logout}"])
+    def clear_space(self, computer, users, logout, winRM):
+        p = subprocess.call([self.pspath, "-File", f"./scripts/disk_cleanup.ps1", f"{computer}", f"{users}", f"{logout}", f"{winRM}"])
         return p
     
     def check_space(self, computer):
@@ -104,7 +104,7 @@ class Power_Shell():
         else:
             return f"Failed to retrieve space on {computer}."
     
-    def check_software(self, computer, software, id, all):
+    def check_software(self, computer, software, id, all, winRM):
         p = subprocess.call([self.pspath, "-File", f"./scripts/check_software.ps1", f"{computer}", f"{software}", f"{id}", f"{all}"])
         if p == 0:
             return f"Open to view software on {computer}."
@@ -132,7 +132,20 @@ class Power_Shell():
         else:
             return f"Failed to get user IDs from {computer}."
     
-    def restart(self, id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds, use_24hr):
+    def restart(
+            self, 
+            id, 
+            shutdown, 
+            scheduled, 
+            computer, 
+            month, 
+            day, 
+            year, 
+            hour, 
+            minute, 
+            seconds, 
+            use_24hr
+        ):
         action = "restart"
         
         if use_24hr:

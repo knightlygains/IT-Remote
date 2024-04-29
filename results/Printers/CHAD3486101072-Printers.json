@@ -1,0 +1,65 @@
+{
+  "1": {
+    "Name": "EPSON ST-M1000 Series",
+    "Status": "Idle",
+    "Port": "USB003",
+    "Published": "False",
+    "Type": "",
+    "Shared": "False",
+    "Driver": "Epson ESC/P-R V4 Class Driver"
+  },
+  "3": {
+    "Name": "OneNote (Desktop)",
+    "Status": "",
+    "Port": "nul:",
+    "Published": "False",
+    "Type": "",
+    "Shared": "False",
+    "Driver": "Send to Microsoft OneNote 16 Driver"
+  },
+  "4": {
+    "Name": "Microsoft XPS Document Writer",
+    "Status": "Idle",
+    "Port": "PORTPROMPT:",
+    "Published": "False",
+    "Type": "",
+    "Shared": "False",
+    "Driver": "Microsoft XPS Document Writer v4"
+  },
+  "5": {
+    "Name": "Microsoft Print to PDF",
+    "Status": "Idle",
+    "Port": "PORTPROMPT:",
+    "Published": "False",
+    "Type": "",
+    "Shared": "False",
+    "Driver": "Microsoft Print To PDF"
+  },
+  "6": {
+    "Name": "Hewlett-Packard HP Color LaserJet M553",
+    "Status": "Idle",
+    "Port": "USB001",
+    "Published": "False",
+    "Type": "",
+    "Shared": "False",
+    "Driver": "HP Color LaserJet M553 PCL 6"
+  },
+  "7": {
+    "Name": "Fax",
+    "Status": "Idle",
+    "Port": "SHRFAX:",
+    "Published": "False",
+    "Type": "",
+    "Shared": "False",
+    "Driver": "Microsoft Shared Fax Driver"
+  },
+  "8": {
+    "Name": "CH B1 Sharp Copier",
+    "Status": "Idle",
+    "Port": "10.200.87.156",
+    "Published": "False",
+    "Type": "",
+    "Shared": "False",
+    "Driver": "SHARP BP-70C31 PCL6"
+  }
+}

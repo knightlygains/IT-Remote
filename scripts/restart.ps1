@@ -9,33 +9,19 @@ param(
     [int]$dateHour,
     [int]$dateMinute,
     [int]$dateSeconds,
-    [string]$timeFormat
+    [string]$timeFormat,
+    [string]$winRM
 )
 
-Function Enable-WinRM {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory)]
-        [string]$Computer
-    )
-
-    psexec.exe \\"$Computer" -s -nobanner -accepteula C:\Windows\System32\winrm.cmd qc -quiet
-
-    $result = winrm id -r:$computer 2>$null
-    if ($LastExitCode -eq 0) {
-        psservice.exe \\"$Computer" -nobanner restart WinRM
-        $result = winrm id -r:$computer 2>$null
-        if ($LastExitCode -eq 0) { 
-            Write-Host "WinRM Enabled on $Computer."
-        }
-        else {
-            Write-Host "Failed to enable WinRM on $Computer."
-        }
-    }
-    else {
-        Write-Host "Failed to enable WinRM on $Computer."
-    }
+if ($winRM -eq "True") {
+    $winRM = $true
 }
+else {
+    $winRM = $false
+}
+
+. .\scripts\functions.ps1
+
 
 Function Restart-PCs {
 
@@ -45,7 +31,7 @@ Function Restart-PCs {
         foreach ($Computer in $list) {
             Write-Host "Balls $Computer"
             if (Test-Connection $Computer) {
-                Enable-WinRM -Computer $Computer
+                Enable-WinRM -Computer $Computer -winRM $winRM
             }
         }
     }
