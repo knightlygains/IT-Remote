@@ -97,8 +97,8 @@ class Power_Shell():
         p = subprocess.call([self.pspath, "-File", f"./scripts/disk_cleanup.ps1", f"{computer}", f"{users}", f"{logout}", f"{winRM}"])
         return p
     
-    def check_space(self, computer):
-        p = subprocess.call([self.pspath, "-File", f"./scripts/check_space.ps1", f"{computer}"])
+    def check_space(self, computer, id, winRM):
+        p = subprocess.call([self.pspath, "-File", f"./scripts/check_space.ps1", f"{computer}", f"{id}", f"{winRM}"])
         if p == 0:
             return f"Open to view space on {computer}."
         else:

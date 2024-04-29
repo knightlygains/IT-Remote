@@ -1501,14 +1501,22 @@ Registry path: {program['RegPath']}"""
         return list_of_controls
     
     def check_space(e):
-        if check_computer_name() and check_process("Check Space", computer_name.value):
-            computer = computer_name.value
-            enable_winrm(computer)
-            id = uuid.uuid4()
+        id = uuid.uuid4()
+        if use_list_checkbox.value:
+            computer = "list of computers"
             add_new_process(new_process("Check Space", [computer], date_time(), id))
             show_message(f"Checking space on {computer}")
             powershell = the_shell.Power_Shell()
-            result = powershell.check_space(computer=computer)
+            result = powershell.check_space(computer=computer, id=id, winRM=settings_values["enable_win_rm"])
+            update_results("Check Space", result, id=id, check_space=True, subtitle=result, computer=computer)
+            end_of_process(id)
+        elif check_computer_name() and check_process("Check Space", computer_name.value):
+            computer = computer_name.value
+            enable_winrm(computer)
+            add_new_process(new_process("Check Space", [computer], date_time(), id))
+            show_message(f"Checking space on {computer}")
+            powershell = the_shell.Power_Shell()
+            result = powershell.check_space(computer=computer, id=id, winRM=False)
             update_results("Check Space", result, id=id, check_space=True, subtitle=result, computer=computer)
             end_of_process(id)
     
@@ -1723,14 +1731,15 @@ Registry path: {program['RegPath']}"""
         content=ft.Container(
             content=ft.Column([
                 ft.Row([
-                    check_space_btn,
+                    delete_users_checkbox,
                     clear_space_tut
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                
-                delete_users_checkbox,
                 logout_users_checkbox,
                 use_list_checkbox,
-                ft.TextButton(text="Clear Disk Space", icon=ft.icons.DELETE_FOREVER, on_click=clear_space)
+                ft.Row([
+                    ft.TextButton(text="Clear Disk Space", icon=ft.icons.DELETE_FOREVER, on_click=clear_space),
+                    check_space_btn
+                ])
             ]),
             padding=10
         ),
