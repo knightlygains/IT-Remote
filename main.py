@@ -1382,12 +1382,27 @@ Registry path: {program['RegPath']}"""
     # Computer Text Field
     computer_name = ft.TextField(label="Computer Name")
     
+    def get_user_ids(e):
+        if check_computer_name() and check_process("User IDs", computer_name.value):
+            computer = computer_name.value
+            show_message(f"Getting user IDs on {computer}")
+            id = uuid.uuid4()
+            powershell = the_shell.Power_Shell()
+            enable_winrm(computer)
+            add_new_process(new_process("User IDs", [computer], date_time(), id))
+            result = powershell.get_user_ids(computer)
+            update_results("User IDs", data=result, id=id, subtitle=result, computer=computer)
+            end_of_process(id)
+            
+            if os.path.exists(f"./results/Users/{computer}-Users.json"):
+                open_logoff_modal(computer)
+    
     ping_btn = ft.TextButton(text="Ping", icon=ft.icons.NETWORK_PING, on_click=ping)
     quser_btn = ft.IconButton(
         icon=ft.icons.PERSON,
         icon_size=20,
         tooltip="QUser",
-        on_click=quser
+        on_click=get_user_ids
     )
 
     def open_pc_list(e):
@@ -1549,22 +1564,7 @@ Registry path: {program['RegPath']}"""
         on_result=select_files,
     )
 
-    page.overlay.append(pick_files_dialog)
-    
-    def get_user_ids(e):
-        if check_computer_name() and check_process("User IDs", computer_name.value):
-            computer = computer_name.value
-            show_message(f"Getting user IDs on {computer}")
-            id = uuid.uuid4()
-            powershell = the_shell.Power_Shell()
-            enable_winrm(computer)
-            add_new_process(new_process("User IDs", [computer], date_time(), id))
-            result = powershell.get_user_ids(computer)
-            update_results("User IDs", data=result, id=id, subtitle=result, computer=computer)
-            end_of_process(id)
-            
-            if os.path.exists(f"./results/Users/{computer}-Users.json"):
-                open_logoff_modal(computer)    
+    page.overlay.append(pick_files_dialog)    
 
     def log_off_user(data):
         user_id = data["ID"]
@@ -1818,11 +1818,6 @@ Registry path: {program['RegPath']}"""
                 ft.Column([
                     ft.IconButton(icon=ft.icons.RESTART_ALT, icon_size=50, on_click=open_restart_modal, data=""),
                     ft.Text("Shutdown/Restart")
-                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-                ft.VerticalDivider(),
-                ft.Column([
-                    ft.IconButton(icon=ft.icons.PEOPLE, icon_size=50, on_click=get_user_ids, data=""),
-                    ft.Text("Log Off Users")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
