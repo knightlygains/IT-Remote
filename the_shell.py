@@ -105,7 +105,7 @@ class Power_Shell():
             return f"Failed to retrieve space on {computer}."
     
     def check_software(self, computer, software, id, all, winRM):
-        p = subprocess.call([self.pspath, "-File", f"./scripts/check_software.ps1", f"{computer}", f"{software}", f"{id}", f"{all}"])
+        p = subprocess.call([self.pspath, "-File", f"./scripts/check_software.ps1", f"{computer}", f"{software}", f"{id}", f"{all}", f"{winRM}"])
         if p == 0:
             return f"Open to view software on {computer}."
         else:

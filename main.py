@@ -1,7 +1,7 @@
 import flet as ft
 import the_shell
 import datetime
-import json
+import json, csv, re, subprocess
 import os, time
 import socket, pathlib
 from tutorial_btn import TutorialBtn
@@ -291,7 +291,7 @@ def main(page: ft.Page):
     
     def check_process(name, computer):
         for process in list_of_processes:
-            if computer in process["computers"] and process["name"] == name:
+            if computer in process["computers"] and process["name"] == name or process["name"] == "WinRM":
                 # Proc is running on computer already
                 show_message(f"Already running {name} on {computer}")
                 return False
@@ -804,6 +804,84 @@ def main(page: ft.Page):
         dynamic_modal.title = ft.Text(f"{e.control.title.value}, {e.control.data["computer"]}")
         show_dynamic_modal()
     
+    def export_data(e):
+        data = e.control.data
+        
+        def check_directory(e):
+            if os.path.exists(f"{e.control.value}"):
+                e.control.error_text=None
+            else:
+                e.control.error_text="Directory does not exist."
+            save_location.update()
+                
+        def check_filename(e):
+            # Remove spaces
+            e.control.value = str(e.control.value).replace(" ", "")
+            # Use regex to remove speical chars
+            e.control.value = re.sub('[^a-zA-Z0-9 \\n\\._-]', '', e.control.value)
+            # Remove period
+            e.control.value = str(e.control.value).replace(".", "")
+            name.update()
+        
+        name = ft.TextField(
+            label="Filename",
+            on_change=check_filename,
+            value="software_results"
+        )
+        
+        save_location = ft.TextField(
+            label="Save location",
+            on_change=check_directory,
+            value=pathlib.Path.home()
+        )
+        
+        # Filepicker for picking directory
+        def select_directory(e: ft.FilePickerResultEvent):
+            save_location.value = e.path
+            save_location.error_text = None
+            save_location.update()
+
+        pick_directory_dialog = ft.FilePicker(
+            on_result=select_directory,
+        )
+        
+        page.overlay.append(pick_directory_dialog) 
+        
+        def save(e):
+            if save_location.error_text == None and name.value != "":
+                with open(f"{save_location.value + "\\" + name.value}.txt", "w", encoding='utf-8') as file:
+                    file.writelines(str(data))
+                subprocess.Popen(["notepad",f"{save_location.value + "\\" + name.value}.txt"])
+                close_dynamic_modal(e)
+            else:
+                if os.path.exists(f"{save_location.value}") == False:
+                    save_location.error_text = "Path must be correct"
+                if name.value == "":
+                    name.error_text = "Cannot be empty"
+                page.update()
+                
+        content = ft.Column([
+            name,
+            ft.Row([
+                save_location,
+                ft.FilledTonalButton(
+                    "Browse",
+                    on_click=lambda _: pick_directory_dialog.get_directory_path(
+                        initial_directory=pathlib.Path.home(),
+                        dialog_title="Choose a save location"
+                    )
+                )
+            ]),
+            ft.FilledTonalButton("Save", on_click=save)
+        ])
+        export_modal = DynamicModal("Export data:", content, close_dynamic_modal)
+        page.dialog = export_modal.get_modal()
+        page.dialog.open = True
+        page.update()
+        
+        while page.dialog.open:
+            pass
+    
     def open_software_card(e):
         software_json_path = e.control.data["data"]
         list_of_pcs = {}
@@ -813,9 +891,13 @@ def main(page: ft.Page):
             controls=[]
         )
         
+        results_for_export = ""
+        
         with open(software_json_path, "r", encoding='utf-8') as file:
             data = json.load(file)
             for r in data:
+                
+                results_for_export += f"{r} - Software:\n"
                 # r is equal to computer name.
                 # comp is equal to 'Programs'.
                 comp = data[r]
@@ -842,6 +924,7 @@ def main(page: ft.Page):
 Install date: {program['InstallDate']}
 Registry path: {program['RegPath']}"""
                     
+                    results_for_export += f"{program['Name'] + "\n" + text}\n\n"
                     # Then add program info to corresponding PCs in the dict
                     new_control = ft.Container(
                         content=ft.Column([
@@ -852,6 +935,7 @@ Registry path: {program['RegPath']}"""
                     )
                     
                     list_of_pcs[f"{pc}"].content.controls.append(new_control)
+                results_for_export += "______________________________\n"
 
         # Loop through expansionpanels in list and append them to expansion_list
         for pc in list_of_pcs:
@@ -861,7 +945,11 @@ Registry path: {program['RegPath']}"""
             title=f"{e.control.title.value}, {e.control.data["computer"]}",
             content=ft.Column(controls=[
                 expansion_list,
-                ft.TextButton("Export results")
+                ft.TextButton(
+                    "Export results", 
+                    on_click=export_data, 
+                    data=results_for_export
+                )
             ]),
             close_modal_func=close_dynamic_modal
         )
@@ -1538,13 +1626,13 @@ Registry path: {program['RegPath']}"""
             data = f"./results/Programs/Programs-{id}.json"
             update_results("Check Software", data=data, id=id, subtitle=result, computer=computer)
             end_of_process(id)
-        elif check_computer_name():
+        elif check_computer_name() and check_process("Check Software", computer_name.value):
             computer = computer_name.value
             enable_winrm(computer)
             add_new_process(new_process("Check Software", [computer], date_time(), id))
             show_message(f"Checking software on {computer}")
             data = f"./results/Programs/{computer}-Programs.json"
-            result = powershell.check_software(computer=computer, software=software_textfield.value, id=id, all=all)
+            result = powershell.check_software(computer=computer, software=software_textfield.value, id=id, all=all, winRM=settings_values["enable_win_rm"])
             update_results("Check Software", data=data, id=id, subtitle=result, computer=computer)
             end_of_process(id)
     

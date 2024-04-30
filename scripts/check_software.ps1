@@ -2,8 +2,16 @@ param (
     [string]$Computer,
     [string]$SoftwareName,
     [string]$id,
-    [string]$all
+    [string]$all,
+    [string]$winRM
 )
+
+if ($winrRM -eq "True") {
+    $winRM = $true
+}
+else {
+    $winRM = $false
+}
 
 . .\scripts\functions.ps1
 
@@ -151,7 +159,7 @@ if ($Computer -eq "list of computers") {
     Write-Host $list
     foreach ($Comp in $list) {
         if (Test-Connection -ComputerName $Comp) {
-            Enable-WinRM -Computer $Comp
+            Enable-WinRM $Comp $winRM
         }
     }
 }
