@@ -1005,16 +1005,6 @@ Registry path: {program['RegPath']}"""
                 print("adding winrm result")
                 update_results("WinRM", result, id)
             end_of_process(id)
-    
-    def quser(e):
-        if check_computer_name() and check_process("QUSER", computer_name.value):
-            id = uuid.uuid4()
-            add_new_process(new_process("QUSER", [computer_name.value], date_time(), id))
-            show_message(f"Querying logged in users on {computer_name.value}")
-            powershell = the_shell.Power_Shell()
-            result = powershell.quser(computer=computer_name.value)
-            update_results("QUser", result, id)
-            end_of_process(id)
             
     def rename_printer(e):
         if check_computer_name() and check_process("Rename Printer", computer_name.value):
@@ -1406,8 +1396,6 @@ Registry path: {program['RegPath']}"""
                     time = time[1]
                     print(f"{year},{month},{day},{time}")
                     close_dynamic_modal(e)
-                    
-                
         
         modal = DynamicModal(
             title=f"Shutdown/Restart",
