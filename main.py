@@ -349,7 +349,7 @@ def main(page: ft.Page):
         elif print_wiz_card:
             data = f"./results/Printers/{computer}-Printers.json"
         elif check_space_card:
-            data = f"./results/ClearSpace/{computer}-Space-Available.json"
+            data = f"./results/ClearSpace/{id}-Space-Available.json"
         
         card = generate_result_card(
             leading = ft.Icon(ft.icons.TERMINAL),
@@ -648,7 +648,7 @@ def main(page: ft.Page):
         elif data in print_log_options:
             print("print log card")
             on_click_function = open_print_log_card
-        elif data == f"./results/ClearSpace/{computer}-Space-Available.json" and "Failed" not in subtitle_data:
+        elif data == f"./results/ClearSpace/{id}-Space-Available.json" and "Failed" not in subtitle_data:
             on_click_function = open_space_card
         elif "results/Programs/" in data:
             print("software card")
@@ -774,28 +774,43 @@ def main(page: ft.Page):
         space_json_path = e.control.data["data"]
         with open(space_json_path, "r") as file:
             data = json.load(file)
-            for drive in data:
-                drive_ltr = data[drive]
-                freespace = drive_ltr['FreeSpace']
-                maxsize = drive_ltr['MaxSize']
-                percentfree = drive_ltr['PercentFree']
+            
+            
+            
+            for comp in data:
+                drives_list = []
+                for disk in data[comp]:
+                    drive = data[comp][disk]
+                    drive_ltr = drive['DiskId']
+                    freespace = drive['FreeSpace']
+                    maxsize = drive['MaxSize']
+                    percentfree = drive['PercentFree']
+                    
+                    drives_list.append(
+                        ft.Column([
+                            ft.Text(f"{drive_ltr}", weight=ft.FontWeight.BOLD),
+                                ft.Row([
+                                    ft.Text("Percent Free:", weight=ft.FontWeight.BOLD),
+                                    ft.Text(f"{percentfree}", selectable=True),
+                                ], wrap=True),
+                                ft.Row([
+                                    ft.Text("Space:", weight=ft.FontWeight.BOLD),
+                                    ft.Text(f"{freespace} / {maxsize} GB", selectable=True),
+                                ]),
+                        ])
+                    )
                 
-                card = ft.Card(
-                    content=ft.Container(
-                        content=ft.Column([
-                            ft.Text(f"{drive}", weight=ft.FontWeight.BOLD),
-                            ft.Row([
-                                ft.Text("Percent Free:", weight=ft.FontWeight.BOLD),
-                                ft.Text(f"{percentfree}", selectable=True),
-                            ], wrap=True),
-                            ft.Row([
-                                ft.Text("Space:", weight=ft.FontWeight.BOLD),
-                                ft.Text(f"{freespace} / {maxsize} GB", selectable=True),
-                            ]),
-                        ], expand = 1),
-                        expand = 1,
-                        padding=20
-                    ),
+                card = ft.ExpansionTile(
+                    title=ft.Text(f"{comp}", weight=ft.FontWeight.BOLD),
+                    controls=[
+                        ft.Container(
+                            content=ft.Column([
+                                ft.Column(drives_list)
+                            ], expand = 1),
+                            expand = 1,
+                            padding=20
+                        )
+                    ],
                     expand = 1
                 )
                 space_list_view.controls.append(card)
@@ -826,7 +841,7 @@ def main(page: ft.Page):
         name = ft.TextField(
             label="Filename",
             on_change=check_filename,
-            value="software_results"
+            value="results"
         )
         
         save_location = ft.TextField(

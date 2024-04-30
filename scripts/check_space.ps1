@@ -17,10 +17,9 @@ if ($Computer -like "localhost") {
     $Computer = $env:COMPUTERNAME
 }
 
-if ($Computer -eq "list of computers") {
-    $Computer = Get-Content ".\lists\computers.txt"
-}
 
+
+Write-Host $id
 $result_json_path = ".\results\ClearSpace\$id-Space-Available.json"
 
 try {
@@ -38,12 +37,18 @@ $json_format = @"
     }
 "@
 
-$space_obj = ConvertFrom-Json $json_format
+
 
 $all_results = ConvertFrom-Json $json_format
 
 Function Get-Space {
+    if ($Computer -eq "list of computers") {
+        $Computer = Get-Content ".\lists\computers.txt"
+        Write-Host "Computer is list"
+    }
     foreach ($pc in $Computer) {
+        $space_obj = ConvertFrom-Json $json_format
+        Write-Host "$pc"
         if (Test-Connection $pc) {
 
             Enable-WinRM $pc $winRM
@@ -66,6 +71,9 @@ Function Get-Space {
                     $space_obj | add-member -Name "$disk_id" -value (ConvertFrom-Json $log_object) -MemberType NoteProperty
                     
                 }
+
+                $space_obj = ConvertTo-Json $space_obj
+
                 $all_results | add-member -Name "$pc" -value (ConvertFrom-Json $space_obj) -MemberType NoteProperty
                 
             }
@@ -79,9 +87,10 @@ Function Get-Space {
         }
     }
     try {
-        Set-Content -Path $result_json_path -Value (ConvertTo-Json $space_obj) -ErrorAction Stop
+        Set-Content -Path $result_json_path -Value (ConvertTo-Json $all_results) -ErrorAction Stop
     }
     catch {
+        Write-Host "Couldnt make json $_"
         exit 1
     }
     exit 0
