@@ -104,6 +104,19 @@ class Power_Shell():
         else:
             return f"Failed to retrieve space on {computer}."
     
+    def check_battery(self, computer, id, winRM):
+        p = subprocess.call([self.pspath, "-File", "./scripts/check_battery.ps1", f"{computer}", f"{id}", f"{winRM}"])
+        if p == 0:
+            return f"Open to view battery info on {computer}."
+        elif p == 3:
+            return f"Check battery failed. C$ admin share is not enabled for {computer}."
+        else:
+            return f"Failed to get battery info on {computer}."
+    
+    def open_c_share(self, computer):
+        p = subprocess.call([self.pspath, "-File", "./scripts/open_cshare.ps1", f"{computer}"])
+        return p
+    
     def check_software(self, computer, software, id, all, winRM):
         p = subprocess.call([self.pspath, "-File", f"./scripts/check_software.ps1", f"{computer}", f"{software}", f"{id}", f"{all}", f"{winRM}"])
         if p == 0:

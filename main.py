@@ -48,6 +48,9 @@ if os.path.exists("./results/Programs"):
 if os.path.exists("./results/Restart"):  
     for filename in os.listdir("./results/Restart"):
         pathlib.Path(f"./results/Restart/{filename}").unlink()
+if os.path.exists("./results/Battery"):  
+    for filename in os.listdir("./results/Battery"):
+        pathlib.Path(f"./results/Battery/{filename}").unlink()
 
 # Program
 def main(page: ft.Page):
@@ -319,6 +322,7 @@ def main(page: ft.Page):
         print_log_card = False
         print_wiz_card = False
         check_space_card = False
+        battery_card = False
         computer = computer_name.value
         subtitle=data
         for key, value in kwargs.items():
@@ -334,6 +338,8 @@ def main(page: ft.Page):
                 print_wiz_card = value
             if key == "check_space":
                 check_space_card = value
+            if key == "battery":
+                battery_card = value
             if key == "subtitle":
                 subtitle=value  
         
@@ -350,6 +356,8 @@ def main(page: ft.Page):
             data = f"./results/Printers/{computer}-Printers.json"
         elif check_space_card:
             data = f"./results/ClearSpace/{id}-Space-Available.json"
+        elif battery_card:
+            data = f"./results/Battery/{id}-BatteryStatus.json"
         
         card = generate_result_card(
             leading = ft.Icon(ft.icons.TERMINAL),
@@ -654,6 +662,8 @@ def main(page: ft.Page):
             print("software card")
             data = f"{data}"
             on_click_function = open_software_card
+        elif "results/Battery/" in data:
+            on_click_function = open_battery_card
         else:
             data = subtitle_data
             on_click_function = open_card
@@ -864,9 +874,9 @@ def main(page: ft.Page):
         
         def save(e):
             if save_location.error_text == None and name.value != "":
-                with open(f"{save_location.value + "\\" + name.value}.txt", "w", encoding='utf-8') as file:
+                with open(f"{save_location.value}\\{name.value}.txt", "w", encoding='utf-8') as file:
                     file.writelines(str(data))
-                subprocess.Popen(["notepad",f"{save_location.value + "\\" + name.value}.txt"])
+                subprocess.Popen(["notepad",f"{save_location.value}\\{name.value}.txt"])
                 close_dynamic_modal(e)
             else:
                 if os.path.exists(f"{save_location.value}") == False:
@@ -1228,17 +1238,24 @@ Registry path: {program['RegPath']}"""
             update_results("Printer Test Page", result, id=id)
             end_of_process(id)
     
-    def are_you_sure(e, text):
-            sure_modal = YouSure(text, close_dynamic_modal)
-            page.dialog = sure_modal.get_modal()
-            page.dialog.open = True
-            page.update()
-            answer = False
-            while page.dialog.open:
-                answer = sure_modal.said_yes
-                if answer:
-                    close_dynamic_modal(e)
-            return answer
+    def are_you_sure(e, text, **kwargs):
+        title = "Confirm:"
+        no_text = "Cancel"
+        for key, value in kwargs.items():
+            if key == "title":
+                title = value
+            if key == "no_text":
+                no_text = value
+        sure_modal = YouSure(text, title, no_text, close_dynamic_modal)
+        page.dialog = sure_modal.get_modal()
+        page.dialog.open = True
+        page.update()
+        answer = False
+        while page.dialog.open:
+            answer = sure_modal.said_yes
+            if answer:
+                close_dynamic_modal(e)
+        return answer
     
     def uninstall_printer(e):
         if are_you_sure(e, f"Uninstall {e.control.data["printer"]} from {e.control.data["computer"]}?"):
@@ -1265,15 +1282,18 @@ Registry path: {program['RegPath']}"""
             end_of_process(id)
     
     def open_c_share(e):
-        pass
+        if check_computer_name():
+            computer = computer_name.value
+            show_message(f"Opening c$ share for {computer}")
+            powershell = the_shell.Power_Shell()
+            result = powershell.open_c_share(computer)
+            if result != 0:
+                update_results(title_text="Uninstall Printer", data=result, id=id, computer=computer, subtitle=f"Couldn't open C$ share on {computer}.")
 
     def check_bootup(e):
         pass
     
     def open_event_log(e):
-        pass
-    
-    def check_battery(e):
         pass
     
     
@@ -1471,7 +1491,7 @@ Registry path: {program['RegPath']}"""
         print("restarted")
 
     # Computer Text Field
-    computer_name = ft.TextField(label="Computer Name")
+    computer_name = ft.TextField(label="Computer Name", on_submit=ping)
     
     def get_user_ids(e):
         if check_computer_name() and check_process("User IDs", computer_name.value):
@@ -1637,6 +1657,127 @@ Registry path: {program['RegPath']}"""
             data = f"./results/Programs/{computer}-Programs.json"
             result = powershell.check_software(computer=computer, software=software_textfield.value, id=id, all=all, winRM=settings_values["enable_win_rm"])
             update_results("Check Software", data=data, id=id, subtitle=result, computer=computer)
+            end_of_process(id)
+    
+    def open_battery_report(e):
+        html = e.control.data
+        subprocess.call([f"cmd.exe", "/c" f"{html}"])
+    
+    def open_battery_card(e):
+        battery_json_path = e.control.data["data"]
+        
+        list_of_pcs = {}
+        
+        expansion_list = ft.ExpansionPanelList(
+            elevation=8,
+            controls=[]
+        )
+        
+        results_for_export = ""
+        
+        with open(battery_json_path, "r", encoding='utf-8') as file:
+            data = json.load(file)
+            
+            # For each computer in data
+            for r in data:
+                
+                results_for_export += f"----{r} - Battery:----\n"
+                # r is equal to computer name.
+                # comp is equal to battery details.
+                comp = data[r]
+                
+                # For each key
+                for batt_info in comp:
+
+                    # First get PC and define an expansiontile for it
+                    if r not in list_of_pcs:
+                        exp_panel = ft.ExpansionPanel(
+                                header=ft.ListTile(
+                                title=ft.Text(f"{r}", weight=ft.FontWeight.BOLD),
+                                trailing=ft.Icon(name=ft.icons.COMPUTER)
+                            ),
+                            content=ft.Row(wrap=True, spacing=10),
+                            can_tap_header=True
+                        )
+                        
+                        # Add dict key of pc name with value of expansiontile
+                        list_of_pcs.update({f"{r}": exp_panel})
+                    
+                    results_for_export += f"{batt_info}: {comp[batt_info]}" + "\n"
+                    
+                    # Then add battery info to corresponding PCs in the dict
+                    if batt_info == "BatteryReport":
+                        new_control = ft.Container(
+                            content=ft.Row([
+                                ft.Text(f"{batt_info}:", selectable=True, weight=ft.FontWeight.BOLD),
+                                ft.TextButton(f"Open", data=comp[batt_info], on_click=open_battery_report),
+                            ]),
+
+                            padding=ft.padding.only(left=10, right=10, bottom=10)
+                        )
+                    else:
+                        new_control = ft.Container(
+                            content=ft.Row([
+                                ft.Text(f"{batt_info}:", selectable=True, weight=ft.FontWeight.BOLD),
+                                ft.Text(f"{comp[batt_info]}", selectable=True),
+                            ]),
+                            padding=ft.padding.only(left=10, right=10, bottom=10)
+                        )
+                        
+                    list_of_pcs[f"{r}"].content.controls.append(new_control)
+                results_for_export += "______________________________\n"
+
+        # Loop through expansionpanels in list and append them to expansion_list
+        for pc in list_of_pcs:
+            expansion_list.controls.append(list_of_pcs[f"{pc}"])
+        
+        modal = DynamicModal(
+            title=f"{e.control.title.value}, {e.control.data["computer"]}",
+            content=ft.Column(controls=[
+                expansion_list,
+                ft.TextButton(
+                    "Export results", 
+                    on_click=export_data, 
+                    data=results_for_export
+                )
+            ]),
+            close_modal_func=close_dynamic_modal
+        )
+        page.dialog = modal.get_modal()
+        page.dialog.open = True
+        page.update()
+    
+    def check_battery(e):
+        id = uuid.uuid4()
+        powershell = the_shell.Power_Shell()
+        if are_you_sure(e, text="Do you want to check the battery status for each computer in the list of ocmputers?", title="Use List of Computers?", no_text="No"):
+            computer = "list of computers"
+            add_new_process(new_process("Check Battery", [computer], date_time(), id))
+            show_message(f"Checking battery on {computer}")
+            result = powershell.check_battery(computer, id, settings_values["enable_win_rm"])
+            update_results(
+                "Check Battery", 
+                data=result, 
+                id=id, 
+                subtitle=result, 
+                computer=computer, 
+                battery=True
+            )
+            end_of_process(id)
+        elif check_computer_name() and check_process("Check Battery", computer_name.value):
+            computer = computer_name.value
+            enable_winrm(computer)
+            add_new_process(new_process("Check Battery", [computer], date_time(), id))
+            show_message(f"Checking battery on {computer}")
+            result = powershell.check_battery(computer, id, settings_values["enable_win_rm"])
+            update_results(
+                "Check Battery", 
+                data=result, 
+                id=id, 
+                subtitle=result, 
+                computer=computer, 
+                battery=True
+            )
             end_of_process(id)
     
     def msinfo_32(e):
@@ -1958,9 +2099,9 @@ Registry path: {program['RegPath']}"""
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.BATTERY_4_BAR, icon_size=50, on_click=check_battery),
+                    ft.IconButton(icon=ft.icons.BATTERY_3_BAR, icon_size=50, on_click=check_battery),
                     ft.Text("Battery Status")
-                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1)
             ], wrap=True),
             padding=10
         ),

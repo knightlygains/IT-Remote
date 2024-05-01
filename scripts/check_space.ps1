@@ -17,9 +17,6 @@ if ($Computer -like "localhost") {
     $Computer = $env:COMPUTERNAME
 }
 
-
-
-Write-Host $id
 $result_json_path = ".\results\ClearSpace\$id-Space-Available.json"
 
 try {
@@ -37,8 +34,6 @@ $json_format = @"
     }
 "@
 
-
-
 $all_results = ConvertFrom-Json $json_format
 
 Function Get-Space {
@@ -48,7 +43,6 @@ Function Get-Space {
     }
     foreach ($pc in $Computer) {
         $space_obj = ConvertFrom-Json $json_format
-        Write-Host "$pc"
         if (Test-Connection $pc) {
 
             Enable-WinRM $pc $winRM

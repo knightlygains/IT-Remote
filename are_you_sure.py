@@ -1,9 +1,8 @@
 import flet as ft
 
 class YouSure(ft.AlertDialog):
-    def __init__(self, text, close_modal_func):
+    def __init__(self, text, title, no_text, close_modal_func):
         super().__init__()
-        self._title = "Confirm:"
         self.said_yes = False
         self.modal_not_dismissed = True
         
@@ -13,13 +12,13 @@ class YouSure(ft.AlertDialog):
         
         self.modal = ft.AlertDialog(
             modal=False,
-            title=ft.Text("Confirm:"),
+            title=ft.Text(f"{title}"),
             content=ft.Column([
                     ft.Text(f"{text}")
                 ], height=100),
             actions=[
                 ft.TextButton("Yes", on_click=yes),
-                ft.TextButton("Cancel", on_click=close_modal_func),
+                ft.TextButton(f"{no_text}", on_click=close_modal_func),
             ],
             actions_alignment=ft.MainAxisAlignment.END
         )
