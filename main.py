@@ -775,7 +775,10 @@ def main(page: ft.Page):
         Uses dynamic modal to show info about the disk
         space on a computer.
         """
-        space_list_view = ft.ListView(expand=1, padding= 20)
+        space_list_view = ft.ExpansionPanelList(
+            elevation=8,
+            controls=[]
+        )
         card_content = ft.Container(
             content=space_list_view,
             expand=1,
@@ -784,8 +787,6 @@ def main(page: ft.Page):
         space_json_path = e.control.data["data"]
         with open(space_json_path, "r") as file:
             data = json.load(file)
-            
-            
             
             for comp in data:
                 drives_list = []
@@ -810,24 +811,32 @@ def main(page: ft.Page):
                         ])
                     )
                 
-                card = ft.ExpansionTile(
-                    title=ft.Text(f"{comp}", weight=ft.FontWeight.BOLD),
-                    controls=[
-                        ft.Container(
+                card = ft.ExpansionPanel(
+                    header=ft.ListTile(
+                            title=ft.Text(f"{comp}", weight=ft.FontWeight.BOLD),
+                            trailing=ft.Icon(name=ft.icons.COMPUTER)
+                        ),
+                    content=ft.Container(
                             content=ft.Column([
                                 ft.Column(drives_list)
                             ], expand = 1),
                             expand = 1,
-                            padding=20
-                        )
-                    ],
+                            padding=ft.padding.only(left=10, right=10, bottom=10)
+                        ),
+                    can_tap_header=True,
                     expand = 1
                 )
                 space_list_view.controls.append(card)
-                
-        dynamic_modal.content = card_content
-        dynamic_modal.title = ft.Text(f"{e.control.title.value}, {e.control.data["computer"]}")
-        show_dynamic_modal()
+        
+        modal = DynamicModal(
+            title=f"{e.control.title.value}, {e.control.data["computer"]}",
+            content=card_content,
+            close_modal_func=close_dynamic_modal
+        )
+            
+        page.dialog = modal.get_modal()
+        page.dialog.open = True
+        page.update()
     
     def export_data(e):
         data = e.control.data
@@ -1693,9 +1702,9 @@ Registry path: {program['RegPath']}"""
                     if r not in list_of_pcs:
                         exp_panel = ft.ExpansionPanel(
                                 header=ft.ListTile(
-                                title=ft.Text(f"{r}", weight=ft.FontWeight.BOLD),
-                                trailing=ft.Icon(name=ft.icons.COMPUTER)
-                            ),
+                                    title=ft.Text(f"{r}", weight=ft.FontWeight.BOLD),
+                                    trailing=ft.Icon(name=ft.icons.COMPUTER)
+                                ),
                             content=ft.Row(wrap=True, spacing=10),
                             can_tap_header=True
                         )
@@ -1712,7 +1721,6 @@ Registry path: {program['RegPath']}"""
                                 ft.Text(f"{batt_info}:", selectable=True, weight=ft.FontWeight.BOLD),
                                 ft.TextButton(f"Open", data=comp[batt_info], on_click=open_battery_report),
                             ]),
-
                             padding=ft.padding.only(left=10, right=10, bottom=10)
                         )
                     else:
@@ -1733,14 +1741,18 @@ Registry path: {program['RegPath']}"""
         
         modal = DynamicModal(
             title=f"{e.control.title.value}, {e.control.data["computer"]}",
-            content=ft.Column(controls=[
-                expansion_list,
-                ft.TextButton(
-                    "Export results", 
-                    on_click=export_data, 
-                    data=results_for_export
-                )
-            ]),
+            content=ft.Container(
+                    content=ft.Column(
+                        controls=[
+                        expansion_list,
+                        ft.TextButton(
+                            "Export results", 
+                            on_click=export_data, 
+                            data=results_for_export
+                        )
+                    ]),
+                    width= 500
+                ),
             close_modal_func=close_dynamic_modal
         )
         page.dialog = modal.get_modal()
