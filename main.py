@@ -332,6 +332,7 @@ def main(page: ft.Page):
                 computer = value
                 if value.lower() == "localhost":
                     computer = socket.gethostname()
+                
             if key == "type":
                 type = value
             if key == "print_wiz":
@@ -361,7 +362,7 @@ def main(page: ft.Page):
         
         card = generate_result_card(
             leading = ft.Icon(ft.icons.TERMINAL),
-            title=ft.Text(title_text),
+            title=ft.Text(title_text + f" - {computer}"),
             date=date_time(),
             data=data,
             id=id,
@@ -450,6 +451,16 @@ def main(page: ft.Page):
         alignment=ft.alignment.top_left,
         border_radius=20
     )
+    
+    # Dynamic Modal
+    def show_dynamic_modal():
+        page.dialog = dynamic_modal
+        dynamic_modal.open = True
+        page.update()
+    
+    def close_dynamic_modal(e):
+        page.dialog.open = False
+        page.update()
     
     # Holds controls we removed from result_data
     filtered_out_results = []
@@ -582,10 +593,6 @@ def main(page: ft.Page):
         page.dialog = result_card_modal
         result_card_modal.open = True
         page.update()
-        
-    def close_card_modal(e):
-        result_card_modal.open = False
-        page.update()
     
     # Define card modal
     result_card_modal = ft.AlertDialog(
@@ -593,7 +600,7 @@ def main(page: ft.Page):
         title=ft.Text("Title"),
         content=ft.Text("No content"),
         actions=[
-            ft.TextButton("Close", on_click=close_card_modal),
+            ft.TextButton("Close", on_click=close_dynamic_modal),
         ],
         actions_alignment=ft.MainAxisAlignment.END,
     )
@@ -606,7 +613,7 @@ def main(page: ft.Page):
             content=ft.Column([
                 ft.Text(e.control.data["data"], selectable=True)
             ], scroll=True))
-        result_card_modal.title = ft.Text(e.control.title.value, )
+        result_card_modal.title = ft.Text(e.control.title.value)
         show_card_modal()
     
     def open_card_print_wiz(e):
@@ -697,16 +704,6 @@ def main(page: ft.Page):
         
         return result_card
     
-    # Dynamic Modal
-    def show_dynamic_modal():
-        page.dialog = dynamic_modal
-        dynamic_modal.open = True
-        page.update()
-    
-    def close_dynamic_modal(e):
-        page.dialog.open = False
-        page.update()
-    
     # The dynamic modal is used to dynamically
     # assign content to its controls, then
     # use the show_dynamic_modal function to
@@ -766,9 +763,20 @@ def main(page: ft.Page):
                 )
                 logs_list_view.controls.append(card)
         
-        dynamic_modal.content = card_content
-        dynamic_modal.title = ft.Text(f"{e.control.title.value}, {e.control.data["computer"]}")
-        show_dynamic_modal()
+        if "Operational" in e.control.data["data"]:
+            title = f"{e.control.data["computer"]}'s Operational Print Logs"
+        else:
+            title = f"{e.control.data["computer"]}'s Admin Print Logs"
+        
+        modal = DynamicModal(
+            title=title,
+            content=card_content,
+            close_modal_func=close_dynamic_modal
+        )
+        
+        page.dialog = modal.get_modal()
+        page.dialog.open = True
+        page.update()
     
     def open_space_card(e):
         """
@@ -833,7 +841,7 @@ def main(page: ft.Page):
             content=card_content,
             close_modal_func=close_dynamic_modal
         )
-            
+        
         page.dialog = modal.get_modal()
         page.dialog.open = True
         page.update()
@@ -1297,13 +1305,19 @@ Registry path: {program['RegPath']}"""
             powershell = the_shell.Power_Shell()
             result = powershell.open_c_share(computer)
             if result != 0:
-                update_results(title_text="Uninstall Printer", data=result, id=id, computer=computer, subtitle=f"Couldn't open C$ share on {computer}.")
-
-    def check_bootup(e):
-        pass
+                update_results(title_text="C$ Share", data=result, id=id, computer=computer, subtitle=f"Couldn't open C$ share on {computer}.")
     
     def open_event_log(e):
-        pass
+        if check_computer_name() and check_process("Event Viewer", computer_name.value):
+            computer = computer_name.value
+            id = uuid.uuid4()
+            add_new_process(new_process("Event Viewer", [computer], date_time(), id))
+            show_message(f"Opening event viewer for {computer}")
+            powershell = the_shell.Power_Shell()
+            result = powershell.event_viewer(computer)
+            if result != 0:
+                update_results(title_text="Event Viewer", data=f"Couldn't open event viewer on {computer}.", id=id, computer=computer, subtitle=f"Couldn't open event viewer on {computer}.")
+            end_of_process(id)
     
     
     def open_restart_modal(e):
@@ -1792,6 +1806,18 @@ Registry path: {program['RegPath']}"""
             )
             end_of_process(id)
     
+    def get_uptime(e):
+        if check_computer_name() and check_process("Get Uptime", computer_name.value):
+            id = uuid.uuid4()
+            powershell = the_shell.Power_Shell()
+            computer = computer_name.value
+            enable_winrm(computer)
+            add_new_process(new_process("Get Uptime", [computer], date_time(), id))
+            show_message(f"Getting uptime for {computer}")
+            result = powershell.get_uptime(computer)
+            update_results("Get Uptime", data=result, id=id, subtitle=result, computer=computer)
+            end_of_process(id)
+    
     def msinfo_32(e):
         if check_computer_name() and check_process("MsInfo32", computer_name.value):
             id = uuid.uuid4()
@@ -2096,13 +2122,13 @@ Registry path: {program['RegPath']}"""
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.SCHEDULE, icon_size=50, on_click=check_bootup, data=""),
-                    ft.Text("Check Last Bootup")
+                    ft.IconButton(icon=ft.icons.SCHEDULE, icon_size=50, on_click=get_uptime, data=""),
+                    ft.Text("Get Uptime")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
                     ft.IconButton(icon=ft.icons.TEXT_SNIPPET, icon_size=50, on_click=open_event_log),
-                    ft.Text("Event Log")
+                    ft.Text("Event Viewer")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([

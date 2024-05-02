@@ -113,6 +113,14 @@ class Power_Shell():
         else:
             return f"Failed to get battery info on {computer}."
     
+    def get_uptime(self, computer):
+        p = subprocess.getoutput([self.pspath, "-File", "./scripts/get_uptime.ps1", f"{computer}"])
+        return p
+    
+    def event_viewer(self, computer):
+        p = subprocess.call([self.pspath, "-File", "./scripts/event_viewer.ps1", f"{computer}"])
+        return p
+    
     def open_c_share(self, computer):
         p = subprocess.call([self.pspath, "-File", "./scripts/open_cshare.ps1", f"{computer}"])
         return p
