@@ -1857,7 +1857,7 @@ Registry path: {program['RegPath']}"""
     def check_battery(e):
         id = uuid.uuid4()
         powershell = the_shell.Power_Shell()
-        if are_you_sure(e, text="Do you want to check the battery status for each computer in the list of ocmputers?", title="Use List of Computers?", no_text="No"):
+        if are_you_sure(e, text="Do you want to check the battery status for each computer in the list of computers?", title="Use List of Computers?", no_text="No"):
             computer = "list of computers"
             add_new_process(new_process("Check Battery", [computer], date_time(), id))
             show_message(f"Checking battery on {computer}")
@@ -2314,6 +2314,18 @@ Registry path: {program['RegPath']}"""
         printer_wiz_list_container,
     ], expand=True)
     
+    
+    # Filepicker for picking directory
+    def select_script(e: ft.FilePickerResultEvent):
+        for file in e.files:
+            print(file.path)
+
+    pick_script_dialog = ft.FilePicker(
+        on_result=select_script,
+    )
+
+    page.overlay.append(pick_script_dialog) 
+    
     commands_list_view = ft.ListView(expand=1, spacing=10, padding=20)
     commands_list_view.controls = generate_commands()
     commands_list_container = ft.Container(
@@ -2328,8 +2340,16 @@ Registry path: {program['RegPath']}"""
     
     custom_scripts_view = ft.Column([
         ft.Row([
+            ft.IconButton(
+                icon=ft.icons.ADD,
+                tooltip="Add a custom script",
+                on_click=lambda _: pick_script_dialog.pick_files(
+                    allow_multiple=True,
+                    allowed_extensions=["ps1"]
+                )
+            ),
             cust_scripts_tutorial
-        ], spacing=0),
+        ], spacing=0, alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
         commands_list_container
     ], expand=True)
     
