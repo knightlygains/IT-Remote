@@ -15,7 +15,8 @@ class DynamicModal(ft.AlertDialog):
         # Make a new container that holds content arugments
         self.content_container=ft.Container(
             content=content,
-            padding=15
+            padding=15,
+            width=500
         )
         
         self.actions = [

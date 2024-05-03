@@ -121,9 +121,15 @@ class Power_Shell():
         p = subprocess.call([self.pspath, "-File", "./scripts/event_viewer.ps1", f"{computer}"])
         return p
     
-    def rename_computers(self, id, winRM):
-        # Need to find a way to pass both lists
-        p = subprocess.call([self.pspath, "-File", "./scripts/rename_computers.ps1"])
+    # def rename_computers(self, computer, username, id, winRM):
+    #     # Need to find a way to pass both lists
+    #     p = subprocess.call([self.pspath, "-File", "./scripts/rename_computers.ps1", f"{computer}", f"{username}", f"{id}", f"{winRM}"])
+    #     if p == 0:
+    #         with open(f"./results/{id}-rename_computers.txt", "r") as file:
+    #             results = file.read()
+    #         return results
+    #     else:
+    #         return f"There was an error creating ./results/{id}-rename_computers.txt"
     
     def open_c_share(self, computer):
         p = subprocess.call([self.pspath, "-File", "./scripts/open_cshare.ps1", f"{computer}"])

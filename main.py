@@ -846,6 +846,15 @@ def main(page: ft.Page):
         page.dialog.open = True
         page.update()
     
+    def format_text_specialchar(e):
+            # Remove spaces
+            e.control.value = str(e.control.value).replace(" ", "")
+            # Use regex to remove speical chars
+            e.control.value = re.sub('[^a-zA-Z0-9 \\n\\._-]', '', e.control.value)
+            # Remove period
+            e.control.value = str(e.control.value).replace(".", "")
+            e.control.update()
+    
     def export_data(e):
         data = e.control.data
         
@@ -856,18 +865,11 @@ def main(page: ft.Page):
                 e.control.error_text="Directory does not exist."
             save_location.update()
                 
-        def check_filename(e):
-            # Remove spaces
-            e.control.value = str(e.control.value).replace(" ", "")
-            # Use regex to remove speical chars
-            e.control.value = re.sub('[^a-zA-Z0-9 \\n\\._-]', '', e.control.value)
-            # Remove period
-            e.control.value = str(e.control.value).replace(".", "")
-            name.update()
+        
         
         name = ft.TextField(
             label="Filename",
-            on_change=check_filename,
+            on_change=format_text_specialchar,
             value="results"
         )
         
@@ -1319,72 +1321,85 @@ Registry path: {program['RegPath']}"""
                 update_results(title_text="Event Viewer", data=f"Couldn't open event viewer on {computer}.", id=id, computer=computer, subtitle=f"Couldn't open event viewer on {computer}.")
             end_of_process(id)
     
-    def rename_modal(e):
-        PCs = []
-        controls = []
-        with open("./lists/computers.txt", "r") as file:
-            computers = file.readlines()
-            for pc in computers:
-                PCs.append(pc)
+    # def rename_modal(e, list):
+    #     PCs = []
+    #     controls = []
+    #     if list:
+    #         with open("./lists/computers.txt", "r") as file:
+    #             computers = file.readlines()
+    #             for pc in computers:
+    #                 PCs.append(pc)
+    #     else:
+    #         PCs.append(computer_name.value)
         
-        def format_text(e):
-            e.control.value = e.control.value.replace(" ", "")
+    #     def format_text(e):
+    #         e.control.value = e.control.value.replace(" ", "")
+        
+    #     for pc in PCs:
+    #         new_control = ft.Row([
+    #             ft.Text(f"{pc}"),
+    #             ft.TextField(label="New Name", data=pc, on_change=format_text)
+    #         ])
+    #         controls.append(new_control)
+        
+    #     def submit_names(e):
+    #         for control in controls:
+    #             if control.controls[1].value == "":
+    #                 return None
+    #         if list:
+    #             computer = "list of computers"
+    #         else:
+    #             computer = computer_name.value
+    #         computer_names = {}
+    #         new_names = []
+    #         for control in controls:
+    #             # Grab values from ft.Text and ft.TextField
+    #             old_name = control.controls[0].value
+    #             new_name = control.controls[1].value
+    #             computer_names.update({old_name: new_name})
+    #             new_names.append(new_name)
             
-        
-        for pc in PCs:
-            new_control = ft.Row([
-                ft.Text(f"{pc}"),
-                ft.TextField(label="New Name", data=pc, on_change=format_text)
-            ])
-            controls.append(new_control)
-        
-        def submit_names(e):
-            computer_names = {}
-            new_names = []
-            for control in controls:
-                old_name = control.controls[0].value
-                new_name = control.controls[1].value
-                computer_names.update({old_name: new_name})
-                new_names.append(new_name)
+    #         with open("./lists/new_names.txt", "w") as file:
+    #             for name in new_names:
+    #                 file.write(f"{name}\n")
             
-            with open("./lists/new_names.txt", "w") as file:
-                file.writelines(new_names)
-            
-            id = uuid.uuid4()
-            add_new_process(new_process("Rename Computers", ["list of computers"], date_time(), id))
-            show_message(f"Renaming computers...")
-            powershell = the_shell.Power_Shell()
-            result = powershell.rename_computers(id, settings_values["enable_win_rm"])
-            update_results("Rename Computer", result, id)
+    #         id = uuid.uuid4()
+    #         add_new_process(new_process("Rename Computers", ["list of computers"], date_time(), id))
+    #         show_message(f"Renaming computers...")
+    #         powershell = the_shell.Power_Shell()
+    #         result = powershell.rename_computers(computer, username_field.value, id, settings_values["enable_win_rm"])
+    #         update_results("Rename Computer", result, id)
         
-        content = ft.Container(
-            content=ft.Column([
-                ft.Column(controls),
-                ft.Row([
-                    ft.TextButton("Submit", on_click=submit_names)
-                ])
-            ])
-        )
+    #     username_field = ft.TextField(label='Username', on_change=format_text_specialchar)
         
-        modal = DynamicModal(
-            title="Rename Computers",
-            content=content,
-            close_modal_func=close_dynamic_modal
-        )
+    #     content = ft.Container(
+    #         content=ft.Column([
+    #             ft.ListView(controls, expand=1),
+    #             ft.Row([
+    #                 username_field
+    #             ], wrap=True),
+    #             ft.Row([
+    #                 ft.TextButton("Submit", on_click=submit_names)
+    #             ])
+    #         ]),
+    #     )
         
-        page.dialog = modal.get_modal()
-        page.dialog.open = True
-        page.update()
+    #     modal = DynamicModal(
+    #         title="Rename Computers",
+    #         content=content,
+    #         close_modal_func=close_dynamic_modal,
+    #         nolistview=True
+    #     )
+        
+    #     page.dialog = modal.get_modal()
+    #     page.dialog.open = True
+    #     page.update()
     
-    def rename_computer(e):
-        if are_you_sure(e, text="Do you want to rename each computer in the list of ocmputers?", title="Use List of Computers?", no_text="No"):
-            rename_modal(e)
-        elif check_computer_name() and check_process("Rename Computer", computer_name.value):
-            computer = computer_name.value
-            id = uuid.uuid4()
-            add_new_process(new_process("Rename Computer", [computer], date_time(), id))
-            show_message(f"Renaming {computer}")
-            powershell = the_shell.Power_Shell()
+    # def rename_computer(e):
+    #     if are_you_sure(e, text="Do you want to rename each computer in the list of computers?", title="Use List of Computers?", no_text="No"):
+    #         rename_modal(e, True)
+    #     elif check_computer_name() and check_process("Rename Computer", computer_name.value):
+    #         rename_modal(e, False)
     
     def open_restart_modal(e):
 
@@ -2164,11 +2179,11 @@ Registry path: {program['RegPath']}"""
                     ft.IconButton(icon=ft.icons.RESTART_ALT, icon_size=50, on_click=open_restart_modal, data=""),
                     ft.Text("Shutdown/Restart")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-                ft.VerticalDivider(),
-                ft.Column([
-                    ft.IconButton(icon=ft.icons.EDIT_SQUARE, icon_size=40, on_click=rename_computer),
-                    ft.Text("Rename Computer")
-                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                # ft.VerticalDivider(),
+                # ft.Column([
+                #     ft.IconButton(icon=ft.icons.EDIT_SQUARE, icon_size=40, on_click=rename_computer),
+                #     ft.Text("Rename Computer")
+                # ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
             ], wrap=True),
             padding=10
         ),
