@@ -7,7 +7,11 @@ try {
         $lastboot = (Get-CimInstance -ClassName Win32_OperatingSystem).LastBootUpTime
         $CurrentDate = Get-Date
         $uptime = $CurrentDate - $lastboot
-        Write-Output "$($uptime.Days):$($uptime.Hours):$($uptime.Minutes):$($uptime.Seconds)"
+        $seconds = $uptime.Seconds
+        if ($seconds -lt 10) {
+            $seconds = "0$seconds"
+        }
+        Write-Output "$($uptime.Days) days - $($uptime.Hours):$($uptime.Minutes):$($seconds)"
     } -ErrorAction Stop
 }
 catch {

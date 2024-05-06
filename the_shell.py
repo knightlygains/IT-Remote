@@ -8,11 +8,12 @@ class Power_Shell():
         self.pspath = "pwsh.exe"
         self.list_path = "./lists/computers.txt"
     
-    def custom_command(self, path, params):
-        run_list = [self.pspath, path]
-        for item in params:
-            run_list.append(item)
-        p = subprocess.run(run_list)
+    def launch_script(self, script, ps_version):
+        if ps_version:
+            ps = "powershell.exe"
+        else:
+            ps = self.pspath
+        p = subprocess.Popen([ps, script], creationflags=subprocess.CREATE_NEW_CONSOLE)
     
     def open_pc_list(self):
         file_exists = exists(self.list_path)

@@ -8,7 +8,7 @@ from tutorial_btn import TutorialBtn
 from dynamic_modal import DynamicModal
 import uuid
 from are_you_sure import YouSure
-from settings_values import settings_values, load_settings
+from settings_values import settings_values, custom_scripts, load_settings
 
 running_processes_count = 0
 
@@ -17,9 +17,6 @@ running_processes_count = 0
 # text field.
 printer_wiz_target_computer = ""
 printer_to_change = ""
-
-# Used to store a list of custom scripts
-list_of_scripts = []
 
 # Used for are you sure modal
 said_yes = False
@@ -1689,31 +1686,43 @@ Registry path: {program['RegPath']}"""
         elif use_list_checkbox.value == True:
             run_operation("list of computers")
     
+    def launch_script(e):
+        script = e.control.data
+        ps_version = use_ps1.value
+        powershell = the_shell.Power_Shell()
+        powershell.launch_script(script, ps_version)
+        show_message(f"Launching {script}.")
+    
+    def remove_script(e):
+        remove_me = e.control.data
+        custom_scripts.pop(f"{remove_me}")
+        update_settings(e)
+        generate_commands()
+    
+    list_of_script_controls = []
     def generate_commands():
-        global list_of_scripts
-        directory = "./custom_commands"
-        
-        for filename in os.listdir(directory):
-            f = os.path.join(directory, filename)
-            # checking if it is a ps1 file
-            if os.path.isfile(f) and f.endswith('.ps1'):
-                file_dict = {
-                    "name": filename,
-                    "path": f
-                }
-                list_of_scripts.append(file_dict)
-        
-        list_of_controls = []
-        for script in list_of_scripts:   
+        list_of_script_controls.clear()
+        for key, value in custom_scripts.items():
             script_list_tile = ft.ListTile(
-                title=ft.Text(f"{script['name']}"),
+                title=ft.Text(f"{key}"),
                 leading=ft.IconButton(
-                    ft.icons.PLAY_ARROW
+                    ft.icons.PLAY_ARROW,
+                    data=f"{value}",
+                    on_click=launch_script,
+                    tooltip="Launch script"
+                ),
+                trailing=ft.IconButton(
+                    ft.icons.DELETE,
+                    data=f"{key}",
+                    on_click=remove_script,
+                    tooltip="Remove script"
                 )
             )
-            list_of_controls.append(script_list_tile)
-            
-        return list_of_controls
+            list_of_script_controls.append(script_list_tile)
+        page.update()
+    
+    # Populate controls on initial app load
+    generate_commands()
     
     def check_space(e):
         id = uuid.uuid4()
@@ -2319,6 +2328,11 @@ Registry path: {program['RegPath']}"""
     def select_script(e: ft.FilePickerResultEvent):
         for file in e.files:
             print(file.path)
+            custom_scripts.update({
+                f"{file.name}": f"{file.path}"
+            })
+        update_settings(e)
+        generate_commands()
 
     pick_script_dialog = ft.FilePicker(
         on_result=select_script,
@@ -2326,10 +2340,10 @@ Registry path: {program['RegPath']}"""
 
     page.overlay.append(pick_script_dialog) 
     
-    commands_list_view = ft.ListView(expand=1, spacing=10, padding=20)
-    commands_list_view.controls = generate_commands()
-    commands_list_container = ft.Container(
-        content=commands_list_view,
+    scripts_list_view = ft.ListView(expand=1, spacing=10, padding=20)
+    scripts_list_view.controls = list_of_script_controls
+    custom_scripts_container = ft.Container(
+        content=scripts_list_view,
         expand=True,
     )
     
@@ -2337,6 +2351,8 @@ Registry path: {program['RegPath']}"""
         data=["Custom Scripts", "Here you can add your own scripts so they are easily accessible and can be launched at the click of a button."],
         on_click=open_tutorial_modal
     )
+    
+    use_ps1 = ft.Switch(label="Use Powershell 1", value=False)
     
     custom_scripts_view = ft.Column([
         ft.Row([
@@ -2348,9 +2364,10 @@ Registry path: {program['RegPath']}"""
                     allowed_extensions=["ps1"]
                 )
             ),
+            use_ps1,
             cust_scripts_tutorial
         ], spacing=0, alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-        commands_list_container
+        custom_scripts_container
     ], expand=True)
     
     current_view = ft.Row([home], expand=True)
