@@ -4,7 +4,7 @@ param (
     [string] $winRM = "True"
 )
 
-. .\scripts\functions.ps1
+. .\assets\scripts\functions.ps1
 
 if ($winRM -eq "True") {
     $winRM = $true
@@ -17,7 +17,7 @@ if ($Computer -like "localhost") {
     $Computer = $env:COMPUTERNAME
 }
 
-$result_json_path = ".\results\ClearSpace\$id-Space-Available.json"
+$result_json_path = ".\assets\results\ClearSpace\$id-Space-Available.json"
 
 try {
     if (-not(Test-Path $result_json_path)) {
@@ -38,7 +38,7 @@ $all_results = ConvertFrom-Json $json_format
 
 Function Get-Space {
     if ($Computer -eq "list of computers") {
-        $Computer = Get-Content ".\lists\computers.txt"
+        $Computer = Get-Content ".\assets\lists\computers.txt"
         Write-Host "Computer is list"
     }
     foreach ($pc in $Computer) {

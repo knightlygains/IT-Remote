@@ -20,12 +20,12 @@ else {
     $winRM = $false
 }
 
-. .\scripts\functions.ps1
+. .\assets\scripts\functions.ps1
 
 
 Function Restart-PCs {
 
-    $list = Get-Content ".\lists\computers.txt"
+    $list = Get-Content ".\assets\lists\computers.txt"
     # If using list, set Computers = to Get-Content for list contents
     if ($Computers -eq "Use-List") {
         foreach ($Computer in $list) {
@@ -41,7 +41,7 @@ Function Restart-PCs {
         $list = $Computers
     }
 
-    New-Item ".\results\Restart\$id-Restart.txt" -type file | Out-Null
+    New-Item ".\assets\results\Restart\$id-Restart.txt" -type file | Out-Null
 
     #Grab date and time values from the schedule text boxes
     $currentDate = Get-Date
@@ -106,10 +106,10 @@ Function Restart-PCs {
         }
         
         if (-not($LastExitCode -eq 0)) {
-            Add-Content -Path ".\results\Restart\$id-Restart.txt" -Value "Could not $action $comp."
+            Add-Content -Path ".\assets\results\Restart\$id-Restart.txt" -Value "Could not $action $comp."
         }
         else {
-            Add-Content -Path ".\results\Restart\$id-Restart.txt" -Value "$($action): $comp at $restartTime."
+            Add-Content -Path ".\assets\results\Restart\$id-Restart.txt" -Value "$($action): $comp at $restartTime."
         }
     }
 }

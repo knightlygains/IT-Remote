@@ -6,14 +6,14 @@ param (
     [string]$winRM
 )
 
-if ($winrRM -eq "True") {
+if ($winRM -eq "True") {
     $winRM = $true
 }
 else {
     $winRM = $false
 }
 
-. .\scripts\functions.ps1
+. .\assets\scripts\functions.ps1
 
 Function Enable-RemoteRegistry {
     [CmdletBinding()]
@@ -153,7 +153,7 @@ Function Get-InstalledSoftware {
     End {}
 }
 
-$list = Get-Content ".\lists\computers.txt"
+$list = Get-Content ".\assets\lists\computers.txt"
 # If using list, set Computers = to Get-Content for list contents
 if ($Computer -eq "list of computers") {
     Write-Host $list
@@ -186,8 +186,8 @@ foreach ($pc in $list) {
 $found_software = Get-Variable -Name "softwareObject_*_" -ValueOnly
 
 if ($Computer -eq "list of computers") {
-    $filename = "Programs-$date.json"
-    New-Item -Path ".\results\Programs\$filename" -ItemType "file" -Force | Out-Null
+    $filename = "Programs-$id.json"
+    New-Item -Path ".\assets\results\Programs\$filename" -ItemType "file" -Force | Out-Null
 
     $computers = @()
 
@@ -199,7 +199,7 @@ if ($Computer -eq "list of computers") {
 }
 else {
     $filename = "$Computer-Programs.json"
-    New-Item -Path ".\results\Programs\$filename" -ItemType "file" -Force | Out-Null
+    New-Item -Path ".\assets\results\Programs\$filename" -ItemType "file" -Force | Out-Null
 }
 
 if ($Computer -eq "list of computers") {
@@ -245,7 +245,7 @@ if ($Computer -eq "list of computers") {
 
     }
 
-    Set-Content -Path ".\results\Programs\$filename" -Value (ConvertTo-Json $results -Depth 4)
+    Set-Content -Path ".\assets\results\Programs\$filename" -Value (ConvertTo-Json $results -Depth 4)
 }
 else {
     # Log each software found to json
@@ -284,6 +284,6 @@ else {
     }
     $results | Add-Member -MemberType NoteProperty -Name "$pc" -Value $computer_results
 
-    Set-Content -Path ".\results\Programs\$filename" -Value (ConvertTo-Json $results -Depth 4)
+    Set-Content -Path ".\assets\results\Programs\$filename" -Value (ConvertTo-Json $results -Depth 4)
 }
 return $filename

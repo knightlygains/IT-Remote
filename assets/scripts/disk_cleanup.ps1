@@ -15,9 +15,9 @@ else {
 
 Write-Output "winRM is $winRM"
 
-. .\scripts\functions.ps1
+. .\assets\scripts\functions.ps1
 
-$list = Get-Content ".\lists\computers.txt"
+$list = Get-Content ".\assets\lists\computers.txt"
 # If using list, set Computers = to Get-Content for list contents
 if ($Computers -eq "list of computers") {
     foreach ($Computer in $list) {
@@ -162,6 +162,6 @@ foreach ($Computer in $list) {
         $results += "$($Computer) could not be contacted."
     }
 
-    New-Item -Path ".\results\ClearSpace\$Computer-ClearSpace.txt" -ItemType "file" -Force
-    Set-Content -Path ".\results\ClearSpace\$Computer-ClearSpace.txt" -Value $results
+    New-Item -Path ".\assets\results\ClearSpace\$Computer-ClearSpace.txt" -ItemType "file" -Force
+    Set-Content -Path ".\assets\results\ClearSpace\$Computer-ClearSpace.txt" -Value $results
 }

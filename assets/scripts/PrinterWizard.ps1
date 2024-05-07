@@ -37,7 +37,7 @@ Function getPrinters {
     # Initialize variable number to assign to and increment with each printer
     $variableNumber = 1
 
-    New-Item -Path ".\results\Printers\$Computer-Printers.json" -ItemType "file" -Force | Out-Null
+    New-Item -Path ".\assets\results\Printers\$Computer-Printers.json" -ItemType "file" -Force | Out-Null
     
     $json_format = @"
     {
@@ -85,7 +85,7 @@ Function getPrinters {
         $variableNumber += 1
     }
 
-    Set-Content -Path ".\results\printers\$Computer-Printers.json" -Value (ConvertTo-Json $json_obj)
+    Set-Content -Path ".\assets\results\printers\$Computer-Printers.json" -Value (ConvertTo-Json $json_obj)
 
 }
 

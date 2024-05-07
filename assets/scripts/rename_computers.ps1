@@ -13,7 +13,7 @@ else {
 }
 
 $results = ""
-$results_file = "./results/$id-rename_computers.txt"
+$results_file = ".\assets\results/$id-rename_computers.txt"
 
 # Create json file
 try {
@@ -26,13 +26,13 @@ catch {
 }
 
 if ($Computer -eq "list of computers") {
-    $old_names = Get-Content "./lists/computers.txt"
+    $old_names = Get-Content ".\assets\lists/computers.txt"
 }
 else {
     $old_names = $Computer
 }
 
-$new_names = Get-Content "./lists/new_names.txt"
+$new_names = Get-Content ".\assets\lists/new_names.txt"
 
 $new_new_names = @()
 

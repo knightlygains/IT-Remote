@@ -4,7 +4,7 @@ param(
     [string]$winRM = "True"
 )
 
-. .\scripts\functions.ps1
+. .\assets\scripts\functions.ps1
 
 if ($winrRM -eq "True") {
     $winRM = $true
@@ -13,7 +13,7 @@ else {
     $winRM = $false
 }
 
-$result_json_path = ".\results\Battery\$id-BatteryStatus.json"
+$result_json_path = ".\assets\results\Battery\$id-BatteryStatus.json"
 
 # Create json file
 try {
@@ -34,7 +34,7 @@ $json_format = @"
 Function CheckBattery {
 
     if ($Computer -eq "list of computers") {
-        $Computer = Get-Content ".\lists\computers.txt"
+        $Computer = Get-Content ".\assets\lists\computers.txt"
         Write-Host "List of computers"
         Write-Host $Computer
     

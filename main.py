@@ -1,31 +1,15 @@
 import flet as ft
 import the_shell
-import datetime
-import json, csv, re, subprocess
-import os, time
-import socket, pathlib
+import datetime, json, re, subprocess, os, time, socket, pathlib, uuid
 from tutorial_btn import TutorialBtn
 from dynamic_modal import DynamicModal
-import uuid
 from are_you_sure import YouSure
 from settings_values import settings_values, custom_scripts, load_settings
-
-running_processes_count = 0
-
-# Used to track the last computer printer wizard was run on,
-# so as to not confuse with the current value in the computername
-# text field.
-printer_wiz_target_computer = ""
-printer_to_change = ""
-
-# Used for are you sure modal
-said_yes = False
-modal_not_dismissed = True
     
 load_settings(e=None, update=False)
 
 # Create recent_computers.json
-recent_computers_path = "./results/recent_computers.json"
+recent_computers_path = "./assets/results/recent_computers.json"
 if os.path.exists(recent_computers_path) == False:
     with open(recent_computers_path, "w") as file:
         print(f"{recent_computers_path} created")
@@ -33,21 +17,21 @@ if os.path.exists(recent_computers_path) == False:
         json.dump(init_data, file, indent=4)
 
 #Cleanup old files
-if os.path.exists("./results/Printers"):
-    for filename in os.listdir("./results/Printers"):
-        pathlib.Path(f"./results/Printers/{filename}").unlink()
-if os.path.exists("./results/ClearSpace"):   
-    for filename in os.listdir("./results/ClearSpace"):
-        pathlib.Path(f"./results/ClearSpace/{filename}").unlink()
-if os.path.exists("./results/Programs"):  
-    for filename in os.listdir("./results/Programs"):
-        pathlib.Path(f"./results/Programs/{filename}").unlink()
-if os.path.exists("./results/Restart"):  
-    for filename in os.listdir("./results/Restart"):
-        pathlib.Path(f"./results/Restart/{filename}").unlink()
-if os.path.exists("./results/Battery"):  
-    for filename in os.listdir("./results/Battery"):
-        pathlib.Path(f"./results/Battery/{filename}").unlink()
+if os.path.exists("assets/results/Printers"):
+    for filename in os.listdir("assets/results/Printers"):
+        pathlib.Path(f"assets/results/Printers/{filename}").unlink()
+if os.path.exists("assets/results/ClearSpace"):   
+    for filename in os.listdir("assets/results/ClearSpace"):
+        pathlib.Path(f"assets/results/ClearSpace/{filename}").unlink()
+if os.path.exists("assets/results/Programs"):  
+    for filename in os.listdir("assets/results/Programs"):
+        pathlib.Path(f"assets/results/Programs/{filename}").unlink()
+if os.path.exists("assets/results/Restart"):  
+    for filename in os.listdir("assets/results/Restart"):
+        pathlib.Path(f"assets/results/Restart/{filename}").unlink()
+if os.path.exists("assets/results/Battery"):  
+    for filename in os.listdir("assets/results/Battery"):
+        pathlib.Path(f"assets/results/Battery/{filename}").unlink()
 
 # Program
 def main(page: ft.Page):
@@ -67,10 +51,10 @@ def main(page: ft.Page):
     
     def save_page_dimensions(e):
         try:
-            with open("settings.json", "r") as settings:
+            with open("assets/settings.json", "r") as settings:
                 data = json.load(settings)
                 data.update({"window_width": page.width, "window_height": page.height})
-            with open("settings.json", "w") as settings:
+            with open("assets/settings.json", "w") as settings:
                 json.dump(data, settings, indent=4)
         except ValueError as e:
             print(f"Something went wrong with saving page dimensions, {e}")   
@@ -92,7 +76,8 @@ def main(page: ft.Page):
         load_settings(e, update=True)
         page.update()
     
-    recent_computers_file = "./results/recent_computers.json"
+    # -------------------- RECENT PCS --------------------
+    recent_computers_file = "assets/results/recent_computers.json"
     def update_recent_computers(computer, date, last_action):
         # We need to convert to json.
         # For each computer in data["Computers"]
@@ -184,18 +169,156 @@ def main(page: ft.Page):
             computer_name.value = recent_pc_radio_grp.value
             page.update()
     
-    def show_message(message):
-        page.snack_bar.content.value = message
-        page.snack_bar.open = True
-        page.update()
+    def date_time(**kwargs):
+        x = datetime.datetime.now()
+        day = x.strftime("%a")
+        day_num = x.strftime("%d")
+        month = x.strftime("%b")
+        if settings_values["use_24hr"]:
+            time = x.strftime("%X")
+        else:
+            time = x.strftime("%I:%M:%S %p")
+            if time[0] == "0":
+                time = time.lstrip("0")
+                
+        for key, value in kwargs.items():
+            if key == "force_24" and value == True:
+                return x.strftime("%X")
+            
+        return f"{day} {month} {day_num}, {time}"
+    
+    def format_text_specialchar(e):
+        # Remove spaces
+        e.control.value = str(e.control.value).replace(" ", "")
+        # Use regex to remove speical chars
+        e.control.value = re.sub('[^a-zA-Z0-9 \\n\\._-]', '', e.control.value)
+        # Remove period
+        e.control.value = str(e.control.value).replace(".", "")
+        e.control.update()
+    
+    # -------------------- PROCESSES --------------------
+    running_processes_count = 0
     
     # Store list of runing processes here for tooltip
     list_of_processes = []
     
+    # Container for running process cards
+    show_running_processes = ft.ListView(expand_loose=True, spacing=10, padding=20)
+    
     # Store a list of computernames we have run actions on.
     list_of_computernames = []
     
-    #Left pane navigation rail
+    # Running Processes Modal \/
+    def show_processes_modal(e):
+        page.dialog = processes_modal
+        processes_modal.open = True
+        page.update()
+    
+    def close_processes_modal(e):
+        processes_modal.open = False
+        page.update()
+        
+    # Define card modal
+    processes_modal = ft.AlertDialog(
+        modal=True,
+        title=ft.Text("Running Processes", ),
+        content=show_running_processes,
+        actions=[
+            ft.TextButton("Close", on_click=close_processes_modal),
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+    )
+    
+    running_processes_icon = ft.IconButton(
+        icon=ft.icons.TERMINAL, 
+        on_click=show_processes_modal, 
+        tooltip="Running processes",
+        )
+    
+    running_processes_count_text = ft.Text(f"{running_processes_count}", )
+    
+    loading_gif = ft.Image(
+        src=f"assets/images/gifs/loading.gif",
+        width=50,
+        height=25,
+        visible=False,
+        fit=ft.ImageFit.SCALE_DOWN,
+        offset=ft.transform.Offset(-0.1, 1)
+    )
+    
+    def check_process(name, computer):
+        for process in list_of_processes:
+            if computer in process["computers"] and process["name"] == name or process["name"] == "WinRM":
+                # Proc is running on computer already
+                show_message(f"Already running {name} on {computer}")
+                return False
+        return True
+    
+    def add_new_process(process_object):
+        nonlocal running_processes_count
+        running_processes_count += 1
+        list_of_processes.append(process_object)
+        running_processes_count_text.value = f"{running_processes_count}"
+        update_processes()
+        page.update()
+    
+    def update_processes():
+        """
+        Resets list of controls for show_running_processes,
+        then loops through list_of_process and re-adds
+        existing ones.
+        """
+        # Reset lsit of controls
+        show_running_processes.controls.clear()
+        
+        # The loop through existing ones and re-add
+        for process in list_of_processes:
+            comps = "Computers: "
+
+            for comp in process["computers"]:
+                comps +=  f"{comp} "
+                
+            new_proc_card = ft.Card(
+                content=ft.Column([
+                    ft.ListTile(
+                        leading=ft.Icon(name=ft.icons.TERMINAL_ROUNDED),
+                        title=ft.Text(process["name"]),
+                        subtitle=ft.Text(comps),
+                    )
+                ])
+            )
+            show_running_processes.controls.append(new_proc_card)
+        if len(list_of_processes) > 0:
+            loading_gif.visible = True
+        else:
+            loading_gif.visible = False
+    
+    def end_of_process(id):
+        """Remove process from running_processes by id
+        """
+        nonlocal running_processes_count
+        for process in list_of_processes:
+            if process["id"] == id:
+                show_message(f"{process['name']} - {process['computers']}: has finished.")
+                list_of_processes.remove(process)
+                running_processes_count -= 1
+                running_processes_count_text.value = f"{running_processes_count}"
+        update_processes()
+        page.update()
+    
+    def new_process(name, computers, date, id):
+        """
+        Define a new process' details
+        """
+        new_process = {
+            "name": name,
+            "computers":  computers,
+            "date": date,
+            "id": id
+        }
+        return new_process
+    
+    # -------------------- NAVIGATION --------------------
     def navigate_view(e):
         #If called by a control set equal to control value
         # Otherwise we are likely passing a specific index
@@ -260,23 +383,30 @@ def main(page: ft.Page):
         on_change=navigate_view
     )
     
-    # Other controls
-    settings_save_btn = ft.FilledButton("Save", icon=ft.icons.SAVE, on_click=update_settings)
-    results_label = ft.Text("Clear Results:", weight=ft.FontWeight.BOLD)
+    # -------------------- APP FUNCTIONS --------------------
+    def are_you_sure(e, text, **kwargs):
+        title = "Confirm:"
+        no_text = "Cancel"
+        for key, value in kwargs.items():
+            if key == "title":
+                title = value
+            if key == "no_text":
+                no_text = value
+        sure_modal = YouSure(text, title, no_text, close_dynamic_modal)
+        page.dialog = sure_modal.get_modal()
+        page.dialog.open = True
+        page.update()
+        answer = False
+        while page.dialog.open:
+            answer = sure_modal.said_yes
+            if answer:
+                close_dynamic_modal(e)
+        return answer
     
-    # Container for running process cards
-    show_running_processes = ft.ListView(expand_loose=True, spacing=10, padding=20)
-    
-    # List view for printer wizard
-    printer_wiz_listview = ft.ListView(expand=1, spacing=10, padding=20,)
-    printer_wiz_list_container = ft.Container(
-        bgcolor=settings_values["app_color"],
-        content=printer_wiz_listview,
-        border_radius=20,
-        expand=True,
-    )
-    
-    new_printer_name = ft.TextField(expand=True)
+    def show_message(message):
+        page.snack_bar.content.value = message
+        page.snack_bar.open = True
+        page.update()
     
     def check_computer_name():
         computer_name.value = computer_name.value.replace(" ", "")
@@ -288,32 +418,6 @@ def main(page: ft.Page):
             return False
         else:
             return True
-    
-    def check_process(name, computer):
-        for process in list_of_processes:
-            if computer in process["computers"] and process["name"] == name or process["name"] == "WinRM":
-                # Proc is running on computer already
-                show_message(f"Already running {name} on {computer}")
-                return False
-        return True
-    
-    def date_time(**kwargs):
-        x = datetime.datetime.now()
-        day = x.strftime("%a")
-        day_num = x.strftime("%d")
-        month = x.strftime("%b")
-        if settings_values["use_24hr"]:
-            time = x.strftime("%X")
-        else:
-            time = x.strftime("%I:%M:%S %p")
-            if time[0] == "0":
-                time = time.lstrip("0")
-                
-        for key, value in kwargs.items():
-            if key == "force_24" and value == True:
-                return x.strftime("%X")
-            
-        return f"{day} {month} {day_num}, {time}"
     
     def update_results(title_text, data, id, **kwargs):
         print_log_card = False
@@ -349,13 +453,13 @@ def main(page: ft.Page):
             update_recent_computers(computer, date_time(), title_text)
         
         if print_log_card:
-            data = f"./results/Printers/{computer}-Printers-{type}-logs.json"
+            data = f"assets/results/Printers/{computer}-Printers-{type}-logs.json"
         elif print_wiz_card:
-            data = f"./results/Printers/{computer}-Printers.json"
+            data = f"assets/results/Printers/{computer}-Printers.json"
         elif check_space_card:
-            data = f"./results/ClearSpace/{id}-Space-Available.json"
+            data = f"assets/results/ClearSpace/{id}-Space-Available.json"
         elif battery_card:
-            data = f"./results/Battery/{id}-BatteryStatus.json"
+            data = f"assets/results/Battery/{id}-BatteryStatus.json"
         
         card = generate_result_card(
             leading = ft.Icon(ft.icons.TERMINAL),
@@ -374,70 +478,6 @@ def main(page: ft.Page):
         
         apply_results_filter(filter_out_PCs, False)
     
-    def add_new_process(process_object):
-        global running_processes_count
-        running_processes_count += 1
-        list_of_processes.append(process_object)
-        running_processes_count_text.value = f"{running_processes_count}"
-        update_processes()
-        page.update()
-    
-    def update_processes():
-        """
-        Resets list of controls for show_running_processes,
-        then loops through list_of_process and re-adds
-        existing ones.
-        """
-        # Reset lsit of controls
-        show_running_processes.controls.clear()
-        
-        # The loop through existing ones and re-add
-        for process in list_of_processes:
-            comps = "Computers: "
-
-            for comp in process["computers"]:
-                comps +=  f"{comp} "
-                
-            new_proc_card = ft.Card(
-                content=ft.Column([
-                    ft.ListTile(
-                        leading=ft.Icon(name=ft.icons.TERMINAL_ROUNDED),
-                        title=ft.Text(process["name"]),
-                        subtitle=ft.Text(comps),
-                    )
-                ])
-            )
-            show_running_processes.controls.append(new_proc_card)
-        if len(list_of_processes) > 0:
-            loading_gif.visible = True
-        else:
-            loading_gif.visible = False
-    
-    def end_of_process(id):
-        """Remove process from running_processes by id
-        """
-        global running_processes_count
-        for process in list_of_processes:
-            if process["id"] == id:
-                show_message(f"{process['name']} - {process['computers']}: has finished.")
-                list_of_processes.remove(process)
-                running_processes_count -= 1
-                running_processes_count_text.value = f"{running_processes_count}"
-        update_processes()
-        page.update()
-    
-    def new_process(name, computers, date, id):
-        """
-        Define a new process' details
-        """
-        new_process = {
-            "name": name,
-            "computers":  computers,
-            "date": date,
-            "id": id
-        }
-        return new_process
-    
     # Console text output
     result_data = ft.ListView(expand=1, spacing=10, padding=20)
 
@@ -450,11 +490,6 @@ def main(page: ft.Page):
     )
     
     # Dynamic Modal
-    def show_dynamic_modal():
-        page.dialog = dynamic_modal
-        dynamic_modal.open = True
-        page.update()
-    
     def close_dynamic_modal(e):
         page.dialog.open = False
         page.update()
@@ -547,44 +582,6 @@ def main(page: ft.Page):
         # result_data.update()
         apply_results_filter(filter_out_PCs, False)
     
-    # Running Processes Modal \/
-    def show_processes_modal(e):
-        page.dialog = processes_modal
-        processes_modal.open = True
-        page.update()
-    
-    def close_processes_modal(e):
-        processes_modal.open = False
-        page.update()
-        
-    # Define card modal
-    processes_modal = ft.AlertDialog(
-        modal=True,
-        title=ft.Text("Running Processes", ),
-        content=show_running_processes,
-        actions=[
-            ft.TextButton("Close", on_click=close_processes_modal),
-        ],
-        actions_alignment=ft.MainAxisAlignment.END,
-    )
-    
-    running_processes_icon = ft.IconButton(
-        icon=ft.icons.TERMINAL, 
-        on_click=show_processes_modal, 
-        tooltip="Running processes",
-        )
-    
-    running_processes_count_text = ft.Text(f"{running_processes_count}", )
-    
-    loading_gif = ft.Image(
-        src=f"assets/images/gifs/loading.gif",
-        width=50,
-        height=25,
-        visible=False,
-        fit=ft.ImageFit.SCALE_DOWN,
-        offset=ft.transform.Offset(-0.1, 1)
-    )
-    
     # Card modal Stuff \/
     def show_card_modal():
         page.dialog = result_card_modal
@@ -602,7 +599,7 @@ def main(page: ft.Page):
         actions_alignment=ft.MainAxisAlignment.END,
     )
     
-    def open_card(e):
+    def open_results_card(e):
         """
         Sets card modal content and opens it.
         """
@@ -613,10 +610,7 @@ def main(page: ft.Page):
         result_card_modal.title = ft.Text(e.control.title.value)
         show_card_modal()
     
-    def open_card_print_wiz(e):
-        printer_wizard(e, target_computer=e.control.data["computer"])
-    
-    def remove_card(e):
+    def remove_results_card(e):
         id = e.control.data
         if id == "all":
             # We clicked the remove all results button
@@ -646,21 +640,21 @@ def main(page: ft.Page):
             subtitle_text += "..."
         
         print_log_options = [
-            f"./results/Printers/{computer}-Printers-Operational-logs.json",
-            f"./results/Printers/{computer}-Printers-Admin-logs.json"
+            f"assets/results/Printers/{computer}-Printers-Operational-logs.json",
+            f"assets/results/Printers/{computer}-Printers-Admin-logs.json"
         ]
         
         # Change card_content controls based on type of card
         # we are making.
         
         # Printer_wizard Card
-        if data == f"./results/Printers/{computer}-Printers.json" and "Failed" not in subtitle_data:
+        if data == f"assets/results/Printers/{computer}-Printers.json" and "Failed" not in subtitle_data:
             on_click_function = open_card_print_wiz
         # Print_Log card
         elif data in print_log_options:
             print("print log card")
             on_click_function = open_print_log_card
-        elif data == f"./results/ClearSpace/{id}-Space-Available.json" and "Failed" not in subtitle_data:
+        elif data == f"assets/results/ClearSpace/{id}-Space-Available.json" and "Failed" not in subtitle_data:
             on_click_function = open_space_card
         elif "results/Programs/" in data:
             print("software card")
@@ -670,7 +664,7 @@ def main(page: ft.Page):
             on_click_function = open_battery_card
         else:
             data = subtitle_data
-            on_click_function = open_card
+            on_click_function = open_results_card
 
         subtitle_content = ft.Text(f"{subtitle_text}")
         
@@ -684,7 +678,7 @@ def main(page: ft.Page):
                     icon=ft.icons.CLOSE,
                     icon_size=10,
                     tooltip="Remove",
-                    on_click=remove_card,
+                    on_click=remove_results_card,
                     data=id
                 ),
                 title=title,
@@ -701,19 +695,22 @@ def main(page: ft.Page):
         
         return result_card
     
-    # The dynamic modal is used to dynamically
-    # assign content to its controls, then
-    # use the show_dynamic_modal function to
-    # display it.
-    dynamic_modal = ft.AlertDialog(
-        modal=True,
-        title=ft.Text("Title"),
-        content=ft.Text("No content"),
-        actions=[
-            ft.TextButton("Close", on_click=close_dynamic_modal),
-        ],
-        actions_alignment=ft.MainAxisAlignment.END,
+    # List view for printer wizard
+    printer_wiz_listview = ft.ListView(expand=1, spacing=10, padding=20,)
+    printer_wiz_list_container = ft.Container(
+        bgcolor=settings_values["app_color"],
+        content=printer_wiz_listview,
+        border_radius=20,
+        expand=True,
     )
+    
+    new_printer_name = ft.TextField(expand=True)
+    
+    # Used to track the last computer printer wizard was run on,
+    # so as to not confuse with the current value in the computername
+    # text field.
+    printer_wiz_target_computer = ""
+    printer_to_change = ""
     
     def open_print_log_card(e):
         """
@@ -774,6 +771,18 @@ def main(page: ft.Page):
         page.dialog = modal.get_modal()
         page.dialog.open = True
         page.update()
+    
+    def open_card_print_wiz(e):
+        printer_wizard(e, target_computer=e.control.data["computer"])
+    
+    # Used to store the computer name
+    # that "Get Printers" was run on
+    printer_wiz_computer = ft.Text("None")
+    
+    def refresh_printers(e):
+        nonlocal printer_wiz_target_computer
+        printer_wiz_target_computer = printer_wiz_computer.data
+        printer_wizard(e, target_computer=printer_wiz_target_computer, refresh=True)
     
     def open_space_card(e):
         """
@@ -843,15 +852,6 @@ def main(page: ft.Page):
         page.dialog.open = True
         page.update()
     
-    def format_text_specialchar(e):
-            # Remove spaces
-            e.control.value = str(e.control.value).replace(" ", "")
-            # Use regex to remove speical chars
-            e.control.value = re.sub('[^a-zA-Z0-9 \\n\\._-]', '', e.control.value)
-            # Remove period
-            e.control.value = str(e.control.value).replace(".", "")
-            e.control.update()
-    
     def export_data(e):
         data = e.control.data
         
@@ -861,8 +861,6 @@ def main(page: ft.Page):
             else:
                 e.control.error_text="Directory does not exist."
             save_location.update()
-                
-        
         
         name = ft.TextField(
             label="Filename",
@@ -1101,7 +1099,7 @@ Registry path: {program['RegPath']}"""
             page.update()
             return
         
-        with open(f"./results/printers/{printer_wiz_target_computer}-Printers.json") as file:
+        with open(f"assets/results/printers/{printer_wiz_target_computer}-Printers.json") as file:
             printers = json.load(file)
         
         for printer in printers:
@@ -1220,7 +1218,7 @@ Registry path: {program['RegPath']}"""
                 except FileNotFoundError:
                     show_message(f"Could not get printers on {computer}")
             
-            json_file = f'./results/Printers/{computer}-Printers.json'
+            json_file = f'assets/results/Printers/{computer}-Printers.json'
             
             if os.path.exists(json_file) and refresh != True:
                 # If json file exists and we arent refreshing
@@ -1253,25 +1251,6 @@ Registry path: {program['RegPath']}"""
             result = powershell.test_page(computer=e.control.data["computer"], printerName=e.control.data["printer"])
             update_results("Printer Test Page", result, id=id)
             end_of_process(id)
-    
-    def are_you_sure(e, text, **kwargs):
-        title = "Confirm:"
-        no_text = "Cancel"
-        for key, value in kwargs.items():
-            if key == "title":
-                title = value
-            if key == "no_text":
-                no_text = value
-        sure_modal = YouSure(text, title, no_text, close_dynamic_modal)
-        page.dialog = sure_modal.get_modal()
-        page.dialog.open = True
-        page.update()
-        answer = False
-        while page.dialog.open:
-            answer = sure_modal.said_yes
-            if answer:
-                close_dynamic_modal(e)
-        return answer
     
     def uninstall_printer(e):
         if are_you_sure(e, f"Uninstall {e.control.data["printer"]} from {e.control.data["computer"]}?"):
@@ -1606,7 +1585,7 @@ Registry path: {program['RegPath']}"""
             update_results("User IDs", data=result, id=id, subtitle=result, computer=computer)
             end_of_process(id)
             
-            if os.path.exists(f"./results/Users/{computer}-Users.json"):
+            if os.path.exists(f"assets/results/Users/{computer}-Users.json"):
                 open_logoff_modal(computer)
     
     ping_btn = ft.TextButton(text="Ping", icon=ft.icons.NETWORK_PING, on_click=ping)
@@ -1655,7 +1634,7 @@ Registry path: {program['RegPath']}"""
             # an array of them.
             if computer == "list of computers":
                 list_of_pcs = []
-                list = open("./lists/computers.txt", "r")
+                list = open("assets/lists/computers.txt", "r")
                 computers = list.readlines()
                 for pc in computers:
                     list_of_pcs.append(pc.strip("\\n"))
@@ -1670,12 +1649,12 @@ Registry path: {program['RegPath']}"""
             
             if use_list_checkbox.value == True:
                 for pc in list_of_pcs:
-                    pc_result = open(f"./results/ClearSpace/{pc}-ClearSpace.txt", "r")
+                    pc_result = open(f"assets/results/ClearSpace/{pc}-ClearSpace.txt", "r")
                     read_pc_result = pc_result.read()
                     update_results("Clear Space", read_pc_result, id, computer=computer)
                     pc_result.close()
             else:
-                results = open(f"./results/ClearSpace/{computer}-ClearSpace.txt", "r")
+                results = open(f"assets/results/ClearSpace/{computer}-ClearSpace.txt", "r")
                 result = results.read()
                 update_results("Clear Space", result, id)
             
@@ -1758,8 +1737,8 @@ Registry path: {program['RegPath']}"""
             computer = "list of computers"
             add_new_process(new_process("Check Software", ["Using list"], date_time(), id))
             show_message(f"Checking software on list of PCs")
-            result = powershell.check_software(computer=computer, software=software_textfield.value, id=id, all=all)
-            data = f"./results/Programs/Programs-{id}.json"
+            result = powershell.check_software(computer=computer, software=software_textfield.value, id=id, all=all, winRM=settings_values["enable_win_rm"])
+            data = f"assets/results/Programs/Programs-{id}.json"
             update_results("Check Software", data=data, id=id, subtitle=result, computer=computer)
             end_of_process(id)
         elif check_computer_name() and check_process("Check Software", computer_name.value):
@@ -1767,7 +1746,7 @@ Registry path: {program['RegPath']}"""
             enable_winrm(computer)
             add_new_process(new_process("Check Software", [computer], date_time(), id))
             show_message(f"Checking software on {computer}")
-            data = f"./results/Programs/{computer}-Programs.json"
+            data = f"assets/results/Programs/{computer}-Programs.json"
             result = powershell.check_software(computer=computer, software=software_textfield.value, id=id, all=all, winRM=settings_values["enable_win_rm"])
             update_results("Check Software", data=data, id=id, subtitle=result, computer=computer)
             end_of_process(id)
@@ -1953,7 +1932,7 @@ Registry path: {program['RegPath']}"""
 
     def open_logoff_modal(computer):
         
-        with open(f"./results/Users/{computer}-Users.json", "r") as file:
+        with open(f"assets/results/Users/{computer}-Users.json", "r") as file:
             users = json.load(file)
         
         def clicked(e):
@@ -2041,6 +2020,8 @@ Registry path: {program['RegPath']}"""
         on_click=filter_results,
     )
     
+    clear_results_label = ft.Text("Clear Results:", weight=ft.FontWeight.BOLD)
+    
     home = ft.Column([
         computer_top_row,
         ft.Row([
@@ -2054,12 +2035,12 @@ Registry path: {program['RegPath']}"""
             
             ft.Column([
                 ft.Row([
-                    results_label,
+                    clear_results_label,
                     ft.IconButton(
                         icon=ft.icons.CLOSE,
                         icon_size=13,
                         tooltip="Clear Results",
-                        on_click=remove_card,
+                        on_click=remove_results_card,
                         data="all"
                     ),
                 ])
@@ -2068,6 +2049,48 @@ Registry path: {program['RegPath']}"""
         results_container
     ], expand=True)
     
+    # -------------------- SETTINGS --------------------
+    # Settings color choice radio
+    app_color_label = ft.Text("App Color:", )
+    red_color_radio = ft.Radio(value="red", label="Red", fill_color="red")
+    blue_color_radio = ft.Radio(value="blue", label="Blue", fill_color="blue")
+    green_color_radio = ft.Radio(value="green", label="Green", fill_color="green")
+    purple_color_radio = ft.Radio(value="purple", label="Purple", fill_color="purple")
+    yellow_color_radio = ft.Radio(value="yellow", label="Yellow", fill_color="yellow")
+    cg = ft.RadioGroup(content=ft.Column([
+        red_color_radio,
+        blue_color_radio,
+        green_color_radio,
+        purple_color_radio,
+        yellow_color_radio
+    ]))
+    
+    winrm_checkbox = ft.Checkbox("Enable WinRM before actions", value=settings_values["enable_win_rm"])
+    winrm_results_checkbox = ft.Checkbox("Supress WinRM results", value=settings_values["supress_winrm_results"])
+    use_24hr_checkbox = ft.Checkbox("Use 24hr time format", value=settings_values["use_24hr"])
+    warn_checkbox = ft.Checkbox("Warn before clearing profiles", value=settings_values["warn_about_profile_deletion"])
+    settings_save_btn = ft.FilledButton("Save", icon=ft.icons.SAVE, on_click=update_settings)
+    settings_view = ft.Column([
+        ft.Row([
+            ft.Column([
+            app_color_label,
+                ft.Row([
+                    cg
+                ]),
+            ]),
+            ft.VerticalDivider(),
+            ft.Column([
+                winrm_checkbox,
+                winrm_results_checkbox,
+                use_24hr_checkbox,
+                warn_checkbox
+            ]),
+            ft.VerticalDivider(),
+        ], expand=1),
+        ft.Row([settings_save_btn], alignment=ft.MainAxisAlignment.CENTER)
+    ], expand=1)
+    
+    # -------------------- ACTIONS VIEWS --------------------
     # Actions tab Expansion List items
     check_space_btn =  ft.TextButton(
         text="Check Space", 
@@ -2188,12 +2211,7 @@ Registry path: {program['RegPath']}"""
                     ft.IconButton(icon=ft.icons.RESTART_ALT, icon_size=50, on_click=open_restart_modal, data=""),
                     ft.Text("Shutdown/Restart")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-                # ft.VerticalDivider(),
-                # ft.Column([
-                #     ft.IconButton(icon=ft.icons.EDIT_SQUARE, icon_size=40, on_click=rename_computer),
-                #     ft.Text("Rename Computer")
-                # ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-            ], wrap=True),
+               ], wrap=True),
             padding=10
         ),
         can_tap_header=True,
@@ -2262,54 +2280,6 @@ Registry path: {program['RegPath']}"""
         actions_view_container
     ], expand=1)
     
-    # Settings color choice radio
-    app_color_label = ft.Text("App Color:", )
-    red_color_radio = ft.Radio(value="red", label="Red", fill_color="red")
-    blue_color_radio = ft.Radio(value="blue", label="Blue", fill_color="blue")
-    green_color_radio = ft.Radio(value="green", label="Green", fill_color="green")
-    purple_color_radio = ft.Radio(value="purple", label="Purple", fill_color="purple")
-    yellow_color_radio = ft.Radio(value="yellow", label="Yellow", fill_color="yellow")
-    cg = ft.RadioGroup(content=ft.Column([
-        red_color_radio,
-        blue_color_radio,
-        green_color_radio,
-        purple_color_radio,
-        yellow_color_radio
-    ]))
-    
-    winrm_checkbox = ft.Checkbox("Enable WinRM before actions", value=settings_values["enable_win_rm"])
-    winrm_results_checkbox = ft.Checkbox("Supress WinRM results", value=settings_values["supress_winrm_results"])
-    use_24hr_checkbox = ft.Checkbox("Use 24hr time format", value=settings_values["use_24hr"])
-    warn_checkbox = ft.Checkbox("Warn before clearing profiles", value=settings_values["warn_about_profile_deletion"])
-    settings_view = ft.Column([
-        ft.Row([
-            ft.Column([
-            app_color_label,
-                ft.Row([
-                    cg
-                ]),
-            ]),
-            ft.VerticalDivider(),
-            ft.Column([
-                winrm_checkbox,
-                winrm_results_checkbox,
-                use_24hr_checkbox,
-                warn_checkbox
-            ]),
-            ft.VerticalDivider(),
-        ], expand=1),
-        ft.Row([settings_save_btn], alignment=ft.MainAxisAlignment.CENTER)
-    ], expand=1)
-
-    # Used to store the computer name
-    # that printer_wizard was run on
-    printer_wiz_computer = ft.Text("None")
-    
-    def refresh_printers(e):
-        global printer_wiz_target_computer
-        printer_wiz_target_computer = printer_wiz_computer.data
-        printer_wizard(e, target_computer=printer_wiz_target_computer, refresh=True)
-    
     print_wizard_view = ft.Column([
         computer_top_row,
         ft.Divider(height=9, thickness=3),
@@ -2323,8 +2293,7 @@ Registry path: {program['RegPath']}"""
         printer_wiz_list_container,
     ], expand=True)
     
-    
-    # Filepicker for picking directory
+    # Filepicker for picking custom scripts
     def select_script(e: ft.FilePickerResultEvent):
         for file in e.files:
             print(file.path)

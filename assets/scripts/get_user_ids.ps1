@@ -4,7 +4,7 @@ param(
 
 Function Get-UserIDs {
 
-    New-Item -Path ".\results\Users\$computer-Users.json" -ItemType "file" -Force | Out-Null
+    New-Item -Path ".\assets\results\Users\$computer-Users.json" -ItemType "file" -Force | Out-Null
     
     $json_format = @"
     {
@@ -31,7 +31,7 @@ Function Get-UserIDs {
 
         $user_object = [PSCustomObject]@{
             Name = $username
-            ID = $temp
+            ID   = $temp
         }
 
         $found_users += $user_object
@@ -45,14 +45,7 @@ Function Get-UserIDs {
         $json_obj | add-member -Name "$username" -value (ConvertFrom-Json $user_json) -MemberType NoteProperty
     }
 
-    # foreach ($user in $found_users) {
-    #     logoff $user.ID /server:$computer
-    #     Write-Host "Logged off $($user.Name), $($user.ID)"
-    # }
-
-    # Write-Host "Logged off $($found_users.length) users on $computer."
-
-    Set-Content -Path ".\results\Users\$computer-Users.json" -Value (ConvertTo-Json $json_obj)
+    Set-Content -Path ".\assets\results\Users\$computer-Users.json" -Value (ConvertTo-Json $json_obj)
 }
 
 Get-UserIDs
