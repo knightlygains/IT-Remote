@@ -199,7 +199,7 @@ class Power_Shell():
         p = subprocess.call([
             self.pspath, 
             "-File", 
-            f"./scripts/restart.ps1",
+            f"./assets/scripts/restart.ps1",
             f"{id}",
             f"{shutdown}",
             f"{scheduled}", 

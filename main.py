@@ -419,11 +419,22 @@ def main(page: ft.Page):
         else:
             return True
     
+    def check_list():
+        try:
+            with open("assets/lists/computers.txt", "r") as list:
+                computers = list.read()
+                if re.compile('[^a-zA-Z0-9n\\-]').search(computers):
+                    show_message("The list is not formatted properly or contains illegal characters.")
+                    return False
+                else:
+                    return True
+        except FileNotFoundError as e:
+            print(e)
+    
     def update_results(title_text, data, id, **kwargs):
         print_log_card = False
         print_wiz_card = False
         check_space_card = False
-        battery_card = False
         computer = computer_name.value
         subtitle=data
         for key, value in kwargs.items():
@@ -440,8 +451,6 @@ def main(page: ft.Page):
                 print_wiz_card = value
             if key == "check_space":
                 check_space_card = value
-            if key == "battery":
-                battery_card = value
             if key == "subtitle":
                 subtitle=value  
         
@@ -458,12 +467,10 @@ def main(page: ft.Page):
             data = f"assets/results/Printers/{computer}-Printers.json"
         elif check_space_card:
             data = f"assets/results/ClearSpace/{id}-Space-Available.json"
-        elif battery_card:
-            data = f"assets/results/Battery/{id}-BatteryStatus.json"
         
         card = generate_result_card(
             leading = ft.Icon(ft.icons.TERMINAL),
-            title=ft.Text(title_text + f" - {computer}"),
+            title=ft.Text(f"{title_text} - {computer}"),
             date=date_time(),
             data=data,
             id=id,
@@ -568,7 +575,6 @@ def main(page: ft.Page):
             pass
         
         for checkbox in comp_checkboxes:
-            print(f"{checkbox.value} {checkbox.data}")
             
             # If computer is checked and was previously filtered out,
             # remove from filtered out list
@@ -652,12 +658,10 @@ def main(page: ft.Page):
             on_click_function = open_card_print_wiz
         # Print_Log card
         elif data in print_log_options:
-            print("print log card")
             on_click_function = open_print_log_card
         elif data == f"assets/results/ClearSpace/{id}-Space-Available.json" and "Failed" not in subtitle_data:
             on_click_function = open_space_card
         elif "results/Programs/" in data:
-            print("software card")
             data = f"{data}"
             on_click_function = open_software_card
         elif "results/Battery/" in data:
@@ -1041,7 +1045,6 @@ Registry path: {program['RegPath']}"""
             powershell = the_shell.Power_Shell()
             result = powershell.enable_winrm(computer)
             if settings_values["supress_winrm_results"] != True:
-                print("adding winrm result")
                 update_results("WinRM", result, id)
             end_of_process(id)
             
@@ -1480,8 +1483,6 @@ Registry path: {program['RegPath']}"""
                     shutdown_only = True
                 if schedule_checkbox.value:
                     try:
-                        # print(date_picker.value)
-                        # print(time_picker.value)
                         scheduled = schedule_checkbox.value
                         doing_action = True
                         list = use_list_checkbox.value
@@ -1492,14 +1493,11 @@ Registry path: {program['RegPath']}"""
                         month = date[1]
                         day = date[2]
                         time = time_picker.value
-                        print(f"Date: {date}")
-                        print(f"Time: {time}")
                         close_dynamic_modal(e)
                     except AttributeError:
                         close_dynamic_modal(e)
                         show_message("Picke a date and time")
                 else:
-                    print("no times picked")
                     doing_action = True
                     scheduled = schedule_checkbox.value
                     list = use_list_checkbox.value
@@ -1509,7 +1507,6 @@ Registry path: {program['RegPath']}"""
                     day = date.day
                     time = str(date).split()
                     time = time[1]
-                    print(f"{year},{month},{day},{time}")
                     close_dynamic_modal(e)
         
         modal = DynamicModal(
@@ -1533,10 +1530,8 @@ Registry path: {program['RegPath']}"""
             computer = computer_name.value
         
         if doing_action and shutdown_only == False:
-            print(f"restarting {computer}")
             restart(scheduled, shutdown_only, computer, month=month, day=day, year=year, time=time)
         elif doing_action and shutdown_only:
-            print(f"Shutting down {computer}")
             restart(scheduled, shutdown_only, computer, month=month, day=day, year=year, time=time)
        
     
@@ -1555,20 +1550,29 @@ Registry path: {program['RegPath']}"""
                 minute = int(time[1])
                 seconds = int(float(time[2]))
         
-        if computer != "list of computers":
-            enable_winrm(computer)
+        if computer == "list of computers":
+            use_list = True
         else:
-            print(f"Computer is use-lsit {computer}")
+            use_list = False
         
         id = uuid.uuid4()
-        add_new_process(new_process("Restart", [computer], date_time(), id))
-        show_message(f"Restarting {computer}")
         powershell = the_shell.Power_Shell()
-        result = powershell.restart(id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds, settings_values["use_24hr"])
+        if use_list and check_list():
+            add_new_process(new_process("Restart", [computer], date_time(), id))
+            show_message(f"Restarting {computer}")
+            result = powershell.restart(id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds, settings_values["use_24hr"])
+            update_results("Restart", result, id, computer=computer)
+            end_of_process(id)
+        if use_list != True:
+            if check_computer_name() and check_process("Restart", computer_name.value):
+                enable_winrm(computer)
+                add_new_process(new_process("Restart", [computer], date_time(), id))
+                show_message(f"Restarting {computer}")
+                result = powershell.restart(id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds, settings_values["use_24hr"])
+                update_results("Restart", result, id, computer=computer)
+                end_of_process(id)
         
-        update_results("Restart", result, id, computer=computer)
-        end_of_process(id)
-        print("restarted")
+        
 
     # Computer Text Field
     computer_name = ft.TextField(label="Computer Name", on_submit=ping)
@@ -1640,7 +1644,8 @@ Registry path: {program['RegPath']}"""
                     list_of_pcs.append(pc.strip("\\n"))
                 add_new_process(new_process("Clear Space", list_of_pcs, date_time(), id))
                 show_message(f"Clearing space on list of PCs.")
-            else:
+            
+            if computer != "list of computers":
                 add_new_process(new_process("Clear Space", [computer], date_time(), id))
                 show_message(f"Clearing space on {computer}.")
                 
@@ -1659,11 +1664,14 @@ Registry path: {program['RegPath']}"""
                 update_results("Clear Space", result, id)
             
             end_of_process(id)
-            
-        if check_computer_name() and use_list_checkbox.value == False and check_process("Clear Space", computer_name.value):
-            run_operation(computer_name.value)
-        elif use_list_checkbox.value == True:
+        
+        use_list = use_list_checkbox.value
+        
+        if use_list and check_list():
             run_operation("list of computers")
+        if use_list != True:
+            if check_computer_name() and check_process("Clear Space", computer_name.value):
+                run_operation(computer_name.value)
     
     def launch_script(e):
         script = e.control.data
@@ -1705,7 +1713,8 @@ Registry path: {program['RegPath']}"""
     
     def check_space(e):
         id = uuid.uuid4()
-        if use_list_checkbox.value:
+        use_list = use_list_checkbox.value
+        if use_list and check_list():
             computer = "list of computers"
             add_new_process(new_process("Check Space", [computer], date_time(), id))
             show_message(f"Checking space on {computer}")
@@ -1713,15 +1722,16 @@ Registry path: {program['RegPath']}"""
             result = powershell.check_space(computer=computer, id=id, winRM=settings_values["enable_win_rm"])
             update_results("Check Space", result, id=id, check_space=True, subtitle=result, computer=computer)
             end_of_process(id)
-        elif check_computer_name() and check_process("Check Space", computer_name.value):
-            computer = computer_name.value
-            enable_winrm(computer)
-            add_new_process(new_process("Check Space", [computer], date_time(), id))
-            show_message(f"Checking space on {computer}")
-            powershell = the_shell.Power_Shell()
-            result = powershell.check_space(computer=computer, id=id, winRM=False)
-            update_results("Check Space", result, id=id, check_space=True, subtitle=result, computer=computer)
-            end_of_process(id)
+        if use_list != True:
+            if check_computer_name() and check_process("Check Space", computer_name.value):
+                computer = computer_name.value
+                enable_winrm(computer)
+                add_new_process(new_process("Check Space", [computer], date_time(), id))
+                show_message(f"Checking space on {computer}")
+                powershell = the_shell.Power_Shell()
+                result = powershell.check_space(computer=computer, id=id, winRM=False)
+                update_results("Check Space", result, id=id, check_space=True, subtitle=result, computer=computer)
+                end_of_process(id)
     
     def check_software(e):
         date = date_time()
@@ -1733,7 +1743,8 @@ Registry path: {program['RegPath']}"""
         
         id = uuid.uuid4()
         powershell = the_shell.Power_Shell()
-        if programs_use_list_checkbox.value:
+        use_list = programs_use_list_checkbox.value
+        if use_list and check_list():
             computer = "list of computers"
             add_new_process(new_process("Check Software", ["Using list"], date_time(), id))
             show_message(f"Checking software on list of PCs")
@@ -1741,15 +1752,16 @@ Registry path: {program['RegPath']}"""
             data = f"assets/results/Programs/Programs-{id}.json"
             update_results("Check Software", data=data, id=id, subtitle=result, computer=computer)
             end_of_process(id)
-        elif check_computer_name() and check_process("Check Software", computer_name.value):
-            computer = computer_name.value
-            enable_winrm(computer)
-            add_new_process(new_process("Check Software", [computer], date_time(), id))
-            show_message(f"Checking software on {computer}")
-            data = f"assets/results/Programs/{computer}-Programs.json"
-            result = powershell.check_software(computer=computer, software=software_textfield.value, id=id, all=all, winRM=settings_values["enable_win_rm"])
-            update_results("Check Software", data=data, id=id, subtitle=result, computer=computer)
-            end_of_process(id)
+        if use_list != True:
+            if check_computer_name() and check_process("Check Software", computer_name.value):
+                computer = computer_name.value
+                enable_winrm(computer)
+                add_new_process(new_process("Check Software", [computer], date_time(), id))
+                show_message(f"Checking software on {computer}")
+                data = f"assets/results/Programs/{computer}-Programs.json"
+                result = powershell.check_software(computer=computer, software=software_textfield.value, id=id, all=all, winRM=settings_values["enable_win_rm"])
+                update_results("Check Software", data=data, id=id, subtitle=result, computer=computer)
+                end_of_process(id)
     
     def open_battery_report(e):
         html = e.control.data
@@ -1823,7 +1835,7 @@ Registry path: {program['RegPath']}"""
             expansion_list.controls.append(list_of_pcs[f"{pc}"])
         
         modal = DynamicModal(
-            title=f"{e.control.title.value}, {e.control.data["computer"]}",
+            title=f"{e.control.title.value}",
             content=ft.Container(
                     content=ft.Column(
                         controls=[
@@ -1845,35 +1857,46 @@ Registry path: {program['RegPath']}"""
     def check_battery(e):
         id = uuid.uuid4()
         powershell = the_shell.Power_Shell()
-        if are_you_sure(e, text="Do you want to check the battery status for each computer in the list of computers?", title="Use List of Computers?", no_text="No"):
+        computer = computer_name.value
+        use_list = are_you_sure(e, text="Do you want to check the battery status for each computer in the list of computers?", title="Use List of Computers?", no_text="No")
+        print("use_list is", use_list)
+        if use_list and check_list():
             computer = "list of computers"
             add_new_process(new_process("Check Battery", [computer], date_time(), id))
             show_message(f"Checking battery on {computer}")
             result = powershell.check_battery(computer, id, settings_values["enable_win_rm"])
             update_results(
-                "Check Battery", 
-                data=result, 
-                id=id, 
-                subtitle=result, 
-                computer=computer, 
-                battery=True
-            )
+                    "Check Battery", 
+                    data=f"assets/results/Battery/{id}-BatteryStatus.json", 
+                    id=id, 
+                    subtitle=result, 
+                    computer=computer
+                )
             end_of_process(id)
-        elif check_computer_name() and check_process("Check Battery", computer_name.value):
-            computer = computer_name.value
-            enable_winrm(computer)
-            add_new_process(new_process("Check Battery", [computer], date_time(), id))
-            show_message(f"Checking battery on {computer}")
-            result = powershell.check_battery(computer, id, settings_values["enable_win_rm"])
-            update_results(
-                "Check Battery", 
-                data=result, 
-                id=id, 
-                subtitle=result, 
-                computer=computer, 
-                battery=True
-            )
-            end_of_process(id)
+        
+        if use_list != True:
+            if check_computer_name() and check_process("Check Battery", computer):
+                enable_winrm(computer)
+                add_new_process(new_process("Check Battery", [computer], date_time(), id))
+                show_message(f"Checking battery on {computer}")
+                result = powershell.check_battery(computer, id, settings_values["enable_win_rm"])
+                if "failed" in result:
+                    update_results(
+                        "Check Battery", 
+                        data=result, 
+                        id=id, 
+                        subtitle=result, 
+                        computer=computer
+                    )
+                else:
+                    update_results(
+                        "Check Battery", 
+                        data=f"assets/results/Battery/{id}-BatteryStatus.json", 
+                        id=id, 
+                        subtitle=result, 
+                        computer=computer
+                    )
+                end_of_process(id)
     
     def get_uptime(e):
         if check_computer_name() and check_process("Get Uptime", computer_name.value):
@@ -2296,7 +2319,6 @@ Registry path: {program['RegPath']}"""
     # Filepicker for picking custom scripts
     def select_script(e: ft.FilePickerResultEvent):
         for file in e.files:
-            print(file.path)
             custom_scripts.update({
                 f"{file.name}": f"{file.path}"
             })

@@ -41,7 +41,7 @@ Function Restart-PCs {
         $list = $Computers
     }
 
-    New-Item ".\assets\results\Restart\$id-Restart.txt" -type file | Out-Null
+    New-Item ".\assets\results\Restart\$id-Restart.txt" -type file -force | Out-Null
 
     #Grab date and time values from the schedule text boxes
     $currentDate = Get-Date
@@ -98,18 +98,18 @@ Function Restart-PCs {
         $action = "restart"
 
         if ($shutdown -eq "True") {
-            shutdown /s /m \\$comp /t $secondsToWait
+            $end_result = shutdown /s /m \\$comp /t $secondsToWait 2>&1 | out-string
             $action = "shutdown"
         }
         else {
-            shutdown /r /m \\$comp /t $secondsToWait
+            $end_result = shutdown /r /m \\$comp /t $secondsToWait 2>&1 | out-string
         }
         
         if (-not($LastExitCode -eq 0)) {
-            Add-Content -Path ".\assets\results\Restart\$id-Restart.txt" -Value "Could not $action $comp."
+            Add-Content -Path ".\assets\results\Restart\$id-Restart.txt" -Value "Could not $action $comp. A restart may already be pending or it is offline."
         }
         else {
-            Add-Content -Path ".\assets\results\Restart\$id-Restart.txt" -Value "$($action): $comp at $restartTime."
+            Add-Content -Path ".\assets\results\Restart\$id-Restart.txt" -Value "$((Get-Culture).TextInfo.ToTitleCase($action))ed $comp at $restartTime."
         }
     }
 }

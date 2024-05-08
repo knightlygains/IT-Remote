@@ -13,6 +13,8 @@ else {
     $winRM = $false
 }
 
+
+
 $result_json_path = ".\assets\results\Battery\$id-BatteryStatus.json"
 
 # Create json file
@@ -48,6 +50,17 @@ Function CheckBattery {
     $results = ConvertFrom-Json $json_format
 
     foreach ($pc in $Computer) {
+
+        # Check if running on local machine, if so: dont need admin share
+        if ($Computer -eq $env:computername) {
+            $htmlFile = "C:\$Computer-BatteryReport.html"
+            $remote = $false
+        }
+        else {
+            $htmlFile = "\\$Computer\C$\$Computer-BatteryReport.html"
+            $remote = $true
+        }
+
         if (Test-Connection $pc) {
             $battery = Get-CimInstance -Class CIM_Battery -ComputerName $Computer | Select-Object EstimatedChargeRemaining, BatteryStatus, DesignCapacity, FullChargeCapacity
 
@@ -72,10 +85,13 @@ Function CheckBattery {
                 11 { $batteryStatus = "Partially Charged" }
             }
 
-
-            PsExec.exe \\$pc "C:\Windows\System32\powercfg.exe" /batteryreport /output "C:\$pc-BatteryReport.html"
-
-            $htmlFile = "\\$pc\C$\$pc-BatteryReport.html"
+            if ($remote) {
+                PsExec.exe \\$pc "C:\Windows\System32\powercfg.exe" /batteryreport /output "C:\$pc-BatteryReport.html"
+            }
+            else {
+                powercfg.exe /batteryreport /output "C:\$pc-BatteryReport.html"
+            }
+            
 
             Function Get-Html {
                 $htmlContent = Get-Content "$htmlFile"
