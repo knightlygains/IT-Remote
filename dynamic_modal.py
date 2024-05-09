@@ -19,6 +19,8 @@ class DynamicModal(ft.AlertDialog):
             width=500
         )
         
+        print(f"sdg{title}")
+        
         self.actions = [
             ft.TextButton("Close", on_click=close_modal_func)
         ]
@@ -31,6 +33,8 @@ class DynamicModal(ft.AlertDialog):
                 self.content = self.content_container
             if key == "add_action":
                 self.actions.insert(0, value)
+            if key == "width":
+                self.content_container.width = value
         
         self.modal = ft.AlertDialog(
             modal=True,

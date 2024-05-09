@@ -1,11 +1,11 @@
 import flet as ft
 import the_shell
-import datetime, json, re, subprocess, os, time, socket, pathlib, uuid
+import datetime, json, re, subprocess, os, time, socket, pathlib, uuid, csv
 from tutorial_btn import TutorialBtn
 from dynamic_modal import DynamicModal
 from are_you_sure import YouSure
 from settings_values import settings_values, custom_scripts, load_settings
-    
+
 load_settings(e=None, update=False)
 
 # Create recent_computers.json
@@ -17,21 +17,30 @@ if os.path.exists(recent_computers_path) == False:
         json.dump(init_data, file, indent=4)
 
 #Cleanup old files
-if os.path.exists("assets/results/Printers"):
-    for filename in os.listdir("assets/results/Printers"):
-        pathlib.Path(f"assets/results/Printers/{filename}").unlink()
-if os.path.exists("assets/results/ClearSpace"):   
-    for filename in os.listdir("assets/results/ClearSpace"):
-        pathlib.Path(f"assets/results/ClearSpace/{filename}").unlink()
-if os.path.exists("assets/results/Programs"):  
-    for filename in os.listdir("assets/results/Programs"):
-        pathlib.Path(f"assets/results/Programs/{filename}").unlink()
-if os.path.exists("assets/results/Restart"):  
-    for filename in os.listdir("assets/results/Restart"):
-        pathlib.Path(f"assets/results/Restart/{filename}").unlink()
-if os.path.exists("assets/results/Battery"):  
-    for filename in os.listdir("assets/results/Battery"):
-        pathlib.Path(f"assets/results/Battery/{filename}").unlink()
+printers_path = "assets/results/Printers"
+clearspace_path = "assets/results/ClearSpace"
+programs_path = "assets/results/Programs"
+restart_path = "assets/results/Restart"
+battery_path = "assets/results/Battery"
+users_path = "assets/results/Users"
+if os.path.exists(printers_path):
+    for filename in os.listdir(printers_path):
+        pathlib.Path(f"{printers_path}/{filename}").unlink()
+if os.path.exists(clearspace_path):   
+    for filename in os.listdir(clearspace_path):
+        pathlib.Path(f"{clearspace_path}/{filename}").unlink()
+if os.path.exists(programs_path):  
+    for filename in os.listdir(programs_path):
+        pathlib.Path(f"{programs_path}/{filename}").unlink()
+if os.path.exists(restart_path):  
+    for filename in os.listdir(restart_path):
+        pathlib.Path(f"{restart_path}/{filename}").unlink()
+if os.path.exists(battery_path):  
+    for filename in os.listdir(battery_path):
+        pathlib.Path(f"{battery_path}/{filename}").unlink()
+if os.path.exists(users_path):  
+    for filename in os.listdir(users_path):
+        pathlib.Path(f"{users_path}/{filename}").unlink()
 
 # Program
 def main(page: ft.Page):
@@ -91,6 +100,10 @@ def main(page: ft.Page):
                 }
                 
                 g = json.load(file)
+                
+                for comp in g["computers"]:
+                    if comp["name"] == recent_pc["name"]:
+                        g["computers"].remove(comp)
                 
                 if len(g["computers"]) < 20:
                     g["computers"].insert(0,recent_pc)
@@ -196,6 +209,12 @@ def main(page: ft.Page):
         e.control.value = str(e.control.value).replace(".", "")
         e.control.update()
     
+    # -------------------- Dynamic Modal --------------------
+    # Dynamic Modal
+    def close_dynamic_modal(e):
+        page.dialog.open = False
+        page.update()
+    
     # -------------------- PROCESSES --------------------
     running_processes_count = 0
     
@@ -203,37 +222,31 @@ def main(page: ft.Page):
     list_of_processes = []
     
     # Container for running process cards
-    show_running_processes = ft.ListView(expand_loose=True, spacing=10, padding=20)
+    running_processes_container = ft.Column(
+        scroll=ft.ScrollMode.ADAPTIVE
+    )
     
     # Store a list of computernames we have run actions on.
     list_of_computernames = []
     
     # Running Processes Modal \/
     def show_processes_modal(e):
-        page.dialog = processes_modal
-        processes_modal.open = True
+        modal = DynamicModal(
+            title="Running Processes",
+            content=running_processes_container,
+            close_modal_func=close_dynamic_modal,
+            nolistview=True,
+            width=200
+        )
+        page.dialog = modal.get_modal()
+        page.dialog.open = True
         page.update()
-    
-    def close_processes_modal(e):
-        processes_modal.open = False
-        page.update()
-        
-    # Define card modal
-    processes_modal = ft.AlertDialog(
-        modal=True,
-        title=ft.Text("Running Processes", ),
-        content=show_running_processes,
-        actions=[
-            ft.TextButton("Close", on_click=close_processes_modal),
-        ],
-        actions_alignment=ft.MainAxisAlignment.END,
-    )
     
     running_processes_icon = ft.IconButton(
         icon=ft.icons.TERMINAL, 
         on_click=show_processes_modal, 
         tooltip="Running processes",
-        )
+    )
     
     running_processes_count_text = ft.Text(f"{running_processes_count}", )
     
@@ -269,7 +282,7 @@ def main(page: ft.Page):
         existing ones.
         """
         # Reset lsit of controls
-        show_running_processes.controls.clear()
+        running_processes_container.controls.clear()
         
         # The loop through existing ones and re-add
         for process in list_of_processes:
@@ -287,7 +300,7 @@ def main(page: ft.Page):
                     )
                 ])
             )
-            show_running_processes.controls.append(new_proc_card)
+            running_processes_container.controls.append(new_proc_card)
         if len(list_of_processes) > 0:
             loading_gif.visible = True
         else:
@@ -423,13 +436,14 @@ def main(page: ft.Page):
         try:
             with open("assets/lists/computers.txt", "r") as list:
                 computers = list.read()
-                if re.compile('[^a-zA-Z0-9n\\-]').search(computers):
+                if re.compile('[^a-zA-Z0-9\\n-]').search(computers):
                     show_message("The list is not formatted properly or contains illegal characters.")
                     return False
                 else:
                     return True
         except FileNotFoundError as e:
             print(e)
+            show_message("Couldn't find list. Please reinstall the app if this issue persists.")
     
     def update_results(title_text, data, id, **kwargs):
         print_log_card = False
@@ -495,11 +509,6 @@ def main(page: ft.Page):
         alignment=ft.alignment.top_left,
         border_radius=20
     )
-    
-    # Dynamic Modal
-    def close_dynamic_modal(e):
-        page.dialog.open = False
-        page.update()
     
     # Holds controls we removed from result_data
     filtered_out_results = []
@@ -857,7 +866,11 @@ def main(page: ft.Page):
         page.update()
     
     def export_data(e):
-        data = e.control.data
+        data = e.control.data["results"]
+        
+        list_of_column_names = e.control.data["columns"]
+        print(list_of_column_names)
+        # print(data)
         
         def check_directory(e):
             if os.path.exists(f"{e.control.value}"):
@@ -892,9 +905,18 @@ def main(page: ft.Page):
         
         def save(e):
             if save_location.error_text == None and name.value != "":
-                with open(f"{save_location.value}\\{name.value}.txt", "w", encoding='utf-8') as file:
-                    file.writelines(str(data))
-                subprocess.Popen(["notepad",f"{save_location.value}\\{name.value}.txt"])
+                with open(f"{save_location.value}\\{name.value}.csv", "w", encoding='utf-8', newline='') as file:
+                    writer = csv.writer(file)
+                    # Write column names
+                    writer.writerow(list_of_column_names)
+                    
+                    # for each result, write a row
+                    for result in data:
+                        list_of_results = []
+                        for key, value in result.items():
+                            list_of_results.append(value)
+                        writer.writerow(list_of_results)
+                    
                 close_dynamic_modal(e)
             else:
                 if os.path.exists(f"{save_location.value}") == False:
@@ -934,13 +956,14 @@ def main(page: ft.Page):
             controls=[]
         )
         
-        results_for_export = ""
+        # Append each software result here as dict
+        # so we can export it.
+        list_of_results = []
         
         with open(software_json_path, "r", encoding='utf-8') as file:
             data = json.load(file)
             for r in data:
-                
-                results_for_export += f"{r} - Software:\n"
+            
                 # r is equal to computer name.
                 # comp is equal to 'Programs'.
                 comp = data[r]
@@ -966,8 +989,17 @@ def main(page: ft.Page):
                     text = f"""Version: {program['Version']}
 Install date: {program['InstallDate']}
 Registry path: {program['RegPath']}"""
+
+                    result = {
+                        "computer": f"{pc}",
+                        "name": f"{program['Name']}",
+                        "version": f"{program['Version']}",
+                        "installdate": f"{program['InstallDate']}",
+                        "registrypath": f"{program['RegPath']}"
+                    }
                     
-                    results_for_export += f"{program['Name'] + "\n" + text}\n\n"
+                    list_of_results.append(result)
+                    
                     # Then add program info to corresponding PCs in the dict
                     new_control = ft.Container(
                         content=ft.Column([
@@ -978,20 +1010,21 @@ Registry path: {program['RegPath']}"""
                     )
                     
                     list_of_pcs[f"{pc}"].content.controls.append(new_control)
-                results_for_export += "______________________________\n"
 
         # Loop through expansionpanels in list and append them to expansion_list
         for pc in list_of_pcs:
             expansion_list.controls.append(list_of_pcs[f"{pc}"])
+        
+        btn_data = {"columns": ["Computer", "Program", "Version", "Install Date", "Registry Path"], "results": list_of_results}
         
         modal = DynamicModal(
             title=f"{e.control.title.value}, {e.control.data["computer"]}",
             content=ft.Column(controls=[
                 expansion_list,
                 ft.TextButton(
-                    "Export results", 
+                    "Export csv", 
                     on_click=export_data, 
-                    data=results_for_export
+                    data=btn_data
                 )
             ]),
             close_modal_func=close_dynamic_modal
@@ -1097,11 +1130,6 @@ Registry path: {program['RegPath']}"""
         global printer_wiz_target_computer
         printer_name = e.control.data
         
-        def close_more_info_dlg(e):
-            more_info_printer_modal.open = False
-            page.update()
-            return
-        
         with open(f"assets/results/printers/{printer_wiz_target_computer}-Printers.json") as file:
             printers = json.load(file)
         
@@ -1110,54 +1138,60 @@ Registry path: {program['RegPath']}"""
             if p['Name'] == printer_name:
                 more_info_printer = p
         
-        more_info_printer_modal = ft.AlertDialog(
-            modal=True,
-            title=ft.Text(f"{more_info_printer['Name']}", selectable=True),
-            content=ft.Column([
+        content = ft.Column(
+            [
                 ft.Row([
                     ft.Row([
                         ft.Text(f"Status:", weight=ft.FontWeight.BOLD),
-                        ft.Text(f"{more_info_printer['Status']}", selectable=True),
-                    ])
+                        ft.Text(
+                            f"{more_info_printer['Status']}", 
+                            selectable=True),
+                    ], wrap=True)
                 ]),
                 ft.Row([
                     ft.Row([
                         ft.Text(f"Port:", weight=ft.FontWeight.BOLD),
                         ft.Text(f"{more_info_printer['Port']}", selectable=True),
-                    ])
+                    ], wrap=True)
                 ]),
                 ft.Row([
                     ft.Row([
                         ft.Text(f"Published:", weight=ft.FontWeight.BOLD),
                         ft.Text(f"{more_info_printer['Published']}", selectable=True),
-                    ])
-                ]),ft.Row([
+                    ], wrap=True)
+                ]),
+                ft.Row([
                     ft.Row([
                         ft.Text(f"Type:", weight=ft.FontWeight.BOLD),
                         ft.Text(f"{more_info_printer['Type']}", selectable=True),
-                    ])
+                    ], wrap=True)
                 ]),
                 ft.Row([
                     ft.Row([
                         ft.Text(f"Shared:", weight=ft.FontWeight.BOLD),
                         ft.Text(f"{more_info_printer['Shared']}", selectable=True),
-                    ])
+                    ], wrap=True)
                 ]),
                 ft.Row([
                     ft.Row([
                         ft.Text(f"Driver:", weight=ft.FontWeight.BOLD),
                         ft.Text(f"{more_info_printer['Driver']}", selectable=True),
-                    ])
-                ]),
-            ]),
-            actions=[
-                ft.TextButton("Close", on_click=close_more_info_dlg),
+                    ], wrap=True)
+                ])
             ],
-            actions_alignment=ft.MainAxisAlignment.END,
+            scroll=ft.ScrollMode.ADAPTIVE
         )
         
-        page.dialog = more_info_printer_modal
-        more_info_printer_modal.open = True
+        modal = DynamicModal(
+            title=f"{more_info_printer['Name']}",
+            content=content,
+            close_modal_func=close_dynamic_modal,
+            nolistview=True,
+            width=300
+        )
+        
+        page.dialog = modal.get_modal()
+        page.dialog.open = True
         page.update()
     
     def printer_wizard(e, **kwargs):
@@ -1299,86 +1333,6 @@ Registry path: {program['RegPath']}"""
             if result != 0:
                 update_results(title_text="Event Viewer", data=f"Couldn't open event viewer on {computer}.", id=id, computer=computer, subtitle=f"Couldn't open event viewer on {computer}.")
             end_of_process(id)
-    
-    # def rename_modal(e, list):
-    #     PCs = []
-    #     controls = []
-    #     if list:
-    #         with open("./lists/computers.txt", "r") as file:
-    #             computers = file.readlines()
-    #             for pc in computers:
-    #                 PCs.append(pc)
-    #     else:
-    #         PCs.append(computer_name.value)
-        
-    #     def format_text(e):
-    #         e.control.value = e.control.value.replace(" ", "")
-        
-    #     for pc in PCs:
-    #         new_control = ft.Row([
-    #             ft.Text(f"{pc}"),
-    #             ft.TextField(label="New Name", data=pc, on_change=format_text)
-    #         ])
-    #         controls.append(new_control)
-        
-    #     def submit_names(e):
-    #         for control in controls:
-    #             if control.controls[1].value == "":
-    #                 return None
-    #         if list:
-    #             computer = "list of computers"
-    #         else:
-    #             computer = computer_name.value
-    #         computer_names = {}
-    #         new_names = []
-    #         for control in controls:
-    #             # Grab values from ft.Text and ft.TextField
-    #             old_name = control.controls[0].value
-    #             new_name = control.controls[1].value
-    #             computer_names.update({old_name: new_name})
-    #             new_names.append(new_name)
-            
-    #         with open("./lists/new_names.txt", "w") as file:
-    #             for name in new_names:
-    #                 file.write(f"{name}\n")
-            
-    #         id = uuid.uuid4()
-    #         add_new_process(new_process("Rename Computers", ["list of computers"], date_time(), id))
-    #         show_message(f"Renaming computers...")
-    #         powershell = the_shell.Power_Shell()
-    #         result = powershell.rename_computers(computer, username_field.value, id, settings_values["enable_win_rm"])
-    #         update_results("Rename Computer", result, id)
-        
-    #     username_field = ft.TextField(label='Username', on_change=format_text_specialchar)
-        
-    #     content = ft.Container(
-    #         content=ft.Column([
-    #             ft.ListView(controls, expand=1),
-    #             ft.Row([
-    #                 username_field
-    #             ], wrap=True),
-    #             ft.Row([
-    #                 ft.TextButton("Submit", on_click=submit_names)
-    #             ])
-    #         ]),
-    #     )
-        
-    #     modal = DynamicModal(
-    #         title="Rename Computers",
-    #         content=content,
-    #         close_modal_func=close_dynamic_modal,
-    #         nolistview=True
-    #     )
-        
-    #     page.dialog = modal.get_modal()
-    #     page.dialog.open = True
-    #     page.update()
-    
-    # def rename_computer(e):
-    #     if are_you_sure(e, text="Do you want to rename each computer in the list of computers?", title="Use List of Computers?", no_text="No"):
-    #         rename_modal(e, True)
-    #     elif check_computer_name() and check_process("Rename Computer", computer_name.value):
-    #         rename_modal(e, False)
     
     def open_restart_modal(e):
 
@@ -1530,12 +1484,12 @@ Registry path: {program['RegPath']}"""
             computer = computer_name.value
         
         if doing_action and shutdown_only == False:
-            restart(scheduled, shutdown_only, computer, month=month, day=day, year=year, time=time)
+            restart(scheduled, shutdown_only, computer, settings_values["enable_win_rm"], month=month, day=day, year=year, time=time)
         elif doing_action and shutdown_only:
-            restart(scheduled, shutdown_only, computer, month=month, day=day, year=year, time=time)
+            restart(scheduled, shutdown_only, computer, settings_values["enable_win_rm"], month=month, day=day, year=year, time=time)
        
     
-    def restart(scheduled, shutdown, computer, **kwargs):
+    def restart(scheduled, shutdown, computer, winRM, **kwargs):
         for key, value in kwargs.items():
             if key == "month":
                 month = int(value)
@@ -1560,7 +1514,7 @@ Registry path: {program['RegPath']}"""
         if use_list and check_list():
             add_new_process(new_process("Restart", [computer], date_time(), id))
             show_message(f"Restarting {computer}")
-            result = powershell.restart(id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds, settings_values["use_24hr"])
+            result = powershell.restart(id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds, settings_values["use_24hr"], winRM)
             update_results("Restart", result, id, computer=computer)
             end_of_process(id)
         if use_list != True:
@@ -1568,11 +1522,9 @@ Registry path: {program['RegPath']}"""
                 enable_winrm(computer)
                 add_new_process(new_process("Restart", [computer], date_time(), id))
                 show_message(f"Restarting {computer}")
-                result = powershell.restart(id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds, settings_values["use_24hr"])
+                result = powershell.restart(id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds, settings_values["use_24hr"], winRM)
                 update_results("Restart", result, id, computer=computer)
-                end_of_process(id)
-        
-        
+                end_of_process(id) 
 
     # Computer Text Field
     computer_name = ft.TextField(label="Computer Name", on_submit=ping)
@@ -1675,10 +1627,13 @@ Registry path: {program['RegPath']}"""
     
     def launch_script(e):
         script = e.control.data
-        ps_version = use_ps1.value
-        powershell = the_shell.Power_Shell()
-        powershell.launch_script(script, ps_version)
-        show_message(f"Launching {script}.")
+        if os.path.exists(script):
+            ps_version = use_ps1.value
+            powershell = the_shell.Power_Shell()
+            powershell.launch_script(script, ps_version)
+            show_message(f"Launching {script}.")
+        else:
+            show_message("The script path is no longer valid.")
     
     def remove_script(e):
         remove_me = e.control.data
@@ -1769,7 +1724,6 @@ Registry path: {program['RegPath']}"""
     
     def open_battery_card(e):
         battery_json_path = e.control.data["data"]
-        
         list_of_pcs = {}
         
         expansion_list = ft.ExpansionPanelList(
@@ -1777,21 +1731,20 @@ Registry path: {program['RegPath']}"""
             controls=[]
         )
         
-        results_for_export = ""
+        # Append each battery result here as dict
+        # so we can export it.
+        list_of_results = []
         
         with open(battery_json_path, "r", encoding='utf-8') as file:
             data = json.load(file)
             
             # For each computer in data
             for r in data:
-                
-                results_for_export += f"----{r} - Battery:----\n"
                 # r is equal to computer name.
                 # comp is equal to battery details.
-                comp = data[r]
+                battery_details = data[r]
                 
-                # For each key
-                for batt_info in comp:
+                for batt_detail in battery_details:
 
                     # First get PC and define an expansiontile for it
                     if r not in list_of_pcs:
@@ -1807,32 +1760,42 @@ Registry path: {program['RegPath']}"""
                         # Add dict key of pc name with value of expansiontile
                         list_of_pcs.update({f"{r}": exp_panel})
                     
-                    results_for_export += f"{batt_info}: {comp[batt_info]}" + "\n"
-                    
                     # Then add battery info to corresponding PCs in the dict
-                    if batt_info == "BatteryReport":
+                    if batt_detail == "BatteryReport":
                         new_control = ft.Container(
                             content=ft.Row([
-                                ft.Text(f"{batt_info}:", selectable=True, weight=ft.FontWeight.BOLD),
-                                ft.TextButton(f"Open", data=comp[batt_info], on_click=open_battery_report),
+                                ft.Text(f"{batt_detail}:", selectable=True, weight=ft.FontWeight.BOLD),
+                                ft.TextButton(f"Open", data=battery_details[batt_detail], on_click=open_battery_report),
                             ]),
                             padding=ft.padding.only(left=10, right=10, bottom=10)
                         )
                     else:
                         new_control = ft.Container(
                             content=ft.Row([
-                                ft.Text(f"{batt_info}:", selectable=True, weight=ft.FontWeight.BOLD),
-                                ft.Text(f"{comp[batt_info]}", selectable=True),
+                                ft.Text(f"{batt_detail}:", selectable=True, weight=ft.FontWeight.BOLD),
+                                ft.Text(f"{battery_details[batt_detail]}", selectable=True),
                             ]),
                             padding=ft.padding.only(left=10, right=10, bottom=10)
                         )
                         
                     list_of_pcs[f"{r}"].content.controls.append(new_control)
-                results_for_export += "______________________________\n"
+                
+                details = {
+                    "computer": f"{r}",
+                    "efficiency": f"{battery_details["Efficiency"]}",
+                    "fullchargecapacity": f"{battery_details["FullChargeCapacity"]}",
+                    "designcapacity": f"{battery_details["DesignCapacity"]}",
+                    "batteryreport": f"{battery_details["BatteryReport"]}"
+                }
+                    
+                list_of_results.append(details)
 
         # Loop through expansionpanels in list and append them to expansion_list
         for pc in list_of_pcs:
             expansion_list.controls.append(list_of_pcs[f"{pc}"])
+        
+        # Format export data
+        btn_data = {"columns": ["Computer", "Efficiency", "Full Charge Capacity", "Design Capacity", "Battery Report"], "results": list_of_results}
         
         modal = DynamicModal(
             title=f"{e.control.title.value}",
@@ -1841,9 +1804,9 @@ Registry path: {program['RegPath']}"""
                         controls=[
                         expansion_list,
                         ft.TextButton(
-                            "Export results", 
+                            "Export csv", 
                             on_click=export_data, 
-                            data=results_for_export
+                            data=btn_data
                         )
                     ]),
                     width= 500
@@ -1857,7 +1820,6 @@ Registry path: {program['RegPath']}"""
     def check_battery(e):
         id = uuid.uuid4()
         powershell = the_shell.Power_Shell()
-        computer = computer_name.value
         use_list = are_you_sure(e, text="Do you want to check the battery status for each computer in the list of computers?", title="Use List of Computers?", no_text="No")
         print("use_list is", use_list)
         if use_list and check_list():
@@ -1875,7 +1837,8 @@ Registry path: {program['RegPath']}"""
             end_of_process(id)
         
         if use_list != True:
-            if check_computer_name() and check_process("Check Battery", computer):
+            if check_computer_name() and check_process("Check Battery", computer_name.value):
+                computer = computer_name.value
                 enable_winrm(computer)
                 add_new_process(new_process("Check Battery", [computer], date_time(), id))
                 show_message(f"Checking battery on {computer}")
@@ -2343,7 +2306,7 @@ Registry path: {program['RegPath']}"""
         on_click=open_tutorial_modal
     )
     
-    use_ps1 = ft.Switch(label="Use Powershell 1", value=False)
+    use_ps1 = ft.Switch(label="Use Powershell 7", value=True)
     
     custom_scripts_view = ft.Column([
         ft.Row([
@@ -2364,12 +2327,22 @@ Registry path: {program['RegPath']}"""
     current_view = ft.Row([home], expand=True)
     
     #Finally build the page
-    page.add(
-        ft.Row([
-            rail,
-            ft.VerticalDivider(width=9, thickness=3),
-            current_view
-        ], expand=True)
-    )
+    if os.path.exists("C:\\Program Files\\PowerShell\\7\\pwsh.exe"):
+    
+        page.add(
+            ft.Row([
+                rail,
+                ft.VerticalDivider(width=9, thickness=3),
+                current_view
+            ], expand=True)
+        )
+    else:
+        page.add(
+            ft.Row(
+                [
+                    ft.Text("Powershell 7 is required for this programs to work.")
+                ]
+            )
+        )
 
 ft.app(target=main)

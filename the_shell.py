@@ -10,9 +10,9 @@ class Power_Shell():
     
     def launch_script(self, script, ps_version):
         if ps_version:
-            ps = "powershell.exe"
-        else:
             ps = self.pspath
+        else:
+            ps = "powershell.exe"
         p = subprocess.Popen([ps, script], creationflags=subprocess.CREATE_NEW_CONSOLE)
     
     def open_pc_list(self):
@@ -176,7 +176,8 @@ class Power_Shell():
             hour, 
             minute, 
             seconds, 
-            use_24hr
+            use_24hr,
+            winRM
         ):
         action = "restart"
         
@@ -210,7 +211,8 @@ class Power_Shell():
             f"{hour}",
             f"{minute}",
             f"{seconds}",
-            f"{timeFormat}"
+            f"{timeFormat}",
+            f"{winRM}"
         ])
         scheduled_time = f"{month}/{day}/{year}, {hour}:{minute}:{seconds}"
         print(f"Scheduled time {scheduled_time}")

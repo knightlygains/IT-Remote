@@ -13,8 +13,6 @@ else {
     $winRM = $false
 }
 
-
-
 $result_json_path = ".\assets\results\Battery\$id-BatteryStatus.json"
 
 # Create json file

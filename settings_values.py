@@ -26,7 +26,6 @@ def load_settings(e, update):
                 # Update each setting with value
                 # stored in settings_values
                 for key, value in settings_values.items():
-                    print(f"{key} is now set to {value}")
                     data.update({
                         f"{key}": value
                     })

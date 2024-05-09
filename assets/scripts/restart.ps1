@@ -27,10 +27,9 @@ Function Restart-PCs {
 
     $list = Get-Content ".\assets\lists\computers.txt"
     # If using list, set Computers = to Get-Content for list contents
-    if ($Computers -eq "Use-List") {
+    if ($Computers -eq "list of computers") {
         foreach ($Computer in $list) {
-            Write-Host "Balls $Computer"
-            if (Test-Connection $Computer) {
+            if ((Test-Connection $Computer) -AND ($winRM -eq $true)) {
                 Enable-WinRM -Computer $Computer -winRM $winRM
             }
         }
@@ -92,17 +91,15 @@ Function Restart-PCs {
         $formatted_time = Format-Time
 
         $restartTime = "$dateMonth/$dateDay/$dateYear, $formatted_time"
-
-        Write-Host "Seconds to wait $secondsToWait"
         
         $action = "restart"
 
         if ($shutdown -eq "True") {
-            $end_result = shutdown /s /m \\$comp /t $secondsToWait 2>&1 | out-string
+            shutdown /s /m \\$comp /t $secondsToWait 2>&1 | out-string
             $action = "shutdown"
         }
         else {
-            $end_result = shutdown /r /m \\$comp /t $secondsToWait 2>&1 | out-string
+            shutdown /r /m \\$comp /t $secondsToWait 2>&1 | out-string
         }
         
         if (-not($LastExitCode -eq 0)) {
