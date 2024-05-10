@@ -1313,12 +1313,15 @@ Registry path: {program['RegPath']}"""
     def open_c_share(e):
         if check_computer_name():
             computer = computer_name.value
+            id = uuid.uuid4()
+            add_new_process(new_process("C$ Share", [computer], date_time(), id))
             show_message(f"Opening c$ share for {computer}")
             powershell = the_shell.Power_Shell()
             result = powershell.open_c_share(computer)
             if result != 0:
                 update_results(title_text="C$ Share", data=result, id=id, computer=computer, subtitle=f"Couldn't open C$ share on {computer}.")
-    
+            end_of_process(id)
+
     def open_event_log(e):
         if check_computer_name() and check_process("Event Viewer", computer_name.value):
             computer = computer_name.value
@@ -1424,6 +1427,11 @@ Registry path: {program['RegPath']}"""
             nonlocal scheduled
             nonlocal list
             nonlocal shutdown_only
+            
+            if date_text.value == "" or time_text.value == "":
+                show_message("Date or Time was not specified.")
+                close_dynamic_modal(e)
+                return
             
             # If we arent using list and we dont have a computername entered, close
             if use_list_checkbox.value == False and check_computer_name() == False:
@@ -1639,6 +1647,18 @@ Registry path: {program['RegPath']}"""
         generate_commands()
     
     list_of_script_controls = []
+    # list_of_script_drag_targets = []
+    # list_of_script_draggables = []
+    
+    # def drag_script_will_accept():
+    #     pass
+
+    # def drag_script_accept():
+    #     pass
+    
+    # def drag_script_leave():
+    #     pass
+    
     def generate_commands():
         list_of_script_controls.clear()
         for key, value in custom_scripts.items():

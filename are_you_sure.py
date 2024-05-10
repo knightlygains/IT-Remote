@@ -15,7 +15,7 @@ class YouSure(ft.AlertDialog):
             title=ft.Text(f"{title}"),
             content=ft.Column([
                     ft.Text(f"{text}")
-                ], height=100),
+                ], height=100, width=300),
             actions=[
                 ft.TextButton("Yes", on_click=yes),
                 ft.TextButton(f"{no_text}", on_click=close_modal_func),
