@@ -210,7 +210,6 @@ def main(page: ft.Page):
         e.control.update()
     
     # -------------------- Dynamic Modal --------------------
-    # Dynamic Modal
     def close_dynamic_modal(e):
         page.dialog.open = False
         page.update()
@@ -869,8 +868,6 @@ def main(page: ft.Page):
         data = e.control.data["results"]
         
         list_of_column_names = e.control.data["columns"]
-        print(list_of_column_names)
-        # print(data)
         
         def check_directory(e):
             if os.path.exists(f"{e.control.value}"):
@@ -1821,7 +1818,6 @@ Registry path: {program['RegPath']}"""
         id = uuid.uuid4()
         powershell = the_shell.Power_Shell()
         use_list = are_you_sure(e, text="Do you want to check the battery status for each computer in the list of computers?", title="Use List of Computers?", no_text="No")
-        print("use_list is", use_list)
         if use_list and check_list():
             computer = "list of computers"
             add_new_process(new_process("Check Battery", [computer], date_time(), id))
@@ -2326,23 +2322,78 @@ Registry path: {program['RegPath']}"""
     
     current_view = ft.Row([home], expand=True)
     
-    #Finally build the page
-    if os.path.exists("C:\\Program Files\\PowerShell\\7\\pwsh.exe"):
+    # Filepicker for picking paths
+    def select_path(e: ft.FilePickerResultEvent):
+        nonlocal page_view
+        for file in e.files:
+            if file.name == "pwsh.exe":
+                powershell_path_text.value = f"{file.path}"
+                settings_values["pwsh_path"] = f"{file.path}"
+                powershell_checkmark.visible = True
+            elif file.name == "PsExec.exe" or file.name == "PsService.exe": 
+                pstools_path_text.value = settings_values["pstools_path"]
+                settings_values["pstools_path"] == file.path.replace(f"\\{file.name}", "")
+                pstools_checkmark.visible = True
+            else:
+                show_message("Invalid program.")
+        update_settings(e)
+        if powershell_checkmark.visible and pstools_checkmark.visible:
+            page.controls = [main_view]
+        page.update()
+        show_message("Setup complete.")
+
+    pick_path_dialog = ft.FilePicker(
+        on_result=select_path,
+    )
+
+    page.overlay.append(pick_path_dialog)
     
-        page.add(
-            ft.Row([
-                rail,
-                ft.VerticalDivider(width=9, thickness=3),
-                current_view
-            ], expand=True)
+    powershell_path_text = ft.Text()
+    powershell_checkmark = ft.Icon(name=ft.icons.CHECK, visible=False)
+    pstools_path_text = ft.Text()
+    pstools_checkmark = ft.Icon(name=ft.icons.CHECK, visible=False)
+    
+    main_view = ft.Row([
+        rail,
+        ft.VerticalDivider(width=9, thickness=3),
+        current_view
+    ], expand=True)
+    
+    setup_view = ft.Container(
+            content=ft.Column([
+                ft.Text("PowerShell 7 and PsTools are required for this program to work."),
+                ft.Text("Click browse to select the respective executables in their install location."),
+                ft.TextButton("Browse", on_click=lambda _: pick_path_dialog.pick_files(
+                    allow_multiple=False,
+                    allowed_extensions=["exe"],
+                    initial_directory="C:\\"
+                )),
+                ft.Row([
+                    ft.Text("pwsh: ", weight=ft.FontWeight.BOLD),
+                    powershell_path_text,
+                    powershell_checkmark
+                ]),
+                ft.Row([
+                    ft.Text("PsTools: ", weight=ft.FontWeight.BOLD),
+                    pstools_path_text,
+                    pstools_checkmark
+                ])
+            ]),
+            padding=15
         )
+    
+    page_view = setup_view
+    
+    #Finally build the page
+    if os.path.exists(f"{settings_values["pwsh_path"]}") and os.path.exists(f"{settings_values["pstools_path"]}\\PsExec.exe"):
+        # Main Program page view
+        page_view = main_view
     else:
-        page.add(
-            ft.Row(
-                [
-                    ft.Text("Powershell 7 is required for this programs to work.")
-                ]
-            )
-        )
+        # Setup executable locations page view
+        page_view = setup_view
+    
+    page.add(
+        page_view
+    )
 
 ft.app(target=main)

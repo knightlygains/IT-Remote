@@ -7,7 +7,9 @@ settings_values = {
     "enable_win_rm": True,
     "supress_winrm_results": False,
     "use_24hr": False,
-    "warn_about_profile_deletion": True
+    "warn_about_profile_deletion": True,
+    "pwsh_path": "C:\\Program Files\\Powershell\\7\\pwsh.exe",
+    "pstools_path": "C:\\Windows\\System32"
 }
 
 custom_scripts = {
@@ -72,14 +74,8 @@ def load_settings(e, update):
         with open(settings_path, "r") as file:
             try:
                 settings_data = json.load(file)
-                settings_values["font_size"] = settings_data["font_size"]
-                settings_values["app_color"] = settings_data["app_color"]
-                settings_values["window_width"] = settings_data["window_width"]
-                settings_values["window_height"] = settings_data["window_height"]
-                settings_values["enable_win_rm"] = settings_data["enable_win_rm"]
-                settings_values["supress_winrm_results"] = settings_data["supress_winrm_results"]
-                settings_values["use_24hr"] = settings_data["use_24hr"]
-                settings_values["warn_about_profile_deletion"] = settings_data["warn_about_profile_deletion"]
+                for key, value in settings_data.items():
+                    settings_values[key] = value
             except json.decoder.JSONDecodeError:
                 print("No settings data found")
     except FileNotFoundError:
