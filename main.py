@@ -1646,38 +1646,78 @@ Registry path: {program['RegPath']}"""
         update_settings(e)
         generate_commands()
     
-    list_of_script_controls = []
-    # list_of_script_drag_targets = []
-    # list_of_script_draggables = []
+    list_of_script_tiles = []
+    list_of_script_dragtargets = []
     
-    # def drag_script_will_accept():
-    #     pass
+    def drag_script_will_accept(e):
+        pass
 
-    # def drag_script_accept():
-    #     pass
+    def drag_script_accept(e: ft.DragTargetAcceptEvent):
+        drag_target_index = e.control.data["index"]
+        src = page.get_control(e.src_id)
+        dragged_index = src.data["index"]
+        
+        print("Dragged index: ", dragged_index, " Drag Target index: ", drag_target_index)
+        
+        if src.data["name"] in custom_scripts:
+            custom_scripts[src.data["name"]]["index"] = drag_target_index
+        if e.control.data["name"] in custom_scripts:
+            custom_scripts[e.control.data["name"]]["index"] = dragged_index
+        
+        generate_commands()
+        page.update()
     
-    # def drag_script_leave():
-    #     pass
+    def drag_script_leave(e):
+        pass
     
     def generate_commands():
-        list_of_script_controls.clear()
-        for key, value in custom_scripts.items():
+        
+        list_of_script_tiles.clear()
+        # list_of_script_dragtargets.clear()
+        
+        for script in custom_scripts:
+            script_props = custom_scripts[script]
+
             script_list_tile = ft.ListTile(
-                title=ft.Text(f"{key}"),
+                title=ft.Text(f"{script}"),
                 leading=ft.IconButton(
                     ft.icons.PLAY_ARROW,
-                    data=f"{value}",
+                    data=f"{script_props["path"]}",
                     on_click=launch_script,
                     tooltip="Launch script"
                 ),
-                trailing=ft.IconButton(
-                    ft.icons.DELETE,
-                    data=f"{key}",
-                    on_click=remove_script,
-                    tooltip="Remove script"
-                )
+                trailing=ft.Row([
+                    ft.Text(f"{script_props["index"]}"),
+                    ft.IconButton(
+                        ft.icons.DELETE,
+                        data=f"{script}",
+                        on_click=remove_script,
+                        tooltip="Remove script"
+                    )
+                ], width=50)
             )
-            list_of_script_controls.append(script_list_tile)
+            
+            draggable = ft.Draggable(
+                group="scripts",
+                content=script_list_tile,
+                content_feedback=ft.Icon(
+                    ft.icons.DESCRIPTION,
+                    offset=ft.transform.Offset(10, 1)
+                ),
+                data={"index": script_props["index"], "name": script}
+            )
+            
+            drag_target=ft.DragTarget(
+                group="scripts",
+                content=draggable,
+                on_accept=drag_script_accept,
+                on_will_accept=drag_script_will_accept,
+                on_leave=drag_script_leave,
+                data={"index": script_props["index"], "name": script}
+            )
+            
+            list_of_script_tiles.append(drag_target)
+            
         page.update()
     
     # Populate controls on initial app load
@@ -2298,9 +2338,24 @@ Registry path: {program['RegPath']}"""
     # Filepicker for picking custom scripts
     def select_script(e: ft.FilePickerResultEvent):
         for file in e.files:
+            
+            # Figure out the index
+            if file.name in custom_scripts:
+                print("found it")
+                index = custom_scripts[f"{file.name}"]["index"]
+                print(f"index: {index}")
+            elif len(list_of_script_tiles) == 0:
+                index = 0
+            else:
+                index = len(list_of_script_tiles)
+            
             custom_scripts.update({
-                f"{file.name}": f"{file.path}"
+                f"{file.name}": {
+                    f"path": f"{file.path}",
+                    "index": index
+                }
             })
+            print("script blah", custom_scripts[f"{file.name}"]["index"])
         update_settings(e)
         generate_commands()
 
@@ -2311,7 +2366,7 @@ Registry path: {program['RegPath']}"""
     page.overlay.append(pick_script_dialog) 
     
     scripts_list_view = ft.ListView(expand=1, spacing=10, padding=20)
-    scripts_list_view.controls = list_of_script_controls
+    scripts_list_view.controls = list_of_script_tiles
     custom_scripts_container = ft.Container(
         content=scripts_list_view,
         expand=True,
