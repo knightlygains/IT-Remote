@@ -9,7 +9,7 @@ from settings_values import settings_values, custom_scripts, load_settings
 load_settings(e=None, update=False)
 
 # Create recent_computers.json
-recent_computers_path = "./assets/results/recent_computers.json"
+recent_computers_path = "assets/results/recent_computers.json"
 if os.path.exists(recent_computers_path) == False:
     with open(recent_computers_path, "w") as file:
         print(f"{recent_computers_path} created")
@@ -1647,7 +1647,6 @@ Registry path: {program['RegPath']}"""
         generate_commands()
     
     list_of_script_tiles = []
-    list_of_script_dragtargets = []
     
     def drag_script_will_accept(e):
         pass
@@ -1664,6 +1663,7 @@ Registry path: {program['RegPath']}"""
         if e.control.data["name"] in custom_scripts:
             custom_scripts[e.control.data["name"]]["index"] = dragged_index
         
+        update_settings(e)
         generate_commands()
         page.update()
     
@@ -1716,7 +1716,11 @@ Registry path: {program['RegPath']}"""
                 data={"index": script_props["index"], "name": script}
             )
             
+            def sort_funct(dict):
+                return dict.data["index"]
+            
             list_of_script_tiles.append(drag_target)
+            list_of_script_tiles.sort(key=sort_funct)
             
         page.update()
     
