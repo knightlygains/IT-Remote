@@ -350,7 +350,8 @@ def main(page: ft.Page):
         if index == 3:
             current_view.controls = [custom_scripts_view]
         if index == 4:
-            pass
+            # Donate
+            current_view.controls = [donate_view]
         if index == 5:
             pass
         if index == 6:
@@ -390,6 +391,11 @@ def main(page: ft.Page):
                 icon=ft.icons.DESCRIPTION_OUTLINED,
                 selected_icon_content=ft.Icon(ft.icons.DESCRIPTION),
                 label_content=ft.Text("My Scripts"),
+            ),
+            ft.NavigationRailDestination(
+                icon=ft.icons.FAVORITE_OUTLINE_OUTLINED,
+                selected_icon_content=ft.Icon(ft.icons.FAVORITE),
+                label_content=ft.Text("Donate"),
             ),
         ],
         on_change=navigate_view
@@ -1687,7 +1693,6 @@ Registry path: {program['RegPath']}"""
                     tooltip="Launch script"
                 ),
                 trailing=ft.Row([
-                    ft.Text(f"{script_props["index"]}"),
                     ft.IconButton(
                         ft.icons.DELETE,
                         data=f"{script}",
@@ -1697,13 +1702,17 @@ Registry path: {program['RegPath']}"""
                 ], width=50)
             )
             
+            feedback = ft.Row([
+                ft.Icon(
+                    ft.icons.DESCRIPTION,
+                ),
+                ft.Text(f"{script}", size=12, color="white")
+            ], offset=ft.transform.Offset(0.2, 1))
+            
             draggable = ft.Draggable(
                 group="scripts",
                 content=script_list_tile,
-                content_feedback=ft.Icon(
-                    ft.icons.DESCRIPTION,
-                    offset=ft.transform.Offset(10, 1)
-                ),
+                content_feedback=feedback,
                 data={"index": script_props["index"], "name": script}
             )
             
@@ -2359,7 +2368,6 @@ Registry path: {program['RegPath']}"""
                     "index": index
                 }
             })
-            print("script blah", custom_scripts[f"{file.name}"]["index"])
         update_settings(e)
         generate_commands()
 
@@ -2377,7 +2385,9 @@ Registry path: {program['RegPath']}"""
     )
     
     cust_scripts_tutorial = TutorialBtn(
-        data=["Custom Scripts", "Here you can add your own scripts so they are easily accessible and can be launched at the click of a button."],
+        data=["Custom Scripts", """Here you can add your own scripts so they are easily accessible and can be launched at the click of a button. 
+
+Click and drag to reorder them."""],
         on_click=open_tutorial_modal
     )
     
@@ -2400,6 +2410,29 @@ Registry path: {program['RegPath']}"""
     ], expand=True)
     
     current_view = ft.Row([home], expand=True)
+    
+    donate_view = ft.Column([
+        ft.Row([
+            ft.Column([
+                ft.Text("Created by:", size=40),
+            ]),
+            ft.Column([
+                ft.Image(
+                    src="https://storage.ko-fi.com/cdn/useruploads/4bf6c379-868e-4be0-b297-2c51ef26a446.png",
+                    border_radius=ft.border_radius.all(60)
+                ),
+                ft.Text("Steven Whitney (KnightlyGains)")
+            ]),
+            
+        ], alignment=ft.MainAxisAlignment.SPACE_EVENLY),
+        ft.Divider(),
+        ft.Row([
+            ft.Text("If you like this tool and would like to support me, please consider donating:"),
+        ]),
+        ft.Row([
+            
+        ])
+    ], expand=1)
     
     # Filepicker for picking paths
     def select_path(e: ft.FilePickerResultEvent):
