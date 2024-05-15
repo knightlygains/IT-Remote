@@ -23,7 +23,7 @@ catch {
     exit 1
 }
 
-$result_json_path = ".\results\Printers\$Computer-Printers-$type-logs.json"
+$result_json_path = ".\assets\results\Printers\$Computer-Printers-$type-logs.json"
 
 try {
     if (-not(Test-Path $result_json_path)) {

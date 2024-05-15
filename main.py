@@ -775,11 +775,18 @@ def main(page: ft.Page):
                     expand = 1
                 )
                 logs_list_view.controls.append(card)
+        ctr_data = "None"
+        ctr_computer = "None"
+        for key, value in e.control.data.items():
+            if key == "data":
+                ctr_data = value
+            if key == "computer":
+                ctr_computer = value
         
-        if "Operational" in e.control.data["data"]:
-            title = f"{e.control.data["computer"]}'s Operational Print Logs"
+        if "Operational" in ctr_data:
+            title = f"{ctr_computer}'s Operational Print Logs"
         else:
-            title = f"{e.control.data["computer"]}'s Admin Print Logs"
+            title = f"{ctr_computer}'s Admin Print Logs"
         
         modal = DynamicModal(
             title=title,
