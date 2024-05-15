@@ -913,9 +913,11 @@ def main(page: ft.Page):
         page.update()
     
     def export_data(e):
-        data = e.control.data["results"]
-        
-        list_of_column_names = e.control.data["columns"]
+        for key, value in e.control.data.items():
+            if key == "results":
+                data = value
+            if key == "columns":
+                list_of_column_names = value
         
         def check_directory(e):
             if os.path.exists(f"{e.control.value}"):
@@ -1175,8 +1177,10 @@ Registry path: {program['RegPath']}"""
     )
     
     def open_printer_name_modal(e):
-        global printer_to_change
-        printer_to_change = e.control.data["printer"]
+        nonlocal printer_to_change
+        for key, value in e.control.data.items():
+            if key == "printer":
+                printer_to_change = value
         page.dialog = printer_name_modal
         printer_name_modal.open = True
         page.update()
@@ -1337,35 +1341,31 @@ Registry path: {program['RegPath']}"""
         
     def printer_wiz_testpage(e):
         if check_computer_name() and check_process("Test Page", computer_name.value):
-            ctr_data = "None"
-            ctr_computer = "None"
             for key, value in e.control.data.items():
-                if key == "data":
-                    ctr_data = value
+                if key == "printer":
+                    ctr_printer = value
                 if key == "computer":
                     ctr_computer = value
             id = uuid.uuid4()
             add_new_process(new_process("Test Page", [ctr_computer], date_time(), id))
             show_message(f"Printing test page from {ctr_computer}.")
             powershell = the_shell.Power_Shell()
-            result = powershell.test_page(computer=ctr_computer, printerName=e.control.data["printer"])
+            result = powershell.test_page(computer=ctr_computer, printerName=ctr_printer)
             update_results("Printer Test Page", result, id=id)
             end_of_process(id)
     
     def uninstall_printer(e):
-        ctr_data = "None"
-        ctr_computer = "None"
         for key, value in e.control.data.items():
-            if key == "data":
-                ctr_data = value
+            if key == "printer":
+                ctr_printer = value
             if key == "computer":
                 ctr_computer = value
-        if are_you_sure(e, f"Uninstall {e.control.data["printer"]} from {ctr_computer}?"):
+        if are_you_sure(e, f"Uninstall {ctr_printer} from {ctr_computer}?"):
             id = uuid.uuid4()
             add_new_process(new_process("Uninstall Printer", [ctr_computer], date_time(), id))
             show_message(f"Uninstalling printer from {ctr_computer}.")
             powershell = the_shell.Power_Shell()
-            result = powershell.uninstall_printer(computer=ctr_computer, printerName=e.control.data["printer"])
+            result = powershell.uninstall_printer(computer=ctr_computer, printerName=ctr_printer)
             update_results("Uninstall Printer", result, id)
             end_of_process(id)
             printer_wizard(e, refresh=True, target_computer=ctr_computer)
@@ -1725,14 +1725,20 @@ Registry path: {program['RegPath']}"""
         pass
 
     def drag_script_accept(e: ft.DragTargetAcceptEvent):
-        drag_target_index = e.control.data["index"]
+        for key, value in e.control.data.items():
+            if key == "index":
+                drag_target_index = value
+
         src = page.get_control(e.src_id)
-        dragged_index = src.data["index"]
         
-        if src.data["name"] in custom_scripts:
-            custom_scripts[src.data["name"]]["index"] = drag_target_index
-        if e.control.data["name"] in custom_scripts:
-            custom_scripts[e.control.data["name"]]["index"] = dragged_index
+        for key, value in src.data.items():
+            if key == "index":  
+                dragged_index = value
+        
+        if src.data['name'] in custom_scripts:
+            custom_scripts[src.data['name']]['index'] = drag_target_index
+        if e.control.data['name'] in custom_scripts:
+            custom_scripts[e.control.data['name']]['index'] = dragged_index
         
         update_settings(e)
         generate_commands()
