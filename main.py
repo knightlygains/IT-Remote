@@ -49,15 +49,15 @@ def main(page: ft.Page):
         "Consola": "assets/fonts/Consola.ttf"
     }
     
-    page.window_width = settings_values["window_width"]
-    page.window_height = settings_values["window_height"]
+    page.window_width = settings_values['window_width']
+    page.window_height = settings_values['window_height']
     page.window_min_width = 745
     page.window_min_height = 515
     if page.window_width < page.window_min_width:
         page.window_width = page.window_min_width
     if page.window_height < page.window_min_height:
         page.window_height = page.window_min_height
-    page.dark_theme = ft.Theme(color_scheme_seed=settings_values["app_color"])
+    page.dark_theme = ft.Theme(color_scheme_seed=settings_values['app_color'])
     
     def save_page_dimensions(e):
         try:
@@ -74,15 +74,15 @@ def main(page: ft.Page):
     
     def update_settings(e):
         if cg.value:
-            settings_values["app_color"] = cg.value
-        results_container.bgcolor = settings_values["app_color"]
-        printer_wiz_list_container.bgcolor = settings_values["app_color"]
-        page.dark_theme.color_scheme_seed = settings_values["app_color"]
-        actions_view_container.bgcolor = settings_values["app_color"]
-        settings_values["enable_win_rm"] = winrm_checkbox.value
-        settings_values["supress_winrm_results"] = winrm_results_checkbox.value
-        settings_values["use_24hr"] = use_24hr_checkbox.value
-        settings_values["warn_about_profile_deletion"] = warn_checkbox.value
+            settings_values['app_color'] = cg.value
+        results_container.bgcolor = settings_values['app_color']
+        printer_wiz_list_container.bgcolor = settings_values['app_color']
+        page.dark_theme.color_scheme_seed = settings_values['app_color']
+        actions_view_container.bgcolor = settings_values['app_color']
+        settings_values['enable_win_rm'] = winrm_checkbox.value
+        settings_values['supress_winrm_results'] = winrm_results_checkbox.value
+        settings_values['use_24hr'] = use_24hr_checkbox.value
+        settings_values['warn_about_profile_deletion'] = warn_checkbox.value
         load_settings(e, update=True)
         page.update()
     
@@ -90,7 +90,7 @@ def main(page: ft.Page):
     recent_computers_file = "assets/results/recent_computers.json"
     def update_recent_computers(computer, date, last_action):
         # We need to convert to json.
-        # For each computer in data["Computers"]
+        # For each computer in data['Computers']
         try:
             with open(recent_computers_file, "r") as file:
                 
@@ -102,15 +102,15 @@ def main(page: ft.Page):
                 
                 g = json.load(file)
                 
-                for comp in g["computers"]:
-                    if comp["name"] == recent_pc["name"]:
-                        g["computers"].remove(comp)
+                for comp in g['computers']:
+                    if comp['name'] == recent_pc['name']:
+                        g['computers'].remove(comp)
                 
-                if len(g["computers"]) < 20:
-                    g["computers"].insert(0,recent_pc)
+                if len(g['computers']) < 20:
+                    g['computers'].insert(0,recent_pc)
                 else:
-                    g["computers"].pop()
-                    g["computers"].insert(0,recent_pc)
+                    g['computers'].pop()
+                    g['computers'].insert(0,recent_pc)
             
         except ValueError as e:
             print(f"Something went wrong updating recent computers file. {e}")
@@ -125,17 +125,17 @@ def main(page: ft.Page):
         
         with open(recent_computers_file, "r") as file:
             data = json.load(file)
-            for item in data["computers"]:
-                if item["name"] not in recent_computer_names:
+            for item in data['computers']:
+                if item['name'] not in recent_computer_names:
                     recent_computer_items.append(item)
-                    recent_computer_names.append(item["name"])
+                    recent_computer_names.append(item['name'])
         
         list_of_recent_pcs_radios = []
         
         for pc in recent_computer_items:
-            name = pc["name"]
-            date = pc["date"]
-            last_action = pc["last_action"]
+            name = pc['name']
+            date = pc['date']
+            last_action = pc['last_action']
             radio = ft.Row([
                 ft.Column([
                     ft.Radio(value=name),
@@ -188,7 +188,7 @@ def main(page: ft.Page):
         day = x.strftime("%a")
         day_num = x.strftime("%d")
         month = x.strftime("%b")
-        if settings_values["use_24hr"]:
+        if settings_values['use_24hr']:
             time = x.strftime("%X")
         else:
             time = x.strftime("%I:%M:%S %p")
@@ -261,7 +261,7 @@ def main(page: ft.Page):
     
     def check_process(name, computer):
         for process in list_of_processes:
-            if computer in process["computers"] and process["name"] == name or process["name"] == "WinRM":
+            if computer in process['computers'] and process['name'] == name or process['name'] == "WinRM":
                 # Proc is running on computer already
                 show_message(f"Already running {name} on {computer}")
                 return False
@@ -288,14 +288,14 @@ def main(page: ft.Page):
         for process in list_of_processes:
             comps = "Computers: "
 
-            for comp in process["computers"]:
+            for comp in process['computers']:
                 comps +=  f"{comp} "
                 
             new_proc_card = ft.Card(
                 content=ft.Column([
                     ft.ListTile(
                         leading=ft.Icon(name=ft.icons.TERMINAL_ROUNDED),
-                        title=ft.Text(process["name"]),
+                        title=ft.Text(process['name']),
                         subtitle=ft.Text(comps),
                     )
                 ])
@@ -311,7 +311,7 @@ def main(page: ft.Page):
         """
         nonlocal running_processes_count
         for process in list_of_processes:
-            if process["id"] == id:
+            if process['id'] == id:
                 show_message(f"{process['name']} - {process['computers']}: has finished.")
                 list_of_processes.remove(process)
                 running_processes_count -= 1
@@ -510,7 +510,7 @@ def main(page: ft.Page):
 
     results_container = ft.Container(
         content=result_data,
-        bgcolor=settings_values["app_color"],
+        bgcolor=settings_values['app_color'],
         expand=True,
         alignment=ft.alignment.top_left,
         border_radius=20
@@ -536,13 +536,13 @@ def main(page: ft.Page):
     
                 # If the controls data is equal to a computer in the filters list
                 # Remove it and add it to another list
-            if control.data["Computer"] in filter:
+            if control.data['Computer'] in filter:
                 filtered_out_results.append(control)
                
         for control in filtered_out_results:
             # If the controls computer isnt in the filter,
             # we want to re-add it to result_data
-            if control.data["Computer"] not in filter:
+            if control.data['Computer'] not in filter:
                 result_data.controls.append(control)
                 remove_these_controls.append(control)
             else:
@@ -556,7 +556,7 @@ def main(page: ft.Page):
         
         remove_these_controls.clear()
         
-        result_data.controls.sort(key=lambda control: control.data["SortDate"], reverse=True)
+        result_data.controls.sort(key=lambda control: control.data['SortDate'], reverse=True)
         if len(filter_out_PCs) > 0:
             filter_btn.icon = ft.icons.FILTER_ALT
             filter_btn.tooltip = "On"
@@ -645,7 +645,7 @@ def main(page: ft.Page):
             result_data.controls.clear()
         else:
             for control in result_data.controls:
-                if id == control.data["Id"]:
+                if id == control.data['Id']:
                     result_data.controls.remove(control)
         page.update()
     
@@ -724,7 +724,7 @@ def main(page: ft.Page):
     # List view for printer wizard
     printer_wiz_listview = ft.ListView(expand=1, spacing=10, padding=20,)
     printer_wiz_list_container = ft.Container(
-        bgcolor=settings_values["app_color"],
+        bgcolor=settings_values['app_color'],
         content=printer_wiz_listview,
         border_radius=20,
         expand=True,
@@ -1063,13 +1063,13 @@ Registry path: {program['RegPath']}"""
                         padding=20
                     )
                     
-                    list_of_pcs[f"{pc}"].content.controls.append(new_control)
+                    list_of_pcs[f'{pc}'].content.controls.append(new_control)
 
         # Loop through expansionpanels in list and append them to expansion_list
         for pc in list_of_pcs:
-            expansion_list.controls.append(list_of_pcs[f"{pc}"])
+            expansion_list.controls.append(list_of_pcs[f'{pc}'])
         
-        btn_data = {"columns": ["Computer", "Program", "Version", "Install Date", "Registry Path"], "results": list_of_results}
+        btn_data = {"columns": ['Computer", "Program", "Version", "Install Date", "Registry Path'], "results": list_of_results}
         
         for key, value in e.control.data.items():
             if key == "computer":
@@ -1128,14 +1128,14 @@ Registry path: {program['RegPath']}"""
             end_of_process(id)
     
     def enable_winrm(computer):
-        if settings_values["enable_win_rm"]:
+        if settings_values['enable_win_rm']:
             if computer == None:
                 computer = computer_name.value
             id = uuid.uuid4()
             add_new_process(new_process("WinRM", [computer], date_time(), id))
             powershell = the_shell.Power_Shell()
             result = powershell.enable_winrm(computer)
-            if settings_values["supress_winrm_results"] != True:
+            if settings_values['supress_winrm_results'] != True:
                 update_results("WinRM", result, id)
             end_of_process(id)
             
@@ -1562,9 +1562,9 @@ Registry path: {program['RegPath']}"""
             computer = computer_name.value
         
         if doing_action and shutdown_only == False:
-            restart(scheduled, shutdown_only, computer, settings_values["enable_win_rm"], month=month, day=day, year=year, time=time)
+            restart(scheduled, shutdown_only, computer, settings_values['enable_win_rm'], month=month, day=day, year=year, time=time)
         elif doing_action and shutdown_only:
-            restart(scheduled, shutdown_only, computer, settings_values["enable_win_rm"], month=month, day=day, year=year, time=time)
+            restart(scheduled, shutdown_only, computer, settings_values['enable_win_rm'], month=month, day=day, year=year, time=time)
        
     
     def restart(scheduled, shutdown, computer, winRM, **kwargs):
@@ -1592,7 +1592,7 @@ Registry path: {program['RegPath']}"""
         if use_list and check_list():
             add_new_process(new_process("Restart", [computer], date_time(), id))
             show_message(f"Restarting {computer}")
-            result = powershell.restart(id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds, settings_values["use_24hr"], winRM)
+            result = powershell.restart(id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds, settings_values['use_24hr'], winRM)
             update_results("Restart", result, id, computer=computer)
             end_of_process(id)
         if use_list != True:
@@ -1600,7 +1600,7 @@ Registry path: {program['RegPath']}"""
                 enable_winrm(computer)
                 add_new_process(new_process("Restart", [computer], date_time(), id))
                 show_message(f"Restarting {computer}")
-                result = powershell.restart(id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds, settings_values["use_24hr"], winRM)
+                result = powershell.restart(id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds, settings_values['use_24hr'], winRM)
                 update_results("Restart", result, id, computer=computer)
                 end_of_process(id) 
 
@@ -1648,7 +1648,7 @@ Registry path: {program['RegPath']}"""
             
         def run_operation(computer):
             
-            if delete_users_checkbox.value and settings_values["warn_about_profile_deletion"]:
+            if delete_users_checkbox.value and settings_values['warn_about_profile_deletion']:
                 
                 are_you_sure(
                     e, 
@@ -1680,7 +1680,7 @@ Registry path: {program['RegPath']}"""
                 show_message(f"Clearing space on {computer}.")
                 
             powershell = the_shell.Power_Shell()
-            powershell.clear_space(computer=computer, users=users, logout=logout, winRM=settings_values["enable_win_rm"])
+            powershell.clear_space(computer=computer, users=users, logout=logout, winRM=settings_values['enable_win_rm'])
             
             if use_list_checkbox.value == True:
                 for pc in list_of_pcs:
@@ -1759,7 +1759,7 @@ Registry path: {program['RegPath']}"""
                 title=ft.Text(f"{script}"),
                 leading=ft.IconButton(
                     ft.icons.PLAY_ARROW,
-                    data=f"{script_props["path"]}",
+                    data=f"{script_props['path']}",
                     on_click=launch_script,
                     tooltip="Launch script"
                 ),
@@ -1784,7 +1784,7 @@ Registry path: {program['RegPath']}"""
                 group="scripts",
                 content=script_list_tile,
                 content_feedback=feedback,
-                data={"index": script_props["index"], "name": script}
+                data={"index": script_props['index'], "name": script}
             )
             
             drag_target=ft.DragTarget(
@@ -1793,11 +1793,11 @@ Registry path: {program['RegPath']}"""
                 on_accept=drag_script_accept,
                 on_will_accept=drag_script_will_accept,
                 on_leave=drag_script_leave,
-                data={"index": script_props["index"], "name": script}
+                data={"index": script_props['index'], "name": script}
             )
             
             def sort_funct(dict):
-                return dict.data["index"]
+                return dict.data['index']
             
             list_of_script_tiles.append(drag_target)
             list_of_script_tiles.sort(key=sort_funct)
@@ -1815,7 +1815,7 @@ Registry path: {program['RegPath']}"""
             add_new_process(new_process("Check Space", [computer], date_time(), id))
             show_message(f"Checking space on {computer}")
             powershell = the_shell.Power_Shell()
-            result = powershell.check_space(computer=computer, id=id, winRM=settings_values["enable_win_rm"])
+            result = powershell.check_space(computer=computer, id=id, winRM=settings_values['enable_win_rm'])
             update_results("Check Space", result, id=id, check_space=True, subtitle=result, computer=computer)
             end_of_process(id)
         if use_list != True:
@@ -1842,9 +1842,9 @@ Registry path: {program['RegPath']}"""
         use_list = programs_use_list_checkbox.value
         if use_list and check_list():
             computer = "list of computers"
-            add_new_process(new_process("Check Software", ["Using list"], date_time(), id))
+            add_new_process(new_process("Check Software", ['Using list'], date_time(), id))
             show_message(f"Checking software on list of PCs")
-            result = powershell.check_software(computer=computer, software=software_textfield.value, id=id, all=all, winRM=settings_values["enable_win_rm"])
+            result = powershell.check_software(computer=computer, software=software_textfield.value, id=id, all=all, winRM=settings_values['enable_win_rm'])
             data = f"assets/results/Programs/Programs-{id}.json"
             update_results("Check Software", data=data, id=id, subtitle=result, computer=computer)
             end_of_process(id)
@@ -1855,13 +1855,13 @@ Registry path: {program['RegPath']}"""
                 add_new_process(new_process("Check Software", [computer], date_time(), id))
                 show_message(f"Checking software on {computer}")
                 data = f"assets/results/Programs/{computer}-Programs.json"
-                result = powershell.check_software(computer=computer, software=software_textfield.value, id=id, all=all, winRM=settings_values["enable_win_rm"])
+                result = powershell.check_software(computer=computer, software=software_textfield.value, id=id, all=all, winRM=settings_values['enable_win_rm'])
                 update_results("Check Software", data=data, id=id, subtitle=result, computer=computer)
                 end_of_process(id)
     
     def open_battery_report(e):
         html = e.control.data
-        subprocess.call([f"cmd.exe", "/c" f"{html}"])
+        subprocess.call(["cmd.exe", "/c" f"{html}"])
     
     def open_battery_card(e):
         ctr_data = "None"
@@ -1930,20 +1930,20 @@ Registry path: {program['RegPath']}"""
                 
                 details = {
                     "computer": f"{r}",
-                    "efficiency": f"{battery_details["Efficiency"]}",
-                    "fullchargecapacity": f"{battery_details["FullChargeCapacity"]}",
-                    "designcapacity": f"{battery_details["DesignCapacity"]}",
-                    "batteryreport": f"{battery_details["BatteryReport"]}"
+                    "efficiency": f"{battery_details['Efficiency']}",
+                    "fullchargecapacity": f"{battery_details['FullChargeCapacity']}",
+                    "designcapacity": f"{battery_details['DesignCapacity']}",
+                    "batteryreport": f"{battery_details['BatteryReport']}"
                 }
                     
                 list_of_results.append(details)
 
         # Loop through expansionpanels in list and append them to expansion_list
         for pc in list_of_pcs:
-            expansion_list.controls.append(list_of_pcs[f"{pc}"])
+            expansion_list.controls.append(list_of_pcs[f'{pc}'])
         
         # Format export data
-        btn_data = {"columns": ["Computer", "Efficiency", "Full Charge Capacity", "Design Capacity", "Battery Report"], "results": list_of_results}
+        btn_data = {"columns": ['Computer", "Efficiency", "Full Charge Capacity", "Design Capacity", "Battery Report'], "results": list_of_results}
         
         modal = DynamicModal(
             title=f"{e.control.title.value}",
@@ -1973,7 +1973,7 @@ Registry path: {program['RegPath']}"""
             computer = "list of computers"
             add_new_process(new_process("Check Battery", [computer], date_time(), id))
             show_message(f"Checking battery on {computer}")
-            result = powershell.check_battery(computer, id, settings_values["enable_win_rm"])
+            result = powershell.check_battery(computer, id, settings_values['enable_win_rm'])
             update_results(
                     "Check Battery", 
                     data=f"assets/results/Battery/{id}-BatteryStatus.json", 
@@ -1989,7 +1989,7 @@ Registry path: {program['RegPath']}"""
                 enable_winrm(computer)
                 add_new_process(new_process("Check Battery", [computer], date_time(), id))
                 show_message(f"Checking battery on {computer}")
-                result = powershell.check_battery(computer, id, settings_values["enable_win_rm"])
+                result = powershell.check_battery(computer, id, settings_values['enable_win_rm'])
                 if "failed" in result:
                     update_results(
                         "Check Battery", 
@@ -2047,9 +2047,9 @@ Registry path: {program['RegPath']}"""
     page.overlay.append(pick_files_dialog)    
 
     def log_off_user(data):
-        user_id = data["ID"]
-        computer = ["computer"]
-        name = data["name"]
+        user_id = data['ID']
+        computer = ['computer']
+        name = data['name']
         
         if check_process("Log Off User", computer):
             id = uuid.uuid4()
@@ -2080,7 +2080,7 @@ Registry path: {program['RegPath']}"""
         list_of_users = []
         for user in users:
             u = users[user]
-            id = u["ID"]
+            id = u['ID']
             
             new_user = ft.Container(
                 content=ft.Row([
@@ -2199,10 +2199,10 @@ Registry path: {program['RegPath']}"""
         yellow_color_radio
     ]))
     
-    winrm_checkbox = ft.Checkbox("Enable WinRM before actions", value=settings_values["enable_win_rm"])
-    winrm_results_checkbox = ft.Checkbox("Supress WinRM results", value=settings_values["supress_winrm_results"])
-    use_24hr_checkbox = ft.Checkbox("Use 24hr time format", value=settings_values["use_24hr"])
-    warn_checkbox = ft.Checkbox("Warn before clearing profiles", value=settings_values["warn_about_profile_deletion"])
+    winrm_checkbox = ft.Checkbox("Enable WinRM before actions", value=settings_values['enable_win_rm'])
+    winrm_results_checkbox = ft.Checkbox("Supress WinRM results", value=settings_values['supress_winrm_results'])
+    use_24hr_checkbox = ft.Checkbox("Use 24hr time format", value=settings_values['use_24hr'])
+    warn_checkbox = ft.Checkbox("Warn before clearing profiles", value=settings_values['warn_about_profile_deletion'])
     settings_save_btn = ft.FilledButton("Save", icon=ft.icons.SAVE, on_click=update_settings)
     settings_view = ft.Column([
         ft.Row([
@@ -2291,7 +2291,7 @@ Registry path: {program['RegPath']}"""
     )
     
     programs_tutorial = TutorialBtn(
-        data=["Programs", "You can use this panel to check for a specific program on a computer, or get a list of all detected installed software."],
+        data=['Programs", "You can use this panel to check for a specific program on a computer, or get a list of all detected installed software.'],
         on_click=open_tutorial_modal
     )
     
@@ -2404,7 +2404,7 @@ Registry path: {program['RegPath']}"""
             [exp_panel_list],
             padding=20,
         ),
-        bgcolor=settings_values["app_color"],
+        bgcolor=settings_values['app_color'],
         expand = 1,
         border_radius=20
     )
@@ -2433,7 +2433,7 @@ Registry path: {program['RegPath']}"""
             
             # Figure out the index
             if file.name in custom_scripts:
-                index = custom_scripts[f"{file.name}"]["index"]
+                index = custom_scripts[f'{file.name}']['index']
             elif len(list_of_script_tiles) == 0:
                 index = 0
             else:
@@ -2477,7 +2477,7 @@ Click and drag to reorder them."""],
                 tooltip="Add a script",
                 on_click=lambda _: pick_script_dialog.pick_files(
                     allow_multiple=True,
-                    allowed_extensions=["ps1"]
+                    allowed_extensions=['ps1']
                 )
             ),
             use_ps1,
@@ -2557,11 +2557,11 @@ Click and drag to reorder them."""],
         for file in e.files:
             if file.name == "pwsh.exe":
                 powershell_path_text.value = f"{file.path}"
-                settings_values["pwsh_path"] = f"{file.path}"
+                settings_values['pwsh_path'] = f"{file.path}"
                 powershell_checkmark.visible = True
             elif file.name == "PsExec.exe" or file.name == "PsService.exe": 
-                pstools_path_text.value = settings_values["pstools_path"]
-                settings_values["pstools_path"] == file.path.replace(f"\\{file.name}", "")
+                pstools_path_text.value = settings_values['pstools_path']
+                settings_values['pstools_path'] == file.path.replace(f"\\{file.name}", "")
                 pstools_checkmark.visible = True
             else:
                 show_message("Invalid program.")
@@ -2595,7 +2595,7 @@ Click and drag to reorder them."""],
                 ft.Text("Click browse to select the respective executables in their install location."),
                 ft.TextButton("Browse", on_click=lambda _: pick_path_dialog.pick_files(
                     allow_multiple=False,
-                    allowed_extensions=["exe"],
+                    allowed_extensions=['exe'],
                     initial_directory="C:\\"
                 )),
                 ft.Row([
@@ -2615,7 +2615,7 @@ Click and drag to reorder them."""],
     page_view = setup_view
     
     #Finally build the page
-    if os.path.exists(f"{settings_values["pwsh_path"]}") and os.path.exists(f"{settings_values["pstools_path"]}\\PsExec.exe"):
+    if os.path.exists(f"{settings_values['pwsh_path']}") and os.path.exists(f"{settings_values['pstools_path']}\\PsExec.exe"):
         # Main Program page view
         page_view = main_view
     else:
