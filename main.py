@@ -6,6 +6,7 @@ from dynamic_modal import DynamicModal
 from are_you_sure import YouSure
 from settings_values import settings_values, custom_scripts, load_settings
 
+# Create settings.json if not exists and/or load saved values
 load_settings(e=None, update=False)
 
 # Create recent_computers.json
@@ -1662,8 +1663,6 @@ Registry path: {program['RegPath']}"""
         src = page.get_control(e.src_id)
         dragged_index = src.data["index"]
         
-        print("Dragged index: ", dragged_index, " Drag Target index: ", drag_target_index)
-        
         if src.data["name"] in custom_scripts:
             custom_scripts[src.data["name"]]["index"] = drag_target_index
         if e.control.data["name"] in custom_scripts:
@@ -1995,7 +1994,8 @@ Registry path: {program['RegPath']}"""
             data = e.control.data
             page.update()
             if log_off_user(data):
-                e.control.text = "logoff sent"
+                e.control.text = "logged out"
+                e.control.update()
                 e.control.on_click = (lambda _: print("Already logged off"))
             
         list_of_users = []
@@ -2354,9 +2354,7 @@ Registry path: {program['RegPath']}"""
             
             # Figure out the index
             if file.name in custom_scripts:
-                print("found it")
                 index = custom_scripts[f"{file.name}"]["index"]
-                print(f"index: {index}")
             elif len(list_of_script_tiles) == 0:
                 index = 0
             else:
@@ -2397,7 +2395,7 @@ Click and drag to reorder them."""],
         ft.Row([
             ft.IconButton(
                 icon=ft.icons.ADD,
-                tooltip="Add a custom script",
+                tooltip="Add a script",
                 on_click=lambda _: pick_script_dialog.pick_files(
                     allow_multiple=True,
                     allowed_extensions=["ps1"]
@@ -2406,33 +2404,73 @@ Click and drag to reorder them."""],
             use_ps1,
             cust_scripts_tutorial
         ], spacing=0, alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+        ft.Divider(),
         custom_scripts_container
     ], expand=True)
     
-    current_view = ft.Row([home], expand=True)
+    def on_donate_hover(e):
+        e.control.bgcolor = "grey" if e.data == "true" else None
+        e.control.content.controls[1].color = "black" if e.data == "true" else "white"
+        e.control.border_radius = 20 if e.data =="true" else 0
+        e.control.update()
     
+    def on_github_hover(e):
+        e.control.bgcolor = "white" if e.data == "true" else None
+        e.control.border_radius = 50 if e.data =="true" else 0
+        e.control.update()
+        
     donate_view = ft.Column([
         ft.Row([
             ft.Column([
                 ft.Text("Created by:", size=40),
             ]),
             ft.Column([
-                ft.Image(
-                    src="https://storage.ko-fi.com/cdn/useruploads/4bf6c379-868e-4be0-b297-2c51ef26a446.png",
-                    border_radius=ft.border_radius.all(60)
-                ),
-                ft.Text("Steven Whitney (KnightlyGains)")
+                ft.Stack([
+                    ft.Image(
+                        src="https://avatars.githubusercontent.com/u/56776962?v=4",
+                        border_radius=ft.border_radius.all(60),
+                        width=210
+                    ),
+                    ft.Container(
+                        content=ft.Image(src="assets/images/Github.png", width=70),
+                        url="https://github.com/knightlygains",
+                        offset=ft.transform.Offset(2, 2),
+                        on_hover=on_github_hover,
+                        tooltip="https://github.com/knightlygains"
+                    )
+                ]),
+                
+                ft.Text("Steven Whitney (KnightlyGains)", weight=ft.FontWeight.BOLD)
             ]),
-            
-        ], alignment=ft.MainAxisAlignment.SPACE_EVENLY),
+        ], alignment=ft.MainAxisAlignment.CENTER, spacing=30),
         ft.Divider(),
         ft.Row([
             ft.Text("If you like this tool and would like to support me, please consider donating:"),
-        ]),
+        ], spacing=15, alignment=ft.MainAxisAlignment.CENTER),
         ft.Row([
-            
-        ])
+            ft.Container(
+                content=ft.Column([
+                    ft.Image(src="assets/images/ko-fi.png", width=70),
+                    ft.Text("Ko-Fi", weight=ft.FontWeight.BOLD)
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                margin=ft.margin.only(top=20),
+                url="https://ko-fi.com/knightlygains",
+                on_hover=on_donate_hover
+            ),
+            ft.Container(
+                content=ft.Column([
+                    ft.Image(src="assets/images/patreon.png", width=70),
+                    ft.Text("Patreon", weight=ft.FontWeight.BOLD)
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                margin=ft.margin.only(top=20),
+                url="https://www.patreon.com/KnightlyGains",
+                on_hover=on_donate_hover
+            )
+        ], alignment=ft.MainAxisAlignment.CENTER, spacing=30)
     ], expand=1)
+    
+    # We assign different views to this in navigation
+    current_view = ft.Row([home], expand=True)
     
     # Filepicker for picking paths
     def select_path(e: ft.FilePickerResultEvent):
@@ -2465,6 +2503,7 @@ Click and drag to reorder them."""],
     pstools_path_text = ft.Text()
     pstools_checkmark = ft.Icon(name=ft.icons.CHECK, visible=False)
     
+    # This is the "main" view for when we have passed setup
     main_view = ft.Row([
         rail,
         ft.VerticalDivider(width=9, thickness=3),
