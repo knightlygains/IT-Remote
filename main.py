@@ -1,10 +1,10 @@
 import flet as ft
-import the_shell
+import assets.py_files.the_shell as the_shell
 import datetime, json, re, subprocess, os, time, socket, pathlib, uuid, csv
-from tutorial_btn import TutorialBtn
-from dynamic_modal import DynamicModal
-from are_you_sure import YouSure
-from settings_values import settings_values, custom_scripts, load_settings
+from assets.py_files.tutorial_btn import TutorialBtn
+from assets.py_files.dynamic_modal import DynamicModal
+from assets.py_files.are_you_sure import YouSure
+from assets.py_files.settings_values import settings_values, custom_scripts, load_settings
 
 # Create settings.json if not exists and/or load saved values
 load_settings(e=None, update=False)
