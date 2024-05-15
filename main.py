@@ -624,9 +624,16 @@ def main(page: ft.Page):
         """
         Sets card modal content and opens it.
         """
+        ctr_data = "None"
+        ctr_computer = "None"
+        for key, value in e.control.data.items():
+            if key == "data":
+                ctr_data = value
+            if key == "computer":
+                ctr_computer = value
         result_card_modal.content = ft.Container(
             content=ft.Column([
-                ft.Text(e.control.data["data"], selectable=True)
+                ft.Text(ctr_data, selectable=True)
             ], scroll=True))
         result_card_modal.title = ft.Text(e.control.title.value)
         show_card_modal()
@@ -741,7 +748,14 @@ def main(page: ft.Page):
             expand=1,
             width= 500
         )
-        log_json_path = e.control.data["data"]
+        ctr_data = "None"
+        ctr_computer = "None"
+        for key, value in e.control.data.items():
+            if key == "data":
+                ctr_data = value
+            if key == "computer":
+                ctr_computer = value
+        log_json_path = ctr_data
         with open(log_json_path, "r") as file:
             data = json.load(file)
             for event in data:
@@ -799,7 +813,14 @@ def main(page: ft.Page):
         page.update()
     
     def open_card_print_wiz(e):
-        printer_wizard(e, target_computer=e.control.data["computer"])
+        ctr_data = "None"
+        ctr_computer = "None"
+        for key, value in e.control.data.items():
+            if key == "data":
+                ctr_data = value
+            if key == "computer":
+                ctr_computer = value
+        printer_wizard(e, target_computer=ctr_computer)
     
     # Used to store the computer name
     # that "Get Printers" was run on
@@ -815,6 +836,14 @@ def main(page: ft.Page):
         Uses dynamic modal to show info about the disk
         space on a computer.
         """
+        ctr_data = "None"
+        ctr_computer = "None"
+        for key, value in e.control.data.items():
+            if key == "data":
+                ctr_data = value
+            if key == "computer":
+                ctr_computer = value
+        
         space_list_view = ft.ExpansionPanelList(
             elevation=8,
             controls=[]
@@ -824,7 +853,8 @@ def main(page: ft.Page):
             expand=1,
             width= 500
         )
-        space_json_path = e.control.data["data"]
+        
+        space_json_path = ctr_data
         with open(space_json_path, "r") as file:
             data = json.load(file)
             
@@ -868,8 +898,12 @@ def main(page: ft.Page):
                 )
                 space_list_view.controls.append(card)
         
+        for key, value in e.control.data.items():
+            if key == "computer":
+                ctr_computer = value
+        
         modal = DynamicModal(
-            title=f"{e.control.title.value}, {e.control.data["computer"]}",
+            title=f"{e.control.title.value}, {ctr_computer}",
             content=card_content,
             close_modal_func=close_dynamic_modal
         )
@@ -959,7 +993,14 @@ def main(page: ft.Page):
             pass
     
     def open_software_card(e):
-        software_json_path = e.control.data["data"]
+        ctr_data = "None"
+        ctr_computer = "None"
+        for key, value in e.control.data.items():
+            if key == "data":
+                ctr_data = value
+            if key == "computer":
+                ctr_computer = value
+        software_json_path = ctr_data
         list_of_pcs = {}
         
         expansion_list = ft.ExpansionPanelList(
@@ -1028,8 +1069,12 @@ Registry path: {program['RegPath']}"""
         
         btn_data = {"columns": ["Computer", "Program", "Version", "Install Date", "Registry Path"], "results": list_of_results}
         
+        for key, value in e.control.data.items():
+            if key == "computer":
+                ctr_computer = value
+        
         modal = DynamicModal(
-            title=f"{e.control.title.value}, {e.control.data["computer"]}",
+            title=f"{e.control.title.value}, {ctr_computer}",
             content=ft.Column(controls=[
                 expansion_list,
                 ft.TextButton(
@@ -1292,24 +1337,38 @@ Registry path: {program['RegPath']}"""
         
     def printer_wiz_testpage(e):
         if check_computer_name() and check_process("Test Page", computer_name.value):
+            ctr_data = "None"
+            ctr_computer = "None"
+            for key, value in e.control.data.items():
+                if key == "data":
+                    ctr_data = value
+                if key == "computer":
+                    ctr_computer = value
             id = uuid.uuid4()
-            add_new_process(new_process("Test Page", [e.control.data["computer"]], date_time(), id))
-            show_message(f"Printing test page from {e.control.data["computer"]}.")
+            add_new_process(new_process("Test Page", [ctr_computer], date_time(), id))
+            show_message(f"Printing test page from {ctr_computer}.")
             powershell = the_shell.Power_Shell()
-            result = powershell.test_page(computer=e.control.data["computer"], printerName=e.control.data["printer"])
+            result = powershell.test_page(computer=ctr_computer, printerName=e.control.data["printer"])
             update_results("Printer Test Page", result, id=id)
             end_of_process(id)
     
     def uninstall_printer(e):
-        if are_you_sure(e, f"Uninstall {e.control.data["printer"]} from {e.control.data["computer"]}?"):
+        ctr_data = "None"
+        ctr_computer = "None"
+        for key, value in e.control.data.items():
+            if key == "data":
+                ctr_data = value
+            if key == "computer":
+                ctr_computer = value
+        if are_you_sure(e, f"Uninstall {e.control.data["printer"]} from {ctr_computer}?"):
             id = uuid.uuid4()
-            add_new_process(new_process("Uninstall Printer", [e.control.data["computer"]], date_time(), id))
-            show_message(f"Uninstalling printer from {e.control.data["computer"]}.")
+            add_new_process(new_process("Uninstall Printer", [ctr_computer], date_time(), id))
+            show_message(f"Uninstalling printer from {ctr_computer}.")
             powershell = the_shell.Power_Shell()
-            result = powershell.uninstall_printer(computer=e.control.data["computer"], printerName=e.control.data["printer"])
+            result = powershell.uninstall_printer(computer=ctr_computer, printerName=e.control.data["printer"])
             update_results("Uninstall Printer", result, id)
             end_of_process(id)
-            printer_wizard(e, refresh=True, target_computer=e.control.data["computer"])
+            printer_wizard(e, refresh=True, target_computer=ctr_computer)
     
     def open_print_logs(e):
         type = e.control.data
@@ -1799,7 +1858,14 @@ Registry path: {program['RegPath']}"""
         subprocess.call([f"cmd.exe", "/c" f"{html}"])
     
     def open_battery_card(e):
-        battery_json_path = e.control.data["data"]
+        ctr_data = "None"
+        ctr_computer = "None"
+        for key, value in e.control.data.items():
+            if key == "data":
+                ctr_data = value
+            if key == "computer":
+                ctr_computer = value
+        battery_json_path = ctr_data
         list_of_pcs = {}
         
         expansion_list = ft.ExpansionPanelList(
