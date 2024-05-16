@@ -17,7 +17,7 @@ Write-Output "winRM is $winRM"
 
 . .\assets\scripts\functions.ps1
 
-$list = Get-Content ".\assets\lists\computers.txt"
+$list = Get-Content ".\settings\lists\computers.txt"
 # If using list, set Computers = to Get-Content for list contents
 if ($Computers -eq "list of computers") {
     foreach ($Computer in $list) {

@@ -16,9 +16,11 @@ custom_scripts = {
     
 }
 
+custom_scripts_path = "settings/custom_scripts.json"
+settings_path = "settings/settings.json"
+
 def load_settings(e, update):
-    custom_scripts_path = "assets/custom_scripts.json"
-    settings_path = "assets/settings.json"
+    
     # Check if settings already exists
     if update:
         try:

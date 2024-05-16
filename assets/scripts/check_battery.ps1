@@ -34,7 +34,7 @@ $json_format = @"
 Function CheckBattery {
 
     if ($Computer -eq "list of computers") {
-        $Computer = Get-Content ".\assets\lists\computers.txt"
+        $Computer = Get-Content ".\settings\lists\computers.txt"
         Write-Host "List of computers"
         Write-Host $Computer
     

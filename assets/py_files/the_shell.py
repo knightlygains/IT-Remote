@@ -6,7 +6,7 @@ import socket
 class Power_Shell():
     def __init__(self):
         self.pspath = "pwsh.exe"
-        self.list_path = "./assets/lists/computers.txt"
+        self.list_path = "settings/lists/computers.txt"
     
     def launch_script(self, script, ps_version):
         if ps_version:
@@ -25,14 +25,14 @@ class Power_Shell():
             p = subprocess.run(["notepad.exe", self.list_path])
     
     def enable_winrm(self, computer):
-        p = subprocess.call([self.pspath, "-File", f"./assets/scripts/enable_winrm.ps1", f"{computer}" ])
+        p = subprocess.call([self.pspath, "-File", f"./assets/scripts/enable_winrm.ps1", f"{computer}"])
         if p == 0:
             return f"WinRM is enabled on {computer}."
         else:
             return f"WinRM could not be enabled on {computer}."
     
     def ping(self, computer):
-        p = subprocess.call([self.pspath, "-File", f"./assets/scripts/ping_computer.ps1", f"{computer}" ])
+        p = subprocess.call([self.pspath, "-windowstyle", "hidden", "-File", f"./assets/scripts/ping_computer.ps1", f"{computer}" ])
         if p == 0:
             return f"{computer} is online."
         elif p == 2:
@@ -41,22 +41,22 @@ class Power_Shell():
             return f"Couldn't ping {computer}."
     
     def quser(self, computer):
-        p = subprocess.getoutput([self.pspath, "-File", f"./assets/scripts/whosLoggedIn.ps1", f"{computer}" ])
+        p = subprocess.getoutput([self.pspath, "-windowstyle", "hidden", "-File", f"./assets/scripts/whosLoggedIn.ps1", f"{computer}" ])
         return p
     
     def check_printers(self, computer):
-        p = subprocess.getoutput([self.pspath, "-File", f"./assets/scripts/check_printers.ps1", f"{computer}" ])
+        p = subprocess.getoutput([self.pspath, "-windowstyle", "hidden", "-File", f"./assets/scripts/check_printers.ps1", f"{computer}" ])
         return p
     
     def printer_wizard(self, computer):
-        p = subprocess.call([self.pspath, "-File", f"./assets/scripts/PrinterWizard.ps1", f"{computer}" ])
+        p = subprocess.call([self.pspath, "-windowstyle", "hidden", "-File", f"./assets/scripts/PrinterWizard.ps1", f"{computer}" ])
         if p == 0:
             return f"Printers retrieved from {computer}. Click to open"
         else:
             return f"Failed to retrieve printers from {computer}."
 
     def test_page(self, computer, printerName):
-        p = subprocess.call([self.pspath, "-File", f"./assets/scripts/test_page.ps1", f"{computer}", f"{printerName}"])
+        p = subprocess.call([self.pspath, "-windowstyle", "hidden", "-File", f"./assets/scripts/test_page.ps1", f"{computer}", f"{printerName}"])
         if p == 0:
             return f"Test page sent to {computer}."
         elif p == 2:
@@ -67,7 +67,7 @@ class Power_Shell():
     def print_logs(self, computer, type):
         if computer.lower() == "localhost":
             computer = socket.gethostname()
-        p = subprocess.call([self.pspath, "-File", "./assets/scripts/print_logs.ps1", f"{computer}", f"{type}"])
+        p = subprocess.call([self.pspath, "-windowstyle", "hidden", "-File", "./assets/scripts/print_logs.ps1", f"{computer}", f"{type}"])
         if p == 0:
             result_json = f"./assets/results/printers/{computer}-Printers-{type}-logs.json"
             results = ""
@@ -81,32 +81,32 @@ class Power_Shell():
             return f"Failed to retreive logs from {computer}."
     
     def rename_printer(self, computer, printerName, newName):
-        p = subprocess.call([self.pspath, "-File", f"./assets/scripts/rename_printer.ps1", f"{computer}", f"{printerName}", f"{newName}"])
+        p = subprocess.call([self.pspath, "-windowstyle", "hidden", "-File", f"./assets/scripts/rename_printer.ps1", f"{computer}", f"{printerName}", f"{newName}"])
         if p == 0:
             return f"Renamed a printer on {computer}."
         else:
             return f"Failed to rename a printer on {computer}."
         
     def uninstall_printer(self, computer, printerName):
-        p = subprocess.call([self.pspath, "-File", f"./assets/scripts/uninstall_printer.ps1", f"{computer}", f"{printerName}"])
+        p = subprocess.call([self.pspath, "-windowstyle", "hidden", "-File", f"./assets/scripts/uninstall_printer.ps1", f"{computer}", f"{printerName}"])
         if p == 0:
             return f"Uninstalled printer {printerName} on {computer}."
         else:
             return f"Failed to uninstall {printerName} on {computer}."
     
     def clear_space(self, computer, users, logout, winRM):
-        p = subprocess.call([self.pspath, "-File", f"./assets/scripts/disk_cleanup.ps1", f"{computer}", f"{users}", f"{logout}", f"{winRM}"])
+        p = subprocess.call([self.pspath, "-windowstyle", "hidden", "-File", f"./assets/scripts/disk_cleanup.ps1", f"{computer}", f"{users}", f"{logout}", f"{winRM}"])
         return p
     
     def check_space(self, computer, id, winRM):
-        p = subprocess.call([self.pspath, "-File", f"./assets/scripts/check_space.ps1", f"{computer}", f"{id}", f"{winRM}"])
+        p = subprocess.call([self.pspath, "-windowstyle", "hidden", "-File", f"./assets/scripts/check_space.ps1", f"{computer}", f"{id}", f"{winRM}"])
         if p == 0:
             return f"Open to view space on {computer}."
         else:
             return f"Failed to retrieve space on {computer}."
     
     def check_battery(self, computer, id, winRM):
-        p = subprocess.call([self.pspath, "-File", "./assets/scripts/check_battery.ps1", f"{computer}", f"{id}", f"{winRM}"])
+        p = subprocess.call([self.pspath, "-windowstyle", "hidden", "-File", "./assets/scripts/check_battery.ps1", f"{computer}", f"{id}", f"{winRM}"])
         if p == 0:
             return f"Open to view battery info on {computer}."
         elif p == 3:
@@ -115,11 +115,11 @@ class Power_Shell():
             return f"Failed to get battery info on {computer}."
     
     def get_uptime(self, computer):
-        p = subprocess.getoutput([self.pspath, "-File", "./assets/scripts/get_uptime.ps1", f"{computer}"])
+        p = subprocess.getoutput([self.pspath, "-windowstyle", "hidden", "-File", "./assets/scripts/get_uptime.ps1", f"{computer}"])
         return p
     
     def event_viewer(self, computer):
-        p = subprocess.call([self.pspath, "-File", "./assets/scripts/event_viewer.ps1", f"{computer}"])
+        p = subprocess.call([self.pspath, "-windowstyle", "hidden", "-File", "./assets/scripts/event_viewer.ps1", f"{computer}"])
         return p
     
     # def rename_computers(self, computer, username, id, winRM):
@@ -133,32 +133,32 @@ class Power_Shell():
     #         return f"There was an error creating ./results/{id}-rename_computers.txt"
     
     def open_c_share(self, computer):
-        p = subprocess.call([self.pspath, "-File", "./assets/scripts/open_cshare.ps1", f"{computer}"])
+        p = subprocess.call([self.pspath, "-windowstyle", "hidden", "-File", "./assets/scripts/open_cshare.ps1", f"{computer}"])
         return p
     
     def check_software(self, computer, software, id, all, winRM):
-        p = subprocess.call([self.pspath, "-File", f"./assets/scripts/check_software.ps1", f"{computer}", f"{software}", f"{id}", f"{all}", f"{winRM}"])
+        p = subprocess.call([self.pspath, "-windowstyle", "hidden", "-File", f"./assets/scripts/check_software.ps1", f"{computer}", f"{software}", f"{id}", f"{all}", f"{winRM}"])
         if p == 0:
             return f"Open to view software on {computer}."
         else:
             return f"Failed to retrieve software on {computer}."
     
     def msinfo_32(self, computer):
-        p = subprocess.run([self.pspath, "-command", f"msinfo32.exe /computer \\\\{computer}"])
+        p = subprocess.run([self.pspath, "-windowstyle", "hidden", "-command", f"msinfo32.exe /computer \\\\{computer}"])
         if p.returncode == 0:
             return f"Launched msinfo32 for {computer}."
         else:
             return f"Failed to launch msinfo32 for {computer}."
     
     def log_off_user(self, computer, id, name):
-        p = subprocess.call([self.pspath, "-File", f"./assets/scripts/log_off_user.ps1", f"{computer}", f"{id}"])
+        p = subprocess.call([self.pspath, "-windowstyle", "hidden", "-File", f"./assets/scripts/log_off_user.ps1", f"{computer}", f"{id}"])
         if p == 0:
             return f"Logged out {name} on {computer}."
         else:
             return f"Failed to log out {name} on {computer}."
     
     def get_user_ids(self, computer):
-        p = subprocess.call([self.pspath, "-File", f"./assets/scripts/get_user_ids.ps1", f"{computer}"])
+        p = subprocess.call([self.pspath, "-windowstyle", "hidden", "-File", f"./assets/scripts/get_user_ids.ps1", f"{computer}"])
         if p == 0:
             return f"Got user IDs from {computer}."
         else:
@@ -199,6 +199,8 @@ class Power_Shell():
         print(f"print {computer}, shutdown {shutdown}")
         p = subprocess.call([
             self.pspath, 
+            "-windowstyle", 
+            "hidden",
             "-File", 
             f"./assets/scripts/restart.ps1",
             f"{id}",

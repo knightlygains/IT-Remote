@@ -4,18 +4,20 @@ import datetime, json, re, subprocess, os, time, socket, pathlib, uuid, csv
 from assets.py_files.tutorial_btn import TutorialBtn
 from assets.py_files.dynamic_modal import DynamicModal
 from assets.py_files.are_you_sure import YouSure
-from assets.py_files.settings_values import settings_values, custom_scripts, load_settings
+from assets.py_files.settings_values import settings_values, custom_scripts, load_settings, settings_path
 
 # Create settings.json if not exists and/or load saved values
 load_settings(e=None, update=False)
 
 # Create recent_computers.json
-recent_computers_path = "assets/results/recent_computers.json"
+recent_computers_path = "settings/recent_computers.json"
 if os.path.exists(recent_computers_path) == False:
     with open(recent_computers_path, "w") as file:
         print(f"{recent_computers_path} created")
         init_data = {"computers":[]}
         json.dump(init_data, file, indent=4)
+
+list_path = "settings/lists/computers.txt"
 
 #Cleanup old files
 printers_path = "assets/results/Printers"
@@ -61,10 +63,10 @@ def main(page: ft.Page):
     
     def save_page_dimensions(e):
         try:
-            with open("assets/settings.json", "r") as settings:
+            with open(settings_path, "r") as settings:
                 data = json.load(settings)
                 data.update({"window_width": page.width, "window_height": page.height})
-            with open("assets/settings.json", "w") as settings:
+            with open(settings_path, "w") as settings:
                 json.dump(data, settings, indent=4)
         except ValueError as e:
             print(f"Something went wrong with saving page dimensions, {e}")   
@@ -87,12 +89,11 @@ def main(page: ft.Page):
         page.update()
     
     # -------------------- RECENT PCS --------------------
-    recent_computers_file = "assets/results/recent_computers.json"
     def update_recent_computers(computer, date, last_action):
         # We need to convert to json.
         # For each computer in data['Computers']
         try:
-            with open(recent_computers_file, "r") as file:
+            with open(recent_computers_path, "r") as file:
                 
                 recent_pc = {
                     "name": computer,
@@ -115,7 +116,7 @@ def main(page: ft.Page):
         except ValueError as e:
             print(f"Something went wrong updating recent computers file. {e}")
         finally:
-            with open(recent_computers_file, "w") as file:
+            with open(recent_computers_path, "w") as file:
                 json.dump(g, file, indent=4)
     
     def load_recent_computers(e):
@@ -123,7 +124,7 @@ def main(page: ft.Page):
         recent_computer_names = []
         recent_computer_items = []
         
-        with open(recent_computers_file, "r") as file:
+        with open(recent_computers_path, "r") as file:
             data = json.load(file)
             for item in data['computers']:
                 if item['name'] not in recent_computer_names:
@@ -439,9 +440,26 @@ def main(page: ft.Page):
             return True
     
     def check_list():
+        
         try:
-            with open("assets/lists/computers.txt", "r") as list:
+            with open(list_path, "r") as file:
+                
+                contents = file.read()
+                print(f"'{contents}'")
+                if contents == "":
+                    show_message("List is empty.")
+                    return False
+        except FileNotFoundError as e:
+            with open(list_path, "x") as file:
+                print("Computer list file created.")
+                
+        try:
+            with open(list_path, "r") as list:
                 computers = list.read()
+                if computers == "":
+                    show_message("List is empty.")
+                    return False
+                
                 if re.compile('[^a-zA-Z0-9\\n-]').search(computers):
                     show_message("The list is not formatted properly or contains illegal characters.")
                     return False
@@ -449,7 +467,10 @@ def main(page: ft.Page):
                     return True
         except FileNotFoundError as e:
             print(e)
-            show_message("Couldn't find list. Please reinstall the app if this issue persists.")
+            with open(list_path, "x") as file:
+                print("Computer list file created.")
+        
+        
     
     def update_results(title_text, data, id, **kwargs):
         print_log_card = False
@@ -1668,7 +1689,7 @@ Registry path: {program['RegPath']}"""
             # an array of them.
             if computer == "list of computers":
                 list_of_pcs = []
-                list = open("assets/lists/computers.txt", "r")
+                list = open(list_path, "r")
                 computers = list.readlines()
                 for pc in computers:
                     list_of_pcs.append(pc.strip("\\n"))
@@ -2534,7 +2555,8 @@ Click and drag to reorder them."""],
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 margin=ft.margin.only(top=20),
                 url="https://ko-fi.com/knightlygains",
-                on_hover=on_donate_hover
+                on_hover=on_donate_hover,
+                padding=10
             ),
             ft.Container(
                 content=ft.Column([
@@ -2543,7 +2565,8 @@ Click and drag to reorder them."""],
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 margin=ft.margin.only(top=20),
                 url="https://www.patreon.com/KnightlyGains",
-                on_hover=on_donate_hover
+                on_hover=on_donate_hover,
+                padding=10
             )
         ], alignment=ft.MainAxisAlignment.CENTER, spacing=30)
     ], expand=1)

@@ -153,7 +153,7 @@ Function Get-InstalledSoftware {
     End {}
 }
 
-$list = Get-Content ".\assets\lists\computers.txt"
+$list = Get-Content ".\settings\lists\computers.txt"
 # If using list, set Computers = to Get-Content for list contents
 if ($Computer -eq "list of computers") {
     Write-Host $list
