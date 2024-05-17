@@ -170,7 +170,8 @@ def main(page: ft.Page):
             title="Select a recent computer:",
             content=recent_pc_radio_grp,
             close_modal_func=close_dynamic_modal,
-            nolistview=True
+            nolistview=True,
+            width=700
         )
         
         page.dialog = modal.get_modal()
@@ -230,6 +231,9 @@ def main(page: ft.Page):
     # Store a list of computernames we have run actions on.
     list_of_computernames = []
     
+    # Store a list of actions we have run.
+    list_of_actionss = []
+    
     # Running Processes Modal \/
     def show_processes_modal(e):
         modal = DynamicModal(
@@ -260,11 +264,11 @@ def main(page: ft.Page):
         offset=ft.transform.Offset(-0.1, 1)
     )
     
-    def check_process(name, computer):
+    def process_not_running(name, computer):
         for process in list_of_processes:
             if computer in process['computers'] and process['name'] == name or process['name'] == "WinRM":
                 # Proc is running on computer already
-                show_message(f"Already running {name} on {computer}")
+                show_message(f"Wait until '{name}' on {computer} finishes.")
                 return False
         return True
     
@@ -499,6 +503,10 @@ def main(page: ft.Page):
             list_of_computernames.append(computer)
             comp_checkboxes.append(ft.Checkbox(label=f"{computer}", value=True, data=f"{computer}"))
         
+        if title_text not in list_of_actionss:
+            list_of_actionss.append(title_text)
+            action_checkboxes.append(ft.Checkbox(label=f"{title_text}", value=True, data=f"{title_text}"))
+        
         if computer != "list of computers":
             update_recent_computers(computer, date_time(), title_text)
         
@@ -516,7 +524,8 @@ def main(page: ft.Page):
             data=data,
             id=id,
             computer=computer,
-            subtitle=subtitle
+            subtitle=subtitle,
+            action=title_text
         )
         
         result_data.controls.insert(0, card)
@@ -524,7 +533,7 @@ def main(page: ft.Page):
             # If home isnt already selected, add notifcation badge
             home_notification_badge.label_visible = True
         
-        apply_results_filter(filter_out_PCs, False)
+        apply_results_filter(False)
     
     # Console text output
     result_data = ft.ListView(expand=1, spacing=10, padding=20)
@@ -543,32 +552,43 @@ def main(page: ft.Page):
     # Computernames we want to filter out
     filter_out_PCs = []
     
+    # Actions we want to filter out
+    filter_out_actions = []
+    
     # temp list to hold controls that we removed from result_data
     remove_these_controls = []
     
     # Store all checkboxes generated for PCs we ran actions on
     comp_checkboxes = []
     
-    def apply_results_filter(filter, clear_filter):
+    # Store all action checkboxes generated for PCs we ran actions on
+    action_checkboxes = []
+    
+    def apply_results_filter(clear_filter):
         
         for control in result_data.controls:
+            print(control.data['Computer'])
+            print(control.data['action'])
             if clear_filter:
                 filter_out_PCs.clear()
+                filter_out_actions.clear()
     
                 # If the controls data is equal to a computer in the filters list
                 # Remove it and add it to another list
-            if control.data['Computer'] in filter:
+            if control.data['Computer'] in filter_out_PCs or control.data['action'] in filter_out_actions:
+                print("Data was in list")
                 filtered_out_results.append(control)
                
         for control in filtered_out_results:
             # If the controls computer isnt in the filter,
             # we want to re-add it to result_data
-            if control.data['Computer'] not in filter:
+            if control.data['Computer'] not in filter_out_PCs and control.data['action'] not in filter_out_actions:
                 result_data.controls.append(control)
                 remove_these_controls.append(control)
             else:
                 try:
                     result_data.controls.remove(control)
+                    print("Control removed")
                 except ValueError:  # The control was already removed
                     pass
             
@@ -588,19 +608,41 @@ def main(page: ft.Page):
 
     def filter_results(e):
         # Set up modal
+        comp_checkboxes_tile = ft.ExpansionPanel(
+            header=ft.ListTile(
+                title=ft.Text("Computers")
+            ),
+            content=ft.Row(
+                comp_checkboxes,  
+                wrap=True,
+                scroll=ft.ScrollMode.ADAPTIVE
+            ),
+            can_tap_header=True
+        )
         
-        content = ft.Row(
-            comp_checkboxes,  
-            wrap=True,
-            width=500,
-            scroll=ft.ScrollMode.ADAPTIVE
+        actions_checkboxes_tile = ft.ExpansionPanel(
+            header=ft.ListTile(
+                title=ft.Text("Actions")
+            ),
+            content=ft.Row(
+                action_checkboxes,  
+                wrap=True,
+                scroll=ft.ScrollMode.ADAPTIVE
+            ),
+            can_tap_header=True
+        )
+        
+        content_container = ft.Container(
+            content=ft.ExpansionPanelList([
+                comp_checkboxes_tile,
+                actions_checkboxes_tile
+            ]),
         )
         
         modal = DynamicModal(
             title=f"Filter results:",
-            content=content,
+            content=content_container,
             close_modal_func=close_dynamic_modal,
-            nolistview=True
         )
         
         page.dialog = modal.get_modal()
@@ -620,9 +662,16 @@ def main(page: ft.Page):
             # Else if computer is not in filtered out list and box isnt checked
             elif checkbox.data not in filter_out_PCs and checkbox.value == False:
                 filter_out_PCs.append(checkbox.data)
+            
+        for checkbox in action_checkboxes:
+            
+            if checkbox.value and checkbox.data in filter_out_actions:
+                filter_out_actions.remove(checkbox.data)
+            
+            elif checkbox.data not in filter_out_actions and checkbox.value == False:
+                filter_out_actions.append(checkbox.data)
         
-        # result_data.update()
-        apply_results_filter(filter_out_PCs, False)
+        apply_results_filter(False)
     
     # Card modal Stuff \/
     def show_card_modal():
@@ -663,14 +712,17 @@ def main(page: ft.Page):
         id = e.control.data
         if id == "all":
             # We clicked the remove all results button
+            amt_cleared = len(result_data.controls)
             result_data.controls.clear()
+            show_message(f"Removed {amt_cleared} results.")
         else:
             for control in result_data.controls:
                 if id == control.data['Id']:
                     result_data.controls.remove(control)
+                    show_message(f"Removed {control.data['action']} - {control.data['Computer']}.")
         page.update()
     
-    def generate_result_card(leading, title, date, data, id, computer, **kwargs):
+    def generate_result_card(leading, title, date, data, id, computer, action, **kwargs):
         """
         Clickable card that shows in the console.
         Is called from update_results()
@@ -737,7 +789,7 @@ def main(page: ft.Page):
         
         result_card = ft.Card(
             content=card_content,
-            data={"Id": id, "Computer": computer, "SortDate": date_time(force_24=True)}
+            data={"Id": id, "Computer": computer, "SortDate": date_time(force_24=True), "action": action}
         )
         
         return result_card
@@ -841,7 +893,7 @@ def main(page: ft.Page):
                 ctr_data = value
             if key == "computer":
                 ctr_computer = value
-        printer_wizard(e, target_computer=ctr_computer)
+        get_printers(e, target_computer=ctr_computer)
     
     # Used to store the computer name
     # that "Get Printers" was run on
@@ -850,7 +902,7 @@ def main(page: ft.Page):
     def refresh_printers(e):
         nonlocal printer_wiz_target_computer
         printer_wiz_target_computer = printer_wiz_computer.data
-        printer_wizard(e, target_computer=printer_wiz_target_computer, refresh=True)
+        get_printers(e, target_computer=printer_wiz_target_computer, refresh=True)
     
     def open_space_card(e):
         """
@@ -1139,7 +1191,7 @@ Registry path: {program['RegPath']}"""
         page.update()
         
     def ping(e):
-        if check_computer_name() and check_process("Ping", computer_name.value):
+        if check_computer_name() and process_not_running("Ping", computer_name.value):
             id = uuid.uuid4()
             add_new_process(new_process("Ping", [computer_name.value], date_time(), id))
             show_message(f"Pinging {computer_name.value}")
@@ -1161,16 +1213,22 @@ Registry path: {program['RegPath']}"""
             end_of_process(id)
             
     def rename_printer(e):
-        if check_computer_name() and check_process("Rename Printer", computer_name.value):
+        computer = printer_wiz_target_computer
+        if (
+                process_not_running("Test Page", computer) and
+                process_not_running("Uninstall Printer", computer) and
+                process_not_running("Rename Printer", computer) and
+                process_not_running("Get Printers", computer)
+            ):
             close_printer_dlg(e)
             id = uuid.uuid4()
-            add_new_process(new_process("Rename Printer", [computer_name.value], date_time(), id))
-            show_message(f"Renaming printer on {computer_name.value}")
+            add_new_process(new_process("Rename Printer", [computer], date_time(), id))
+            show_message(f"Renaming printer on {computer}")
             powershell = the_shell.Power_Shell()
-            result = powershell.rename_printer(computer=computer_name.value, printerName=printer_to_change, newName=new_printer_name.value)
+            result = powershell.rename_printer(computer=computer, printerName=printer_to_change, newName=new_printer_name.value)
             update_results("Rename Printer", result, id)
             end_of_process(id)
-        printer_wizard(e, refresh=True)
+        get_printers(e, refresh=True)
         
     # Rename Printer modal
     def close_printer_dlg(e):
@@ -1275,9 +1333,9 @@ Registry path: {program['RegPath']}"""
         page.dialog.open = True
         page.update()
     
-    def printer_wizard(e, **kwargs):
-        global printer_wiz_target_computer
-        if check_computer_name() and check_process("Get Printers", computer_name.value):
+    def get_printers(e, **kwargs):
+        nonlocal printer_wiz_target_computer
+        if check_computer_name() and process_not_running("Get Printers", computer_name.value):
             refresh = False
             computer = computer_name.value
             for key, value in kwargs.items():
@@ -1317,7 +1375,7 @@ Registry path: {program['RegPath']}"""
                                         trailing=ft.PopupMenuButton(
                                             icon=ft.icons.MORE_VERT,
                                             items=[
-                                                ft.PopupMenuItem(text="Test Page", data=control_data, on_click=printer_wiz_testpage),
+                                                ft.PopupMenuItem(text="Test Page", data=control_data, on_click=testpage_printer),
                                                 ft.PopupMenuItem(text="Rename", data=control_data, on_click=open_printer_name_modal),
                                                 ft.PopupMenuItem(text=f"Uninstall {p_name}", data=control_data, on_click=uninstall_printer),
                                             ],
@@ -1360,13 +1418,18 @@ Registry path: {program['RegPath']}"""
                 load_printers()
                 end_of_process(id)
         
-    def printer_wiz_testpage(e):
-        if check_computer_name() and check_process("Test Page", computer_name.value):
-            for key, value in e.control.data.items():
+    def testpage_printer(e):
+        for key, value in e.control.data.items():
                 if key == "printer":
                     ctr_printer = value
                 if key == "computer":
                     ctr_computer = value
+        if (
+                process_not_running("Test Page", ctr_computer) and
+                process_not_running("Uninstall Printer", ctr_computer) and
+                process_not_running("Rename Printer", ctr_computer) and
+                process_not_running("Get Printers", ctr_computer)
+            ):
             id = uuid.uuid4()
             add_new_process(new_process("Test Page", [ctr_computer], date_time(), id))
             show_message(f"Printing test page from {ctr_computer}.")
@@ -1381,7 +1444,13 @@ Registry path: {program['RegPath']}"""
                 ctr_printer = value
             if key == "computer":
                 ctr_computer = value
-        if are_you_sure(e, f"Uninstall {ctr_printer} from {ctr_computer}?"):
+        if (
+                are_you_sure(e, f"Uninstall {ctr_printer} from {ctr_computer}?") and 
+                process_not_running("Uninstall Printer", ctr_computer) and
+                process_not_running("Get Printers", ctr_computer) and
+                process_not_running("Test Page", ctr_computer) and
+                process_not_running("Rename Printer", ctr_computer)
+            ):
             id = uuid.uuid4()
             add_new_process(new_process("Uninstall Printer", [ctr_computer], date_time(), id))
             show_message(f"Uninstalling printer from {ctr_computer}.")
@@ -1389,11 +1458,11 @@ Registry path: {program['RegPath']}"""
             result = powershell.uninstall_printer(computer=ctr_computer, printerName=ctr_printer)
             update_results("Uninstall Printer", result, id)
             end_of_process(id)
-            printer_wizard(e, refresh=True, target_computer=ctr_computer)
+            get_printers(e, refresh=True, target_computer=ctr_computer)
     
     def open_print_logs(e):
         type = e.control.data
-        if check_computer_name() and check_process(f"{type} Log", computer_name.value):
+        if check_computer_name() and process_not_running(f"{type} Log", computer_name.value):
             computer = computer_name.value
             enable_winrm(computer)
             id = uuid.uuid4()
@@ -1417,7 +1486,7 @@ Registry path: {program['RegPath']}"""
             end_of_process(id)
 
     def open_event_log(e):
-        if check_computer_name() and check_process("Event Viewer", computer_name.value):
+        if check_computer_name() and process_not_running("Event Viewer", computer_name.value):
             computer = computer_name.value
             id = uuid.uuid4()
             add_new_process(new_process("Event Viewer", [computer], date_time(), id))
@@ -1617,7 +1686,7 @@ Registry path: {program['RegPath']}"""
             update_results("Restart", result, id, computer=computer)
             end_of_process(id)
         if use_list != True:
-            if check_computer_name() and check_process("Restart", computer_name.value):
+            if check_computer_name() and process_not_running("Restart", computer_name.value):
                 enable_winrm(computer)
                 add_new_process(new_process("Restart", [computer], date_time(), id))
                 show_message(f"Restarting {computer}")
@@ -1629,7 +1698,7 @@ Registry path: {program['RegPath']}"""
     computer_name = ft.TextField(label="Computer Name", on_submit=ping)
     
     def get_user_ids(e):
-        if check_computer_name() and check_process("User IDs", computer_name.value):
+        if check_computer_name() and process_not_running("User IDs", computer_name.value):
             computer = computer_name.value
             show_message(f"Getting user IDs on {computer}")
             id = uuid.uuid4()
@@ -1721,7 +1790,7 @@ Registry path: {program['RegPath']}"""
         if use_list and check_list():
             run_operation("list of computers")
         if use_list != True:
-            if check_computer_name() and check_process("Clear Space", computer_name.value):
+            if check_computer_name() and process_not_running("Clear Space", computer_name.value):
                 run_operation(computer_name.value)
     
     def launch_script(e):
@@ -1840,7 +1909,7 @@ Registry path: {program['RegPath']}"""
             update_results("Check Space", result, id=id, check_space=True, subtitle=result, computer=computer)
             end_of_process(id)
         if use_list != True:
-            if check_computer_name() and check_process("Check Space", computer_name.value):
+            if check_computer_name() and process_not_running("Check Space", computer_name.value):
                 computer = computer_name.value
                 enable_winrm(computer)
                 add_new_process(new_process("Check Space", [computer], date_time(), id))
@@ -1870,7 +1939,7 @@ Registry path: {program['RegPath']}"""
             update_results("Check Software", data=data, id=id, subtitle=result, computer=computer)
             end_of_process(id)
         if use_list != True:
-            if check_computer_name() and check_process("Check Software", computer_name.value):
+            if check_computer_name() and process_not_running("Check Software", computer_name.value):
                 computer = computer_name.value
                 enable_winrm(computer)
                 add_new_process(new_process("Check Software", [computer], date_time(), id))
@@ -2005,7 +2074,7 @@ Registry path: {program['RegPath']}"""
             end_of_process(id)
         
         if use_list != True:
-            if check_computer_name() and check_process("Check Battery", computer_name.value):
+            if check_computer_name() and process_not_running("Check Battery", computer_name.value):
                 computer = computer_name.value
                 enable_winrm(computer)
                 add_new_process(new_process("Check Battery", [computer], date_time(), id))
@@ -2030,7 +2099,7 @@ Registry path: {program['RegPath']}"""
                 end_of_process(id)
     
     def get_uptime(e):
-        if check_computer_name() and check_process("Get Uptime", computer_name.value):
+        if check_computer_name() and process_not_running("Get Uptime", computer_name.value):
             id = uuid.uuid4()
             powershell = the_shell.Power_Shell()
             computer = computer_name.value
@@ -2042,7 +2111,7 @@ Registry path: {program['RegPath']}"""
             end_of_process(id)
     
     def msinfo_32(e):
-        if check_computer_name() and check_process("MsInfo32", computer_name.value):
+        if check_computer_name() and process_not_running("MsInfo32", computer_name.value):
             id = uuid.uuid4()
             powershell = the_shell.Power_Shell()
             computer = computer_name.value
@@ -2072,7 +2141,7 @@ Registry path: {program['RegPath']}"""
         computer = ['computer']
         name = data['name']
         
-        if check_process("Log Off User", computer):
+        if process_not_running("Log Off User", computer):
             id = uuid.uuid4()
             powershell = the_shell.Power_Shell()
             computer = computer_name.value
@@ -2292,7 +2361,7 @@ Registry path: {program['RegPath']}"""
         content=ft.Container(
             content=ft.Row([
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.PRINT, icon_size=50, on_click=printer_wizard, data=""),
+                    ft.IconButton(icon=ft.icons.PRINT, icon_size=50, on_click=get_printers, data=""),
                     ft.Text("Get Printers")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
@@ -2485,7 +2554,9 @@ Registry path: {program['RegPath']}"""
     cust_scripts_tutorial = TutorialBtn(
         data=["Custom Scripts", """Here you can add your own scripts so they are easily accessible and can be launched at the click of a button. 
 
-Click and drag to reorder them."""],
+Click and drag to reorder them.
+
+Toggle the use of PowerShell 7 or native PowerShell built in to your windows install with the switch at the top."""],
         on_click=open_tutorial_modal
     )
     
