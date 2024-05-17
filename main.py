@@ -51,10 +51,38 @@ def main(page: ft.Page):
         "Consola": "assets/fonts/Consola.ttf"
     }
     
+    def min_max(e):
+        if e.control.data == "min":
+            page.window_minimized = True
+            page.update()
+            return
+        
+        if page.window_maximized == False:
+            page.window_maximized = True
+        else:
+            page.window_maximized = False
+        page.update()
+    
+    page.window_title_bar_hidden = True
+    
+    drag_window = ft.Container(
+        content=ft.Row([
+            ft.Image(src="assets/images/smallicon.png", width=35),
+            ft.WindowDragArea(ft.Container(
+                content=ft.Text("IT Remote", offset=ft.transform.Offset(0, 0.24), color="black", weight=ft.FontWeight.BOLD)
+            ), height=40, expand=True),
+            ft.IconButton(ft.icons.MINIMIZE, data="min", on_click=min_max),
+            ft.IconButton(ft.icons.SQUARE_OUTLINED, data="toggle", on_click=min_max),
+            ft.IconButton(ft.icons.CLOSE, on_click=lambda _: page.window_close())
+        ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
+        bgcolor=settings_values['app_color']
+    )
+    
     page.window_width = settings_values['window_width']
     page.window_height = settings_values['window_height']
     page.window_min_width = 745
-    page.window_min_height = 515
+    page.window_min_height = 525
+    page.padding=0
     if page.window_width < page.window_min_width:
         page.window_width = page.window_min_width
     if page.window_height < page.window_min_height:
@@ -81,6 +109,7 @@ def main(page: ft.Page):
         printer_wiz_list_container.bgcolor = settings_values['app_color']
         page.dark_theme.color_scheme_seed = settings_values['app_color']
         actions_view_container.bgcolor = settings_values['app_color']
+        drag_window.bgcolor = settings_values['app_color']
         settings_values['enable_win_rm'] = winrm_checkbox.value
         settings_values['supress_winrm_results'] = winrm_results_checkbox.value
         settings_values['use_24hr'] = use_24hr_checkbox.value
@@ -2681,11 +2710,15 @@ Toggle the use of PowerShell 7 or native PowerShell built in to your windows ins
     pstools_checkmark = ft.Icon(name=ft.icons.CHECK, visible=False)
     
     # This is the "main" view for when we have passed setup
-    main_view = ft.Row([
-        rail,
-        ft.VerticalDivider(width=9, thickness=3),
-        current_view
-    ], expand=True)
+    main_view = ft.Container(
+        content=ft.Row([
+            rail,
+            ft.VerticalDivider(width=9, thickness=3),
+            current_view
+        ], expand=True),
+        padding=ft.padding.only(left=5, bottom=10, right=10, top=0),
+        expand=True
+    )
     
     setup_view = ft.Container(
             content=ft.Column([
@@ -2707,7 +2740,7 @@ Toggle the use of PowerShell 7 or native PowerShell built in to your windows ins
                     pstools_checkmark
                 ])
             ]),
-            padding=15
+            padding=ft.padding.only(top=0, left=5, bottom=10, right=10)
         )
     
     page_view = setup_view
@@ -2721,6 +2754,7 @@ Toggle the use of PowerShell 7 or native PowerShell built in to your windows ins
         page_view = setup_view
     
     page.add(
+        drag_window,
         page_view
     )
 
