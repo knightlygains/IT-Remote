@@ -2281,12 +2281,16 @@ Registry path: {program['RegPath']}"""
     green_color_radio = ft.Radio(value="green", label="Green", fill_color="green")
     purple_color_radio = ft.Radio(value="purple", label="Purple", fill_color="purple")
     yellow_color_radio = ft.Radio(value="yellow", label="Yellow", fill_color="yellow")
+    white_color_radio = ft.Radio(value="white", label="White", fill_color="white")
+    orange_color_radio = ft.Radio(value="orange", label="Orange", fill_color="orange")
     cg = ft.RadioGroup(content=ft.Column([
         red_color_radio,
         blue_color_radio,
         green_color_radio,
         purple_color_radio,
-        yellow_color_radio
+        yellow_color_radio,
+        orange_color_radio,
+        white_color_radio
     ]))
     
     winrm_checkbox = ft.Checkbox("Enable WinRM before actions", value=settings_values['enable_win_rm'])
