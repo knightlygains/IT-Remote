@@ -8,8 +8,9 @@ class TutorialBtn(IconButton):
             data (string): Pass a string for title and another string for tutorial description.
             on_click (funciton): pass a funciton to open an alert dialog
         """
+
         super().__init__(
-            tooltip = "Help",
+            tooltip=data[0],
             icon = icons.HELP,
             data = data,
             on_click = on_click

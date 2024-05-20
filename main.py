@@ -67,7 +67,10 @@ def main(page: ft.Page):
     
     drag_window = ft.Container(
         content=ft.Row([
-            ft.Image(src="assets/images/smallicon.png", width=35),
+            ft.Container(
+                content=ft.Image(src="assets/images/smallicon.png", width=32),
+                padding=ft.padding.only(left=10, top=3)
+            ),
             ft.WindowDragArea(ft.Container(
                 content=ft.Text("IT Remote", offset=ft.transform.Offset(0, 0.24), color="black", weight=ft.FontWeight.BOLD)
             ), height=40, expand=True),
@@ -153,12 +156,17 @@ def main(page: ft.Page):
         recent_computer_names = []
         recent_computer_items = []
         
-        with open(recent_computers_path, "r") as file:
-            data = json.load(file)
-            for item in data['computers']:
-                if item['name'] not in recent_computer_names:
-                    recent_computer_items.append(item)
-                    recent_computer_names.append(item['name'])
+        try:
+            with open(recent_computers_path, "r") as file:
+                data = json.load(file)
+                for item in data['computers']:
+                    if item['name'] not in recent_computer_names:
+                        recent_computer_items.append(item)
+                        recent_computer_names.append(item['name'])
+        except FileNotFoundError as e:
+            show_message("recent_computers.json is missing. Please relaunch program.")
+            print(e)
+            return        
         
         list_of_recent_pcs_radios = []
         
@@ -195,11 +203,29 @@ def main(page: ft.Page):
             )
         )
         
+        def clear_recent_pcs(e):
+            with open(recent_computers_path, "w") as file:
+                g = {
+                    "computers": []
+                }
+                json.dump(g, file, indent=4)
+            page.dialog.open = False
+            show_message("Cleared recent PCs.")
+        
+        clear_recent_pcs_btn = ft.TextButton("Clear Recent PCs", on_click=clear_recent_pcs)
+        
+        content = ft.Container(
+            content=ft.Column([
+                recent_pc_radio_grp,
+                clear_recent_pcs_btn
+            ])
+        )
+        
         modal = DynamicModal(
             title="Select a recent computer:",
-            content=recent_pc_radio_grp,
+            content=content,
             close_modal_func=close_dynamic_modal,
-            nolistview=True,
+            nolistview=False,
             width=700
         )
         
@@ -505,20 +531,18 @@ def main(page: ft.Page):
         
         
     
-    def update_results(title_text, data, id, **kwargs):
+    def update_results(title_text, data, id, computer, **kwargs):
         print_log_card = False
         print_wiz_card = False
         check_space_card = False
-        computer = computer_name.value
         subtitle=data
+        
+        if computer.lower() == "localhost":
+            computer = socket.gethostname()
+        
         for key, value in kwargs.items():
             if key == "print_log":
                 print_log_card = True
-            if key == "computer":
-                computer = value
-                if value.lower() == "localhost":
-                    computer = socket.gethostname()
-                
             if key == "type":
                 type = value
             if key == "print_wiz":
@@ -1221,16 +1245,17 @@ Registry path: {program['RegPath']}"""
         
     def ping(e):
         if check_computer_name() and process_not_running("Ping", computer_name.value):
+            computer = computer_name.value
             id = uuid.uuid4()
             add_new_process(new_process("Ping", [computer_name.value], date_time(), id))
             show_message(f"Pinging {computer_name.value}")
             powershell = the_shell.Power_Shell()
             result = powershell.ping(computer=computer_name.value)
-            update_results("Ping", result, id)
+            update_results("Ping", result, id, computer)
             end_of_process(id)
     
     def enable_winrm(computer):
-        if settings_values['enable_win_rm']:
+        if settings_values['enable_win_rm'] and check_computer_name() and process_not_running("WinRM", computer_name.value):
             if computer == None:
                 computer = computer_name.value
             id = uuid.uuid4()
@@ -1238,7 +1263,7 @@ Registry path: {program['RegPath']}"""
             powershell = the_shell.Power_Shell()
             result = powershell.enable_winrm(computer)
             if settings_values['supress_winrm_results'] != True:
-                update_results("WinRM", result, id)
+                update_results("WinRM", result, id, computer)
             end_of_process(id)
             
     def rename_printer(e):
@@ -1255,7 +1280,7 @@ Registry path: {program['RegPath']}"""
             show_message(f"Renaming printer on {computer}")
             powershell = the_shell.Power_Shell()
             result = powershell.rename_printer(computer=computer, printerName=printer_to_change, newName=new_printer_name.value)
-            update_results("Rename Printer", result, id)
+            update_results("Rename Printer", result, id, computer)
             end_of_process(id)
         get_printers(e, refresh=True)
         
@@ -1443,7 +1468,7 @@ Registry path: {program['RegPath']}"""
                 powershell = the_shell.Power_Shell()
                 result = powershell.printer_wizard(computer=computer)
                 if refresh == False:
-                    update_results("Get Printers", data=result, id=id, print_wiz=True, computer=computer, subtitle=result)
+                    update_results("Get Printers", data=result, id=id, computer=computer, print_wiz=True, subtitle=result)
                 load_printers()
                 end_of_process(id)
         
@@ -1464,7 +1489,7 @@ Registry path: {program['RegPath']}"""
             show_message(f"Printing test page from {ctr_computer}.")
             powershell = the_shell.Power_Shell()
             result = powershell.test_page(computer=ctr_computer, printerName=ctr_printer)
-            update_results("Printer Test Page", result, id=id)
+            update_results("Printer Test Page", data=result, id=id, computer=ctr_computer)
             end_of_process(id)
     
     def uninstall_printer(e):
@@ -1485,7 +1510,7 @@ Registry path: {program['RegPath']}"""
             show_message(f"Uninstalling printer from {ctr_computer}.")
             powershell = the_shell.Power_Shell()
             result = powershell.uninstall_printer(computer=ctr_computer, printerName=ctr_printer)
-            update_results("Uninstall Printer", result, id)
+            update_results("Uninstall Printer", result, id, ctr_computer)
             end_of_process(id)
             get_printers(e, refresh=True, target_computer=ctr_computer)
     
@@ -1499,7 +1524,7 @@ Registry path: {program['RegPath']}"""
             show_message(f"Getting {type} print logs from {computer}.")
             powershell = the_shell.Power_Shell()
             result = powershell.print_logs(computer, type)
-            update_results(title_text=f"{type} Log", data=result, id=id, print_log=True, computer=computer, type=type, subtitle=result)
+            update_results(title_text=f"{type} Log", data=result, id=id, computer=computer, print_log=True, type=type, subtitle=result)
             end_of_process(id)
     
     def open_c_share(e):
@@ -1735,7 +1760,7 @@ Registry path: {program['RegPath']}"""
             enable_winrm(computer)
             add_new_process(new_process("User IDs", [computer], date_time(), id))
             result = powershell.get_user_ids(computer)
-            update_results("User IDs", data=result, id=id, subtitle=result, computer=computer)
+            update_results("User IDs", data=result, id=id, computer=computer, subtitle=result)
             end_of_process(id)
             
             if os.path.exists(f"assets/results/Users/{computer}-Users.json"):
@@ -1805,12 +1830,12 @@ Registry path: {program['RegPath']}"""
                 for pc in list_of_pcs:
                     pc_result = open(f"assets/results/ClearSpace/{pc}-ClearSpace.txt", "r")
                     read_pc_result = pc_result.read()
-                    update_results("Clear Space", read_pc_result, id, computer=computer)
+                    update_results("Clear Space", read_pc_result, id, computer)
                     pc_result.close()
             else:
                 results = open(f"assets/results/ClearSpace/{computer}-ClearSpace.txt", "r")
                 result = results.read()
-                update_results("Clear Space", result, id)
+                update_results("Clear Space", result, id, computer)
             
             end_of_process(id)
         
@@ -1935,7 +1960,7 @@ Registry path: {program['RegPath']}"""
             show_message(f"Checking space on {computer}")
             powershell = the_shell.Power_Shell()
             result = powershell.check_space(computer=computer, id=id, winRM=settings_values['enable_win_rm'])
-            update_results("Check Space", result, id=id, check_space=True, subtitle=result, computer=computer)
+            update_results("Check Space", result, id=id, computer=computer, check_space=True, subtitle=result)
             end_of_process(id)
         if use_list != True:
             if check_computer_name() and process_not_running("Check Space", computer_name.value):
@@ -1945,7 +1970,7 @@ Registry path: {program['RegPath']}"""
                 show_message(f"Checking space on {computer}")
                 powershell = the_shell.Power_Shell()
                 result = powershell.check_space(computer=computer, id=id, winRM=False)
-                update_results("Check Space", result, id=id, check_space=True, subtitle=result, computer=computer)
+                update_results("Check Space", result, id=id, computer=computer, check_space=True, subtitle=result)
                 end_of_process(id)
     
     def check_software(e):
@@ -1965,7 +1990,7 @@ Registry path: {program['RegPath']}"""
             show_message(f"Checking software on list of PCs")
             result = powershell.check_software(computer=computer, software=software_textfield.value, id=id, all=all, winRM=settings_values['enable_win_rm'])
             data = f"assets/results/Programs/Programs-{id}.json"
-            update_results("Check Software", data=data, id=id, subtitle=result, computer=computer)
+            update_results("Check Software", data=data, id=id, computer=computer, subtitle=result)
             end_of_process(id)
         if use_list != True:
             if check_computer_name() and process_not_running("Check Software", computer_name.value):
@@ -1975,7 +2000,7 @@ Registry path: {program['RegPath']}"""
                 show_message(f"Checking software on {computer}")
                 data = f"assets/results/Programs/{computer}-Programs.json"
                 result = powershell.check_software(computer=computer, software=software_textfield.value, id=id, all=all, winRM=settings_values['enable_win_rm'])
-                update_results("Check Software", data=data, id=id, subtitle=result, computer=computer)
+                update_results("Check Software", data=data, id=id, computer=computer, subtitle=result)
                 end_of_process(id)
     
     def open_battery_report(e):
@@ -2096,9 +2121,9 @@ Registry path: {program['RegPath']}"""
             update_results(
                     "Check Battery", 
                     data=f"assets/results/Battery/{id}-BatteryStatus.json", 
-                    id=id, 
-                    subtitle=result, 
-                    computer=computer
+                    id=id,
+                    computer=computer,
+                    subtitle=result
                 )
             end_of_process(id)
         
@@ -2113,17 +2138,17 @@ Registry path: {program['RegPath']}"""
                     update_results(
                         "Check Battery", 
                         data=result, 
-                        id=id, 
-                        subtitle=result, 
-                        computer=computer
+                        id=id,
+                        computer=computer,
+                        subtitle=result
                     )
                 else:
                     update_results(
                         "Check Battery", 
                         data=f"assets/results/Battery/{id}-BatteryStatus.json", 
                         id=id, 
-                        subtitle=result, 
-                        computer=computer
+                        computer=computer,
+                        subtitle=result
                     )
                 end_of_process(id)
     
@@ -2136,7 +2161,7 @@ Registry path: {program['RegPath']}"""
             add_new_process(new_process("Get Uptime", [computer], date_time(), id))
             show_message(f"Getting uptime for {computer}")
             result = powershell.get_uptime(computer)
-            update_results("Get Uptime", data=result, id=id, subtitle=result, computer=computer)
+            update_results("Get Uptime", data=result, id=id, computer=computer, subtitle=result)
             end_of_process(id)
     
     def msinfo_32(e):
@@ -2148,7 +2173,7 @@ Registry path: {program['RegPath']}"""
             add_new_process(new_process("MsInfo32", [computer], date_time(), id))
             show_message(f"Opening MsInfo32 for {computer}")
             result = powershell.msinfo_32(computer)
-            update_results("MsInfo32", data=result, id=id, subtitle=result, computer=computer)
+            update_results("MsInfo32", data=result, id=id, computer=computer, subtitle=result)
             end_of_process(id)
     
     # File picker for import printer
@@ -2177,7 +2202,7 @@ Registry path: {program['RegPath']}"""
             add_new_process(new_process("Log Off User", [computer], date_time(), id))
             show_message(f"Logging off {name} on {computer}")
             result = powershell.log_off_user(computer, user_id, name)
-            update_results("Log Off Users", data=result, id=id, subtitle=result, computer=computer)
+            update_results("Log Off Users", data=result, id=id, computer=computer, subtitle=result)
             end_of_process(id)
             return True
         return False
@@ -2327,6 +2352,13 @@ Registry path: {program['RegPath']}"""
     use_24hr_checkbox = ft.Checkbox("Use 24hr time format", value=settings_values['use_24hr'])
     warn_checkbox = ft.Checkbox("Warn before clearing profiles", value=settings_values['warn_about_profile_deletion'])
     settings_save_btn = ft.FilledButton("Save", icon=ft.icons.SAVE, on_click=update_settings)
+    settings_about_app = TutorialBtn(["About IT Remote", "IT Remote is a PowerShell GUI designed to \
+make troubleshooting remote  or local Windows computers easy. \n\nIT Remote will allow you to query \
+information on devices within the same domain or workgroup as your computer. You must be an \
+admin and be running the IT Remote as admin for most of the functions to work. IT Remote uses \
+PowerShell 7, PsTools, and Python's subprocess module to launch built-in custom PowerShell \
+scripts to retrieve the information from remote computers and perform other tasks."], on_click=open_tutorial_modal)
+    
     settings_view = ft.Column([
         ft.Row([
             ft.Column([
@@ -2343,6 +2375,9 @@ Registry path: {program['RegPath']}"""
                 warn_checkbox
             ]),
             ft.VerticalDivider(),
+            ft.Column([
+                settings_about_app
+            ], expand=True, horizontal_alignment=ft.CrossAxisAlignment.END)
         ], expand=1),
         ft.Row([settings_save_btn], alignment=ft.MainAxisAlignment.CENTER)
     ], expand=1)
@@ -2357,7 +2392,7 @@ Registry path: {program['RegPath']}"""
     
     clear_space_tut = TutorialBtn(
         data=[
-            "Clear Space", 
+            "About Clear Space", 
             "By default this action will clear recycle bin data, Windows\\Temp, and Windows\\Prefetch. It will also remove any user profiles it finds if you specify."
         ],
         on_click=open_tutorial_modal
@@ -2414,7 +2449,7 @@ Registry path: {program['RegPath']}"""
     )
     
     programs_tutorial = TutorialBtn(
-        data=['Programs", "You can use this panel to check for a specific program on a computer, or get a list of all detected installed software.'],
+        data=['About Programs', 'You can use this panel to check for a specific program on a computer, or get a list of all detected installed software.'],
         on_click=open_tutorial_modal
     )
     
@@ -2585,11 +2620,10 @@ Registry path: {program['RegPath']}"""
     )
     
     cust_scripts_tutorial = TutorialBtn(
-        data=["Custom Scripts", """Here you can add your own scripts so they are easily accessible and can be launched at the click of a button. 
-
-Click and drag to reorder them.
-
-Toggle the use of PowerShell 7 or native PowerShell built in to your windows install with the switch at the top."""],
+        data=["About Custom Scripts", "Here you can add your own scripts so they \
+are easily accessible and can be launched at the click of a button. Click \
+and drag to reorder them. \n\nToggle the use of PowerShell 7 or native PowerShell \
+built in to your windows install with the switch at the top."],
         on_click=open_tutorial_modal
     )
     
