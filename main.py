@@ -2686,7 +2686,7 @@ built in to your windows install with the switch at the top."],
         ], alignment=ft.MainAxisAlignment.CENTER, spacing=30),
         ft.Divider(),
         ft.Row([
-            ft.Text("If you like this tool and would like to support me, please consider donating:"),
+            ft.Text("If you like this app and would like to support me, please consider donating:"),
         ], spacing=15, alignment=ft.MainAxisAlignment.CENTER),
         ft.Row([
             ft.Container(
