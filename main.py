@@ -1878,6 +1878,9 @@ Registry path: {program['RegPath']}"""
         for key, value in src.data.items():
             if key == "index":  
                 dragged_index = value
+                
+        if drag_target_index == dragged_index:
+            return
         
         if src.data['name'] in custom_scripts:
             custom_scripts[src.data['name']]['index'] = drag_target_index
