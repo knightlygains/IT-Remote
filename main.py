@@ -90,6 +90,7 @@ def main(page: ft.Page):
     if page.window_height < page.window_min_height:
         page.window_height = page.window_min_height
     page.dark_theme = ft.Theme(color_scheme_seed=settings_values['app_color'])
+    page.theme = ft.Theme(color_scheme_seed=settings_values['app_color'])
     
     def save_page_dimensions(e):
         try:
@@ -110,6 +111,7 @@ def main(page: ft.Page):
         results_container.bgcolor = settings_values['app_color']
         printer_wiz_list_container.bgcolor = settings_values['app_color']
         page.dark_theme.color_scheme_seed = settings_values['app_color']
+        page.theme.color_scheme_seed = settings_values['app_color']
         actions_view_container.bgcolor = settings_values['app_color']
         drag_window.bgcolor = settings_values['app_color']
         settings_values['enable_win_rm'] = winrm_checkbox.value
@@ -309,14 +311,7 @@ def main(page: ft.Page):
     
     running_processes_count_text = ft.Text(f"{running_processes_count}", )
     
-    loading_gif = ft.Image(
-        src=f"assets/images/gifs/loading.gif",
-        width=50,
-        height=25,
-        visible=False,
-        fit=ft.ImageFit.SCALE_DOWN,
-        offset=ft.transform.Offset(-0.1, 1)
-    )
+    loading_ring = ft.ProgressRing(visible=False, width=30, height=30,offset=ft.transform.Offset(0.18, 0.18))
     
     def process_not_running(name, computer):
         for process in list_of_processes:
@@ -361,9 +356,9 @@ def main(page: ft.Page):
             )
             running_processes_container.controls.append(new_proc_card)
         if len(list_of_processes) > 0:
-            loading_gif.visible = True
+            loading_ring.visible = True
         else:
-            loading_gif.visible = False
+            loading_ring.visible = False
     
     def end_of_process(id):
         """Remove process from running_processes by id
@@ -2282,7 +2277,7 @@ Registry path: {program['RegPath']}"""
         ft.Column([
             ft.Stack([
                 running_processes_icon,
-                loading_gif
+                loading_ring
             ])
         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
         running_processes_count_text,
@@ -2725,7 +2720,7 @@ built in to your windows install with the switch at the top."],
                 show_message("Invalid program.")
         update_settings(e)
         if powershell_checkmark.visible and pstools_checkmark.visible:
-            page.controls = [main_view]
+            page.controls = [drag_window, main_view]
         page.update()
         show_message("Setup complete.")
 
@@ -2761,17 +2756,17 @@ built in to your windows install with the switch at the top."],
                     initial_directory="C:\\"
                 )),
                 ft.Row([
-                    ft.Text("pwsh: ", weight=ft.FontWeight.BOLD),
+                    ft.Text("pwsh.exe: ", weight=ft.FontWeight.BOLD),
                     powershell_path_text,
                     powershell_checkmark
                 ]),
                 ft.Row([
-                    ft.Text("PsTools: ", weight=ft.FontWeight.BOLD),
+                    ft.Text("PsExec.exe\\PsService.exe: ", weight=ft.FontWeight.BOLD),
                     pstools_path_text,
                     pstools_checkmark
                 ])
             ]),
-            padding=ft.padding.only(top=0, left=5, bottom=10, right=10)
+            padding=ft.padding.only(top=10, left=10, bottom=10, right=10)
         )
     
     page_view = setup_view
