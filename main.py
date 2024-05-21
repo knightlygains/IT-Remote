@@ -68,11 +68,10 @@ def main(page: ft.Page):
     drag_window = ft.Container(
         content=ft.Row([
             ft.Container(
-                content=ft.Image(src="assets/images/smallicon.png", width=32),
+                content=ft.Image(src="assets/images/itremote.svg", width=32),
                 padding=ft.padding.only(left=10, top=3)
             ),
             ft.WindowDragArea(ft.Container(
-                content=ft.Text("IT Remote", offset=ft.transform.Offset(0, 0.24), color="black", weight=ft.FontWeight.BOLD)
             ), height=40, expand=True),
             ft.IconButton(ft.icons.MINIMIZE, data="min", on_click=min_max),
             ft.IconButton(ft.icons.SQUARE_OUTLINED, data="toggle", on_click=min_max),
@@ -504,7 +503,6 @@ def main(page: ft.Page):
             with open(list_path, "r") as file:
                 
                 contents = file.read()
-                print(f"'{contents}'")
                 if contents == "":
                     show_message("List is empty.")
                     return False
@@ -620,8 +618,6 @@ def main(page: ft.Page):
     def apply_results_filter(clear_filter):
         
         for control in result_data.controls:
-            print(control.data['Computer'])
-            print(control.data['action'])
             if clear_filter:
                 filter_out_PCs.clear()
                 filter_out_actions.clear()
@@ -629,7 +625,6 @@ def main(page: ft.Page):
                 # If the controls data is equal to a computer in the filters list
                 # Remove it and add it to another list
             if control.data['Computer'] in filter_out_PCs or control.data['action'] in filter_out_actions:
-                print("Data was in list")
                 filtered_out_results.append(control)
                
         for control in filtered_out_results:
@@ -641,7 +636,6 @@ def main(page: ft.Page):
             else:
                 try:
                     result_data.controls.remove(control)
-                    print("Control removed")
                 except ValueError:  # The control was already removed
                     pass
             

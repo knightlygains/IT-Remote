@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="199.26689mm"
+   height="128.58571mm"
+   viewBox="0 0 199.26689 128.58571"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.3.2 (091e20e, 2023-11-25, custom)"
+   sodipodi:docname="itremote.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#505050"
+     bordercolor="#ffffff"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#505050"
+     inkscape:document-units="mm"
+     inkscape:zoom="1.0449705"
+     inkscape:cx="426.32781"
+     inkscape:cy="198.57019"
+     inkscape:window-width="2560"
+     inkscape:window-height="1369"
+     inkscape:window-x="1072"
+     inkscape:window-y="154"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-4.6076749,-60.746607)">
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:114.78px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, ';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;stroke:#000000;stroke-width:7.23087"
+       x="19.850521"
+       y="185.71689"
+       id="text1"><tspan
+         sodipodi:role="line"
+         id="tspan1"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:114.78px;font-family:Sans;-inkscape-font-specification:'Sans, ';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:7.23087"
+         x="19.850521"
+         y="185.71689">ITR</tspan></text>
+    <rect
+       style="fill:#000000;stroke:#000000;stroke-width:1.75756"
+       id="rect1"
+       width="87.856369"
+       height="15.062253"
+       x="43.755836"
+       y="99.305153" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:7.69502;stroke-dasharray:none"
+       d="m 18.532965,95.027137 c 11.208383,-8.078839 22.290442,-8.589996 33.224144,0"
+       id="path2"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:8.94442;stroke-dasharray:none"
+       d="m 12.715399,84.976419 c 14.819233,-9.209184 29.790008,-9.409978 44.88871,0"
+       id="path2-7"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:9.99768;stroke-dasharray:none"
+       d="m 7.079571,73.651856 c 18.550314,-10.553633 37.243168,-10.863837 56.083252,0"
+       id="path2-7-9"
+       sodipodi:nodetypes="cc" />
+  </g>
+</svg>

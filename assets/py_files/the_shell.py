@@ -26,7 +26,7 @@ class Power_Shell():
             p = subprocess.run(["notepad.exe", self.list_path])
     
     def enable_winrm(self, computer):
-        p = subprocess.call([self.pspath, "-File", f"./assets/scripts/enable_winrm.ps1", f"{computer}"])
+        p = subprocess.call([self.pspath, "-File", f"./assets/scripts/enable_winrm.ps1", f"{computer}"], creationflags=self.no_window)
         if p == 0:
             return f"WinRM is enabled on {computer}."
         else:

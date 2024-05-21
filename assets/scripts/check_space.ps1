@@ -38,7 +38,7 @@ $all_results = ConvertFrom-Json $json_format
 
 Function Get-Space {
     if ($Computer -eq "list of computers") {
-        $Computer = Get-Content ".\assets\lists\computers.txt"
+        $Computer = Get-Content ".\settings\lists\computers.txt"
         Write-Host "Computer is list"
     }
     foreach ($pc in $Computer) {
