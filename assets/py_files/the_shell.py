@@ -116,8 +116,10 @@ class Power_Shell():
             return f"Failed to get battery info on {computer}."
     
     def get_uptime(self, computer):
-        p = subprocess.getoutput([self.pspath, "-File", "./assets/scripts/get_uptime.ps1", f"{computer}"], creationflags=self.no_window)
-        return p
+        subprocess.call([self.pspath, "-File", "./assets/scripts/get_uptime.ps1", f"{computer}"])
+        with open(f"assets/results/Uptime/{computer}-uptime.txt", "r") as result:
+            results = result.read()
+        return results
     
     def event_viewer(self, computer):
         p = subprocess.call([self.pspath, "-File", "./assets/scripts/event_viewer.ps1", f"{computer}"], creationflags=self.no_window)
@@ -209,7 +211,7 @@ class Power_Shell():
             action = "shutdown"
         else:
             shutdown = "False"
-        print(f"print {computer}, shutdown {shutdown}")
+
         p = subprocess.call([
             self.pspath, 
             "-File", 
@@ -228,7 +230,7 @@ class Power_Shell():
             f"{winRM}"
         ], creationflags=self.no_window)
         scheduled_time = f"{month}/{day}/{year}, {hour}:{minute}:{seconds}"
-        print(f"Scheduled time {scheduled_time}")
+
         if p == 0:
             with open(f"./assets/results/Restart/{id}-Restart.txt") as results:
                 content = results.readlines()

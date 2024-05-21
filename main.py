@@ -26,6 +26,7 @@ programs_path = "assets/results/Programs"
 restart_path = "assets/results/Restart"
 battery_path = "assets/results/Battery"
 users_path = "assets/results/Users"
+uptime_path = "assets/results/Uptime"
 if os.path.exists(printers_path):
     for filename in os.listdir(printers_path):
         pathlib.Path(f"{printers_path}/{filename}").unlink()
@@ -44,6 +45,9 @@ if os.path.exists(battery_path):
 if os.path.exists(users_path):  
     for filename in os.listdir(users_path):
         pathlib.Path(f"{users_path}/{filename}").unlink()
+if os.path.exists(uptime_path):  
+    for filename in os.listdir(uptime_path):
+        pathlib.Path(f"{uptime_path}/{filename}").unlink()
 
 # Program
 def main(page: ft.Page):
@@ -1634,11 +1638,6 @@ Registry path: {program['RegPath']}"""
             nonlocal list
             nonlocal shutdown_only
             
-            if date_text.value == "" or time_text.value == "":
-                show_message("Date or Time was not specified.")
-                close_dynamic_modal(e)
-                return
-            
             # If we arent using list and we dont have a computername entered, close
             if use_list_checkbox.value == False and check_computer_name() == False:
                 close_dynamic_modal(e)
@@ -1647,6 +1646,10 @@ Registry path: {program['RegPath']}"""
                 if shutdown_checkbox.value:
                     shutdown_only = True
                 if schedule_checkbox.value:
+                    if date_text.value == "" or time_text.value == "":
+                        show_message("Date or Time was not specified.")
+                        close_dynamic_modal(e)
+                        return
                     try:
                         scheduled = schedule_checkbox.value
                         doing_action = True
@@ -2276,8 +2279,8 @@ Registry path: {program['RegPath']}"""
         quser_btn,
         ft.Column([
             ft.Stack([
-                running_processes_icon,
-                loading_ring
+                loading_ring,
+                running_processes_icon
             ])
         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
         running_processes_count_text,

@@ -25,6 +25,7 @@ else {
 
 Function Restart-PCs {
 
+    $action = "Restart"
     $list = Get-Content ".\settings\lists\computers.txt"
     # If using list, set Computers = to Get-Content for list contents
     if ($Computers -eq "list of computers") {
@@ -54,6 +55,8 @@ Function Restart-PCs {
 
         #Get total seconds converted from the difference between the two dates
         $secondsToWait = [int]$timeAdjusted.TotalSeconds
+
+        $action = "Restarting"
     }
 
     foreach ($comp in $List) {
@@ -91,19 +94,17 @@ Function Restart-PCs {
         $formatted_time = Format-Time
 
         $restartTime = "$dateMonth/$dateDay/$dateYear, $formatted_time"
-        
-        $action = "restart"
 
         if ($shutdown -eq "True") {
             shutdown /s /m \\$comp /t $secondsToWait 2>&1 | out-string
-            $action = "shutdown"
+            $action = "Shutdown"
         }
         else {
             shutdown /r /m \\$comp /t $secondsToWait 2>&1 | out-string
         }
         
         if (-not($LastExitCode -eq 0)) {
-            Add-Content -Path ".\assets\results\Restart\$id-Restart.txt" -Value "Could not $action $comp. A restart may already be pending or it is offline."
+            Add-Content -Path ".\assets\results\Restart\$id-Restart.txt" -Value "$action failed on $comp. A restart may already be pending or it is offline."
         }
         else {
             Add-Content -Path ".\assets\results\Restart\$id-Restart.txt" -Value "$((Get-Culture).TextInfo.ToTitleCase($action))ed $comp at $restartTime."
