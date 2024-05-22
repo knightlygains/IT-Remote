@@ -124,6 +124,11 @@ def main(page: ft.Page):
         settings_values['use_24hr'] = use_24hr_checkbox.value
         settings_values['warn_about_profile_deletion'] = warn_checkbox.value
         load_settings(e, update=True)
+        try:
+            if e.control.text == "Save":
+                show_message("Settings have been saved.")
+        except AttributeError:
+            pass
         page.update()
     
     # -------------------- COMPUTER NAME --------------------
