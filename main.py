@@ -81,7 +81,8 @@ def main(page: ft.Page):
             ft.IconButton(ft.icons.SQUARE_OUTLINED, data="toggle", on_click=min_max),
             ft.IconButton(ft.icons.CLOSE, on_click=lambda _: page.window_close())
         ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
-        bgcolor=settings_values['app_color']
+        bgcolor=settings_values['app_color'],
+        margin=ft.margin.only(top=1)
     )
     
     page.window_width = settings_values['window_width']
@@ -104,7 +105,7 @@ def main(page: ft.Page):
             with open(settings_path, "w") as settings:
                 json.dump(data, settings, indent=4)
         except ValueError as e:
-            print(f"Something went wrong with saving page dimensions, {e}")   
+            print(f"Something went wrong with saving page dimensions, {e}")
         
     page.on_resize = save_page_dimensions
     page.snack_bar = ft.SnackBar(ft.Text("", ), duration=3000)
@@ -124,6 +125,20 @@ def main(page: ft.Page):
         settings_values['warn_about_profile_deletion'] = warn_checkbox.value
         load_settings(e, update=True)
         page.update()
+    
+    # -------------------- COMPUTER NAME --------------------
+    def ping(e):
+        if check_computer_name() and process_not_running("Ping", computer_name.value):
+            computer = computer_name.value
+            id = uuid.uuid4()
+            add_new_process(new_process("Ping", [computer_name.value], date_time(), id))
+            show_message(f"Pinging {computer_name.value}")
+            powershell = the_shell.Power_Shell()
+            result = powershell.ping(computer=computer_name.value)
+            update_results("Ping", result, id, computer)
+            end_of_process(id)
+    
+    computer_name = ft.TextField(label="Computer Name", on_submit=ping)
     
     # -------------------- RECENT PCS --------------------
     def update_recent_computers(computer, date, last_action):
@@ -171,7 +186,7 @@ def main(page: ft.Page):
         except FileNotFoundError as e:
             show_message("recent_computers.json is missing. Please relaunch program.")
             print(e)
-            return        
+            return
         
         list_of_recent_pcs_radios = []
         
@@ -1235,17 +1250,6 @@ Registry path: {program['RegPath']}"""
         page.dialog = modal.get_modal()
         page.dialog.open = True
         page.update()
-        
-    def ping(e):
-        if check_computer_name() and process_not_running("Ping", computer_name.value):
-            computer = computer_name.value
-            id = uuid.uuid4()
-            add_new_process(new_process("Ping", [computer_name.value], date_time(), id))
-            show_message(f"Pinging {computer_name.value}")
-            powershell = the_shell.Power_Shell()
-            result = powershell.ping(computer=computer_name.value)
-            update_results("Ping", result, id, computer)
-            end_of_process(id)
     
     def enable_winrm(computer):
         if settings_values['enable_win_rm'] and check_computer_name() and process_not_running("WinRM", computer_name.value):
@@ -1739,9 +1743,6 @@ Registry path: {program['RegPath']}"""
                 result = powershell.restart(id, shutdown, scheduled, computer, month, day, year, hour, minute, seconds, settings_values['use_24hr'], winRM)
                 update_results("Restart", result, id, computer=computer)
                 end_of_process(id) 
-
-    # Computer Text Field
-    computer_name = ft.TextField(label="Computer Name", on_submit=ping)
     
     def get_user_ids(e):
         if check_computer_name() and process_not_running("User IDs", computer_name.value):
@@ -2716,16 +2717,16 @@ built in to your windows install with the switch at the top."],
                 settings_values['pwsh_path'] = f"{file.path}"
                 powershell_checkmark.visible = True
             elif file.name == "PsExec.exe" or file.name == "PsService.exe": 
-                pstools_path_text.value = settings_values['pstools_path']
-                settings_values['pstools_path'] == file.path.replace(f"\\{file.name}", "")
+                pstools_path_text.value = f"{file.path}"
+                settings_values['pstools_path'] = file.path.replace(f"\\{file.name}", "")
                 pstools_checkmark.visible = True
             else:
                 show_message("Invalid program.")
         update_settings(e)
         if powershell_checkmark.visible and pstools_checkmark.visible:
             page.controls = [drag_window, main_view]
+            show_message("Setup complete.")
         page.update()
-        show_message("Setup complete.")
 
     pick_path_dialog = ft.FilePicker(
         on_result=select_path,

@@ -111,7 +111,7 @@ class Power_Shell():
         if p == 0:
             return f"Open to view battery info on {computer}."
         elif p == 3:
-            return f"Check battery failed. C$ admin share is not enabled for {computer}."
+            return f"Check battery failed. The battery-report.html could not be found. C$ admin share may not enabled for {computer}."
         else:
             return f"Failed to get battery info on {computer}."
     
