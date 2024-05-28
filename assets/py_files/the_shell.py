@@ -65,6 +65,15 @@ class Power_Shell():
         else:
             return f"Test page failed to send to {computer}."
     
+    def restart_print_spool(self, computer):
+        p = subprocess.call([self.pspath, "-File", f"./assets/scripts/restart_spool.ps1", f"{computer}"])
+        if p == 0:
+            return f"Print spooler restarted on {computer}."
+        elif p == 2:
+            return f"Failed to restart print spooler on {computer}. It is offline."
+        else:
+            return f"Failed to restart print spooler on {computer}."
+    
     def print_logs(self, computer, type):
         if computer.lower() == "localhost":
             computer = socket.gethostname()

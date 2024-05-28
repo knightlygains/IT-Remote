@@ -963,12 +963,52 @@ def main(page: ft.Page):
     
     # Used to store the computer name
     # that "Get Printers" was run on
-    printer_wiz_computer = ft.Text("None")
+    printer_wiz_computer_text = ft.Text("None")
     
     def refresh_printers(e):
         nonlocal printer_wiz_target_computer
-        printer_wiz_target_computer = printer_wiz_computer.data
+        printer_wiz_target_computer = printer_wiz_computer_text.data
         get_printers(e, target_computer=printer_wiz_target_computer, refresh=True)
+    
+    def restart_print_spooler(e):
+        printer_wiz_target_computer = printer_wiz_computer_text.data
+        print_wiz_view = False
+
+        if e.control.data == "print_wiz_view":
+            print_wiz_view = True
+        
+        def check_processes(computer):
+            if (
+                process_not_running("Test Page", computer) and
+                process_not_running("Uninstall Printer", computer) and
+                process_not_running("Rename Printer", computer) and
+                process_not_running("Get Printers", computer) and
+                process_not_running("Restart Print Spooler", computer)
+            ):
+                return True
+            else:
+                return False
+            
+        id = uuid.uuid4()
+        if print_wiz_view:
+            computer = printer_wiz_target_computer
+            if check_processes(computer):
+                enable_winrm(computer)
+                add_new_process(new_process("Restart Print Spooler", [computer], date_time(), id))
+                show_message(f"Restarting Print Spooler on {computer}")
+                powershell = the_shell.Power_Shell()
+                result = powershell.restart_print_spool(computer=computer)
+                end_of_process(id)
+        else:
+            if check_computer_name() and check_processes(computer_name.value):
+                computer = computer_name.value
+                enable_winrm(computer)
+                add_new_process(new_process("Restart Print Spooler", [computer], date_time(), id))
+                show_message(f"Restarting Print Spooler on {computer}")
+                powershell = the_shell.Power_Shell()
+                result = powershell.restart_print_spool(computer=computer)
+                update_results("Restart Print Spooler", result, id, computer)
+                end_of_process(id)
     
     def open_space_card(e):
         """
@@ -1322,7 +1362,7 @@ Registry path: {program['RegPath']}"""
     
     # More info printer modal
     def open_printer_more_info_modal(e):
-        global printer_wiz_target_computer
+        nonlocal printer_wiz_target_computer
         printer_name = e.control.data
         
         with open(f"assets/results/printers/{printer_wiz_target_computer}-Printers.json") as file:
@@ -1337,41 +1377,49 @@ Registry path: {program['RegPath']}"""
             [
                 ft.Row([
                     ft.Row([
+                        ft.Text(f"Name:", weight=ft.FontWeight.BOLD),
+                        ft.Text(
+                            f"{more_info_printer['Name']}", 
+                            selectable=True),
+                    ], expand=True, wrap=True)
+                ]),
+                ft.Row([
+                    ft.Row([
                         ft.Text(f"Status:", weight=ft.FontWeight.BOLD),
                         ft.Text(
                             f"{more_info_printer['Status']}", 
                             selectable=True),
-                    ], wrap=True)
+                    ], expand=True, wrap=True)
                 ]),
                 ft.Row([
                     ft.Row([
                         ft.Text(f"Port:", weight=ft.FontWeight.BOLD),
                         ft.Text(f"{more_info_printer['Port']}", selectable=True),
-                    ], wrap=True)
+                    ], expand=True, wrap=True)
                 ]),
                 ft.Row([
                     ft.Row([
                         ft.Text(f"Published:", weight=ft.FontWeight.BOLD),
                         ft.Text(f"{more_info_printer['Published']}", selectable=True),
-                    ], wrap=True)
+                    ], expand=True, wrap=True)
                 ]),
                 ft.Row([
                     ft.Row([
                         ft.Text(f"Type:", weight=ft.FontWeight.BOLD),
                         ft.Text(f"{more_info_printer['Type']}", selectable=True),
-                    ], wrap=True)
+                    ], expand=True, wrap=True)
                 ]),
                 ft.Row([
                     ft.Row([
                         ft.Text(f"Shared:", weight=ft.FontWeight.BOLD),
                         ft.Text(f"{more_info_printer['Shared']}", selectable=True),
-                    ], wrap=True)
+                    ], expand=True, wrap=True)
                 ]),
                 ft.Row([
                     ft.Row([
                         ft.Text(f"Driver:", weight=ft.FontWeight.BOLD),
                         ft.Text(f"{more_info_printer['Driver']}", selectable=True),
-                    ], wrap=True)
+                    ], expand=True, wrap=True)
                 ])
             ],
             scroll=ft.ScrollMode.ADAPTIVE
@@ -1394,6 +1442,7 @@ Registry path: {program['RegPath']}"""
         if check_computer_name() and process_not_running("Get Printers", computer_name.value):
             refresh = False
             computer = computer_name.value
+            printer_wiz_target_computer = computer
             for key, value in kwargs.items():
                 # Check if we are just refreshing list
                 if key == "refresh":
@@ -1444,8 +1493,8 @@ Registry path: {program['RegPath']}"""
                         )
 
                         printer_wiz_listview.controls.append(printer_list_item_card)
-                    printer_wiz_computer.data = computer
-                    printer_wiz_computer.value = f"{computer}'s printers. Last refreshed {date_refreshed}"
+                    printer_wiz_computer_text.data = computer
+                    printer_wiz_computer_text.value = f"{computer}'s printers. Refreshed: {date_refreshed}"
                     navigate_view(6)
                 except FileNotFoundError:
                     show_message(f"Could not get printers on {computer}")
@@ -2435,6 +2484,11 @@ scripts to retrieve the information from remote computers and perform other task
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
+                    ft.IconButton(icon=ft.icons.MISCELLANEOUS_SERVICES, icon_size=50, on_click=restart_print_spooler),
+                    ft.Text("Restart Print Spooler")
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
+                ft.VerticalDivider(),
+                ft.Column([
                     ft.IconButton(icon=ft.icons.TEXT_SNIPPET, data="Operational", icon_size=50, on_click=open_print_logs),
                     ft.Text("Operational Logs")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
@@ -2573,16 +2627,24 @@ scripts to retrieve the information from remote computers and perform other task
         actions_view_container
     ], expand=1)
     
+    print_spooler_button = ft.TextButton(
+        "Restart Print Spooler", 
+        on_click=restart_print_spooler,
+        data="print_wiz_view"
+    )
+    
     print_wizard_view = ft.Column([
         computer_top_row,
         ft.Divider(height=9, thickness=3),
         ft.Row([
-            printer_wiz_computer,
+            printer_wiz_computer_text,
             ft.IconButton(
                 icon=ft.icons.REFRESH, 
                 on_click=refresh_printers,
+                tooltip="Refresh"
             ),
-        ]),
+            print_spooler_button,
+        ], wrap=True),
         printer_wiz_list_container,
     ], expand=True)
     
