@@ -280,6 +280,8 @@ def main(page: ft.Page):
         for key, value in kwargs.items():
             if key == "force_24" and value == True:
                 return x.strftime("%X")
+            if key == "result_card" and value == True:
+                return x.strftime("%c")
             
         return f"{day} {month} {day_num}, {time}"
     
@@ -663,6 +665,7 @@ def main(page: ft.Page):
         
         remove_these_controls.clear()
         
+        # Sort results by their date
         result_data.controls.sort(key=lambda control: control.data['SortDate'], reverse=True)
         if len(filter_out_PCs) > 0:
             filter_btn.icon = ft.icons.FILTER_ALT
@@ -855,7 +858,7 @@ def main(page: ft.Page):
         
         result_card = ft.Card(
             content=card_content,
-            data={"Id": id, "Computer": computer, "SortDate": date_time(force_24=True), "action": action}
+            data={"Id": id, "Computer": computer, "SortDate": date_time(result_card=True), "action": action}
         )
         
         return result_card
@@ -1838,13 +1841,18 @@ Registry path: {program['RegPath']}"""
             logout = "True"
             
         def run_operation(computer):
-            
+            nonlocal users
+            nonlocal logout
             if delete_users_checkbox.value and settings_values['warn_about_profile_deletion']:
                 
-                are_you_sure(
+                answer = are_you_sure(
                     e, 
-                    "Are you sure you want to remove profiles? Users could lose valuable data."
+                    "Are you sure you want to remove profiles? Users could lose valuable data.",
+                    no_text = "Don't remove profiles"
                 )
+                
+                if answer == False:
+                    users = "False"
                 
                 update_settings(e)
             

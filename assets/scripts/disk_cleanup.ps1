@@ -34,8 +34,14 @@ foreach ($Computer in $list) {
     $this_comps_results = ""
 
     Function Get-Space {
+        param(
+            [bool]$free_space_only = $false
+        )
         try {
             $space = Get-CimInstance -ComputerName $Computer win32_logicaldisk -ErrorAction Stop | Select-Object -Property DeviceID, @{Label = 'FreeSpace'; expression = { ($_.FreeSpace / 1GB).ToString('F2') + "GB" } }, @{Label = 'MaxSize'; expression = { ($_.Size / 1GB).ToString('F2') + "GB" } }
+            if ($free_space_only) {
+                return "$($space.FreeSpace)"
+            }
             return "$($space.FreeSpace) / $($space.MaxSize)"
         }
         catch {
@@ -44,23 +50,26 @@ foreach ($Computer in $list) {
     }
 
     if (Test-Connection $Computer) {
-        $space_before = Get-Space
+        $space_before = Get-Space $true
 
         $command = Invoke-Command -ComputerName $Computer -ScriptBlock {
             param($delete_users, $this_comps_results, $Computer, $logout)
             #Get logged in users
             $users = query user /server:$Computer;
 
-            # We store logged in users and their IDs here so we can
-            # get the IDs later for logoff.
-            $arrayOfUsers = @() ;
-
-            foreach ($user in $users) {
-                if ($user -ne $users[0]) {
-                    $user = ("$user").TrimStart()
-                    $firstWhiteSpace = "$user".IndexOf(" ")
-                    $userOnly = "$user".Substring(0, $firstWhiteSpace)
-                    $arrayOfUsers += $userOnly
+            # Log out users if True
+            if ($logout -eq "True") {
+                $IDs = @() ;
+                for ($i = 1; $i -lt $users.Count; $i++) {
+                    # using regex to find the IDs
+                    $temp = [string]($users[$i] | Select-String -pattern "\s\d+\s").Matches ;
+                    $temp = $temp.Trim() ;
+                    $IDs += $temp ;
+                }
+            
+                foreach ($user_id in $IDs) {
+                    Write-Host "Logging off user ID: $user_id"
+                    logoff $user_id
                 }
             }
 
@@ -121,21 +130,6 @@ foreach ($Computer in $list) {
                 Where-Object {
                     $_.LocalPath -notLike "*Public" -and $_.LocalPath -notLike "*admin" -and $_.LocalPath -notLike "*localadmin" -and $_.LocalPath -notLike "*systemprofile" -and $_.LocalPath -notLike "*LocalService" -and $_.LocalPath -notLike "*NetworkService"
                 }
-        
-                if ($logout -eq "True") {
-                    $IDs = @() ;
-                    for ($i = 1; $i -lt $users.Count; $i++) {
-                        # using regex to find the IDs
-                        $temp = [string]($users[$i] | Select-String -pattern "\s\d+\s").Matches ;
-                        $temp = $temp.Trim() ;
-                        $IDs += $temp ;
-                    }
-                
-                    foreach ($user_id in $IDs) {
-                        Write-Host "Logging off user ID: $user_id"
-                        logoff $user_id
-                    }
-                }
 
                 # Make sure they are not logged in before deleting
                 foreach ($u in $users_to_delete) {
@@ -154,9 +148,10 @@ foreach ($Computer in $list) {
 
         $results = $command
 
-        $space_after = Get-Space
+        $space_after = Get-Space $true
 
-        $results += "`n$($Computer) - Space before: $space_before | Space after: $space_after"
+        $results += "`n$($Computer) - Space before: $space_before | Space after: $space_after."
+        $results += "`nCleared space: $($space_before - $space_after)GB."
     }
     else {
         $results += "$($Computer) could not be contacted."
