@@ -38,9 +38,9 @@ foreach ($Computer in $list) {
             [bool]$free_space_only = $false
         )
         try {
-            $space = Get-CimInstance -ComputerName $Computer win32_logicaldisk -ErrorAction Stop | Select-Object -Property DeviceID, @{Label = 'FreeSpace'; expression = { ($_.FreeSpace / 1GB).ToString('F2') + "GB" } }, @{Label = 'MaxSize'; expression = { ($_.Size / 1GB).ToString('F2') + "GB" } }
+            $space = Get-CimInstance -ComputerName $Computer win32_logicaldisk -ErrorAction Stop | Select-Object -Property DeviceID, @{Label = 'FreeSpace'; expression = { ($_.FreeSpace / 1GB).ToString('F2') } }, @{Label = 'MaxSize'; expression = { ($_.Size / 1GB).ToString('F2') } }
             if ($free_space_only) {
-                return "$($space.FreeSpace)"
+                return $space.FreeSpace
             }
             return "$($space.FreeSpace) / $($space.MaxSize)"
         }
@@ -68,8 +68,8 @@ foreach ($Computer in $list) {
                 }
             
                 foreach ($user_id in $IDs) {
-                    Write-Host "Logging off user ID: $user_id"
                     logoff $user_id
+                    $this_comps_results += "Logged off user ID: $user_id`n"
                 }
             }
 
@@ -150,8 +150,11 @@ foreach ($Computer in $list) {
 
         $space_after = Get-Space $true
 
-        $results += "`n$($Computer) - Space before: $space_before | Space after: $space_after."
-        $results += "`nCleared space: $($space_before - $space_after)GB."
+        $space_cleared = $space_after - $space_before
+        $space_cleared = [math]::Round($space_cleared, 2)
+
+        $results += "`n$($Computer) - Space before: $($space_before)GB | Space after: $($space_after)GB."
+        $results += "`nCleared space: $($space_cleared)GB."
     }
     else {
         $results += "$($Computer) could not be contacted."

@@ -66,7 +66,7 @@ class Power_Shell():
             return f"Test page failed to send to {computer}."
     
     def restart_print_spool(self, computer):
-        p = subprocess.call([self.pspath, "-File", f"./assets/scripts/restart_spool.ps1", f"{computer}"])
+        p = subprocess.call([self.pspath, "-File", f"./assets/scripts/restart_spool.ps1", f"{computer}"], creationflags=self.no_window)
         if p == 0:
             return f"Print spooler restarted on {computer}."
         elif p == 2:
@@ -94,6 +94,8 @@ class Power_Shell():
         p = subprocess.call([self.pspath, "-File", f"./assets/scripts/rename_printer.ps1", f"{computer}", f"{printerName}", f"{newName}"], creationflags=self.no_window)
         if p == 0:
             return f"Renamed a printer on {computer}."
+        elif p == 2:
+            return f"Failed to rename a printer on {computer}. It is offline."
         else:
             return f"Failed to rename a printer on {computer}."
         
@@ -125,7 +127,7 @@ class Power_Shell():
             return f"Failed to get battery info on {computer}."
     
     def get_uptime(self, computer):
-        subprocess.call([self.pspath, "-File", "./assets/scripts/get_uptime.ps1", f"{computer}"])
+        subprocess.call([self.pspath, "-File", "./assets/scripts/get_uptime.ps1", f"{computer}"], creationflags=self.no_window)
         with open(f"assets/results/Uptime/{computer}-uptime.txt", "r") as result:
             results = result.read()
         return results
@@ -133,16 +135,6 @@ class Power_Shell():
     def event_viewer(self, computer):
         p = subprocess.call([self.pspath, "-File", "./assets/scripts/event_viewer.ps1", f"{computer}"], creationflags=self.no_window)
         return p
-    
-    # def rename_computers(self, computer, username, id, winRM):
-    #     # Need to find a way to pass both lists
-    #     p = subprocess.call([self.pspath, "-File", "./scripts/rename_computers.ps1", f"{computer}", f"{username}", f"{id}", f"{winRM}"])
-    #     if p == 0:
-    #         with open(f"./results/{id}-rename_computers.txt", "r") as file:
-    #             results = file.read()
-    #         return results
-    #     else:
-    #         return f"There was an error creating ./results/{id}-rename_computers.txt"
     
     def open_c_share(self, computer):
         p = subprocess.call([self.pspath, "-File", "./assets/scripts/open_cshare.ps1", f"{computer}"], creationflags=self.no_window)
@@ -238,7 +230,6 @@ class Power_Shell():
             f"{timeFormat}",
             f"{winRM}"
         ], creationflags=self.no_window)
-        scheduled_time = f"{month}/{day}/{year}, {hour}:{minute}:{seconds}"
 
         if p == 0:
             with open(f"./assets/results/Restart/{id}-Restart.txt") as results:

@@ -10,7 +10,8 @@ Function Rename-RemotePrinter {
     Invoke-Command -ComputerName $Computer -ScriptBlock {
         param($printerName, $newName)
         try {
-            Rename-Printer -Name "$printerName" -NewName "$newName"
+            Rename-Printer -Name "$printerName" -NewName "$newName" -ErrorAction Stop
+            exit 0
         }
         catch {
             exit 1
@@ -19,15 +20,9 @@ Function Rename-RemotePrinter {
     } -ArgumentList ($printerName, $newName)
 }
 
-if (Test-Connection $Computer) {
+if (Test-Connection $Computer -Count 1) {
     Rename-RemotePrinter
-    if ($LASTEXITCODE -eq 0) {
-        exit 0
-    }
-    else {
-        exit 1
-    }
 }
 else {
-    exit 1
+    exit 2
 }

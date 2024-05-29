@@ -25,7 +25,7 @@ else {
 
 Function Restart-PCs {
 
-    $action = "Restart"
+    $action = "Restarted"
     $list = Get-Content ".\settings\lists\computers.txt"
     # If using list, set Computers = to Get-Content for list contents
     if ($Computers -eq "list of computers") {
@@ -107,7 +107,7 @@ Function Restart-PCs {
             Add-Content -Path ".\assets\results\Restart\$id-Restart.txt" -Value "$action failed on $comp. A restart may already be pending or it is offline."
         }
         else {
-            Add-Content -Path ".\assets\results\Restart\$id-Restart.txt" -Value "$((Get-Culture).TextInfo.ToTitleCase($action))ed $comp at $restartTime."
+            Add-Content -Path ".\assets\results\Restart\$id-Restart.txt" -Value "$((Get-Culture).TextInfo.ToTitleCase($action)) $comp at $restartTime."
         }
     }
 }
