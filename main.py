@@ -1923,6 +1923,7 @@ Registry path: {program['RegPath']}"""
     def drag_script_will_accept(e):
         pass
 
+    # Reorder scripts
     def drag_script_accept(e: ft.DragTargetAcceptEvent):
         for key, value in e.control.data.items():
             if key == "index":
@@ -1936,6 +1937,8 @@ Registry path: {program['RegPath']}"""
                 
         if drag_target_index == dragged_index:
             return
+        
+        print(f"Dragged index: {dragged_index}, drag target: {drag_target_index}")
         
         if src.data['name'] in custom_scripts:
             custom_scripts[src.data['name']]['index'] = drag_target_index
@@ -2663,10 +2666,10 @@ scripts to retrieve the information from remote computers and perform other task
             # Figure out the index
             if file.name in custom_scripts:
                 index = custom_scripts[f'{file.name}']['index']
-            elif len(list_of_script_tiles) == 0:
+            elif len(custom_scripts) == 0:
                 index = 0
             else:
-                index = len(list_of_script_tiles)
+                index = len(custom_scripts)
             
             custom_scripts.update({
                 f"{file.name}": {
