@@ -38,7 +38,7 @@ foreach ($Computer in $list) {
             [bool]$free_space_only = $false
         )
         try {
-            $space = Get-CimInstance -ComputerName $Computer win32_logicaldisk -ErrorAction Stop | Select-Object -Property DeviceID, @{Label = 'FreeSpace'; expression = { ($_.FreeSpace / 1GB).ToString('F2') } }, @{Label = 'MaxSize'; expression = { ($_.Size / 1GB).ToString('F2') } }
+            $space = Get-CimInstance -ComputerName $Computer win32_logicaldisk -Filter 'DeviceId = "C:"' -ErrorAction Stop | Select-Object -Property DeviceID, @{Label = 'FreeSpace'; expression = { ($_.FreeSpace / 1GB).ToString('F2') } }, @{Label = 'MaxSize'; expression = { ($_.Size / 1GB).ToString('F2') } }
             if ($free_space_only) {
                 return $space.FreeSpace
             }

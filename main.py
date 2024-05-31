@@ -486,12 +486,15 @@ def main(page: ft.Page):
     def are_you_sure(e, text, **kwargs):
         title = "Confirm:"
         no_text = "Cancel"
+        yes_text = "Yes"
         for key, value in kwargs.items():
             if key == "title":
                 title = value
             if key == "no_text":
                 no_text = value
-        sure_modal = YouSure(text, title, no_text, close_dynamic_modal)
+            if key == "yes_text":
+                yes_text = value
+        sure_modal = YouSure(text, title, close_dynamic_modal, no_text=no_text, yes_text=yes_text)
         page.dialog = sure_modal.get_modal()
         page.dialog.open = True
         page.update()
@@ -2135,6 +2138,8 @@ Registry path: {program['RegPath']}"""
                 
                 details = {
                     "computer": f"{r}",
+                    "batterystatus": f"{battery_details['BatteryStatus']}",
+                    "Charge": f"{battery_details['Charge']}",
                     "efficiency": f"{battery_details['Efficiency']}",
                     "fullchargecapacity": f"{battery_details['FullChargeCapacity']}",
                     "designcapacity": f"{battery_details['DesignCapacity']}",
@@ -2148,7 +2153,7 @@ Registry path: {program['RegPath']}"""
             expansion_list.controls.append(list_of_pcs[f'{pc}'])
         
         # Format export data
-        btn_data = {"columns": ['Computer", "Efficiency", "Full Charge Capacity", "Design Capacity", "Battery Report'], "results": list_of_results}
+        btn_data = {"columns": ['Computer', 'BatteryStatus', 'Charge', 'Efficiency', 'Full Charge Capacity', 'Design Capacity', 'Battery Report'], "results": list_of_results}
         
         modal = DynamicModal(
             title=f"{e.control.title.value}",
@@ -2173,7 +2178,7 @@ Registry path: {program['RegPath']}"""
     def check_battery(e):
         id = uuid.uuid4()
         powershell = the_shell.Power_Shell()
-        use_list = are_you_sure(e, text="Do you want to check the battery status for each computer in the list of computers?", title="Use List of Computers?", no_text="No")
+        use_list = are_you_sure(e, text="Do you want to check the battery status for each computer in the list of computers?", title="Use List of Computers?", no_text="No", yes_text="Use list")
         if use_list and check_list():
             computer = "list of computers"
             add_new_process(new_process("Check Battery", [computer], date_time(), id))

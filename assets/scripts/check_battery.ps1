@@ -62,7 +62,7 @@ Function CheckBattery {
         if (Test-Connection $pc) {
             $battery = Get-CimInstance -Class CIM_Battery -ComputerName $Computer | Select-Object EstimatedChargeRemaining, BatteryStatus, DesignCapacity, FullChargeCapacity
 
-            $script:batteryStatus = ""
+            $batteryStatus = ""
 
             $designCapacity = "$($battery.DesignCapacity)"
 
@@ -141,6 +141,8 @@ Function CheckBattery {
 
             $battery_obj = @"
     {
+        "BatteryStatus": "$batterystatus",
+        "Charge": "$($battery.EstimatedChargeRemaining)%",
         "Efficiency": "$percentEfficiency%",
         "FullChargeCapacity": "$($fullChargeCapacity)mAh",
         "DesignCapacity": "$($designCapacity)mAh",
