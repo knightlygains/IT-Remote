@@ -2833,25 +2833,45 @@ built in to your windows install with the switch at the top."],
         expand=True
     )
     
-    setup_view = ft.Container(
-            content=ft.Column([
-                ft.Text("PowerShell 7 and PsTools are required for this program to work."),
-                ft.Text("Click browse to select the respective executables in their install location."),
-                ft.TextButton("Browse", on_click=lambda _: pick_path_dialog.pick_files(
-                    allow_multiple=False,
-                    allowed_extensions=['exe'],
-                    initial_directory="C:\\"
-                )),
-                ft.Row([
-                    ft.Text("pwsh.exe: ", weight=ft.FontWeight.BOLD),
-                    powershell_path_text,
-                    powershell_checkmark
+    def has_admin():
+        if os.name == 'nt':
+            try:
+                # only windows users with admin privileges can read the C:\windows\temp
+                temp = os.listdir(os.sep.join([os.environ.get('SystemRoot','C:\\windows'),'temp']))
+            except:
+                return False
+            else:
+                return True
+    
+    admin = has_admin()
+    
+    if admin:
+        setup_view = ft.Container(
+                content=ft.Column([
+                    ft.Text("PowerShell 7 and PsTools are required for this program to work."),
+                    ft.Text("Click browse to select the respective executables in their install location."),
+                    ft.TextButton("Browse", on_click=lambda _: pick_path_dialog.pick_files(
+                        allow_multiple=False,
+                        allowed_extensions=['exe'],
+                        initial_directory="C:\\"
+                    )),
+                    ft.Row([
+                        ft.Text("pwsh.exe: ", weight=ft.FontWeight.BOLD),
+                        powershell_path_text,
+                        powershell_checkmark
+                    ]),
+                    ft.Row([
+                        ft.Text("PsExec.exe\\PsService.exe: ", weight=ft.FontWeight.BOLD),
+                        pstools_path_text,
+                        pstools_checkmark
+                    ])
                 ]),
-                ft.Row([
-                    ft.Text("PsExec.exe\\PsService.exe: ", weight=ft.FontWeight.BOLD),
-                    pstools_path_text,
-                    pstools_checkmark
-                ])
+                padding=ft.padding.only(top=10, left=10, bottom=10, right=10)
+            )
+    else:
+        setup_view = ft.Container(
+            content=ft.Column([
+                ft.Text("Please re-run this application as an administrator. You can go to the .exe properties -> Compatibility -> check the box: 'Run this program as an administrator'.")
             ]),
             padding=ft.padding.only(top=10, left=10, bottom=10, right=10)
         )
@@ -2859,7 +2879,7 @@ built in to your windows install with the switch at the top."],
     page_view = setup_view
     
     #Finally build the page
-    if os.path.exists(f"{settings_values['pwsh_path']}") and os.path.exists(f"{settings_values['pstools_path']}\\PsExec.exe"):
+    if os.path.exists(f"{settings_values['pwsh_path']}") and os.path.exists(f"{settings_values['pstools_path']}\\PsExec.exe") and admin:
         # Main Program page view
         page_view = main_view
     else:
