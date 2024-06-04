@@ -2419,8 +2419,8 @@ Registry path: {program['RegPath']}"""
     warn_checkbox = ft.Checkbox("Warn before clearing profiles", value=settings_values['warn_about_profile_deletion'])
     settings_save_btn = ft.FilledButton("Save", icon=ft.icons.SAVE, on_click=update_settings)
     settings_about_app = TutorialBtn(["About IT Remote", "IT Remote is a PowerShell GUI designed to \
-make troubleshooting remote  or local Windows computers easy. \n\nIT Remote will allow you to query \
-information on devices within the same domain or workgroup as your computer. You must be an \
+make troubleshooting remote Windows computers on your domain easy. \n\nIT Remote will allow you to query \
+information on devices within the same domain as your computer. You must be an \
 admin and be running the IT Remote as admin for most of the functions to work. IT Remote uses \
 PowerShell 7, PsTools, and Python's subprocess module to launch built-in custom PowerShell \
 scripts to retrieve the information from remote computers and perform other tasks."], on_click=open_tutorial_modal)
