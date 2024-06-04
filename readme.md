@@ -2,7 +2,7 @@
 
 <img src="assets/icon.png" alt="IT Remote Logo" width="100">
 
-IT Remote is a PowerShell GUI built using Python, Flet, and custom PowerShell scripts. Its goal is to allow you to get useful information from Windows PCs and troubleshoot them remotely.
+IT Remote is a PowerShell GUI built using Python, Flet, and custom PowerShell scripts. Its goal is to allow you to get useful information from Windows PCs on your domain and troubleshoot them remotely.
 
 Many of the functions can be done without interupting the user.
 For exmaple: *getting their installed printers, renaming them, and even uninstalling them without any pop ups on their screen.*
