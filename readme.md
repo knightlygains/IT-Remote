@@ -23,7 +23,7 @@ With Python's subprocess module, IT Remote launches custom powershell scripts wi
 * Obtain a list of all installed software or specific programs on 1 or multiple PCs
 * Check available space on all attached disks on 1 or multiple PCs
 * Clear space on 1 or multiple PCs including user profiles, Windows/Temp, Windows/Prefetch, and recycle bin
-* Generate battery reports on 1 or multiple PCs and extract information like Design Capacity, Full Charge Capacity, and calculate the battery effeciency
+* Generate battery reports on 1 or multiple PCs and extract information like Design Capacity, Full Charge Capacity, and calculate the battery efficiency
 * Perform useful actions at the click of a button like launch Event Viewer, MsInfo32, and the C$ admin share if enabled in your environment
 * See whos logged in on a PC and log them off at the click of a button
 * See the current uptime of a PC
