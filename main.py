@@ -113,6 +113,11 @@ def main(page: ft.Page):
     def update_settings(e):
         if cg.value:
             settings_values['app_color'] = cg.value
+        settings_values['dark_theme'] = theme_mode.value
+        if settings_values['dark_theme']: 
+            page.theme_mode = ft.ThemeMode.DARK
+        else:
+            page.theme_mode = ft.ThemeMode.LIGHT
         results_container.bgcolor = settings_values['app_color']
         printer_wiz_list_container.bgcolor = settings_values['app_color']
         page.dark_theme.color_scheme_seed = settings_values['app_color']
@@ -2425,12 +2430,17 @@ admin and be running the IT Remote as admin for most of the functions to work. I
 PowerShell 7, PsTools, and Python's subprocess module to launch built-in custom PowerShell \
 scripts to retrieve the information from remote computers and perform other tasks."], on_click=open_tutorial_modal)
     
+    theme_mode = ft.Switch(label="Dark Theme", value=True)
+    
     settings_view = ft.Column([
         ft.Row([
             ft.Column([
             app_color_label,
                 ft.Row([
                     cg
+                ]),
+                ft.Row([
+                    theme_mode
                 ]),
             ]),
             ft.VerticalDivider(),
@@ -2445,7 +2455,7 @@ scripts to retrieve the information from remote computers and perform other task
                 settings_about_app
             ], expand=True, horizontal_alignment=ft.CrossAxisAlignment.END)
         ], expand=1),
-        ft.Row([settings_save_btn], alignment=ft.MainAxisAlignment.CENTER)
+        ft.Row([settings_save_btn], alignment=ft.MainAxisAlignment.END)
     ], expand=1)
     
     # -------------------- ACTIONS VIEWS --------------------
