@@ -69,6 +69,25 @@ def main(page: ft.Page):
     
     page.window_title_bar_hidden = True
     
+    def on_pan_update(e: ft.DragUpdateEvent):
+        if e.delta_y < 0 or e.delta_y > 0:
+            print(e.control.top, e.delta_y)
+            page.window_top += e.delta_y
+            page.window_height -= e.delta_y
+        page.update()
+    
+    drag_window_resize=ft.Container(
+        height=3,
+        bgcolor="red",
+        padding=0
+    )
+    
+    gd = ft.GestureDetector(
+        mouse_cursor=ft.MouseCursor.RESIZE_UP_DOWN,
+        on_horizontal_drag_update=on_pan_update,
+        content=drag_window_resize
+    )
+    
     drag_window = ft.Container(
         content=ft.Row([
             ft.Container(
@@ -76,13 +95,12 @@ def main(page: ft.Page):
                 padding=ft.padding.only(left=10, top=3)
             ),
             ft.WindowDragArea(ft.Container(
-            ), height=40, expand=True),
+            ), height=37, expand=True),
             ft.IconButton(ft.icons.MINIMIZE, data="min", on_click=min_max),
             ft.IconButton(ft.icons.SQUARE_OUTLINED, data="toggle", on_click=min_max),
             ft.IconButton(ft.icons.CLOSE, on_click=lambda _: page.window_close())
         ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
-        bgcolor=settings_values['app_color'],
-        margin=ft.margin.only(top=1)
+        bgcolor=settings_values['app_color']
     )
     
     page.window_width = settings_values['window_width']
@@ -96,6 +114,8 @@ def main(page: ft.Page):
         page.window_height = page.window_min_height
     page.dark_theme = ft.Theme(color_scheme_seed=settings_values['app_color'])
     page.theme = ft.Theme(color_scheme_seed=settings_values['app_color'])
+    
+    ft.MouseCursor.RESIZE_UP_DOWN
     
     def save_page_dimensions(e):
         try:
@@ -2817,7 +2837,7 @@ built in to your windows install with the switch at the top."],
                 show_message("Invalid program.")
         update_settings(e)
         if powershell_checkmark.visible and pstools_checkmark.visible:
-            page.controls = [drag_window, main_view]
+            page.controls = [gd, drag_window, main_view]
             show_message("Setup complete.")
         page.update()
 
@@ -2897,6 +2917,7 @@ built in to your windows install with the switch at the top."],
         page_view = setup_view
     
     page.add(
+        gd,
         drag_window,
         page_view
     )
