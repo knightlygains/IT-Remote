@@ -115,7 +115,13 @@ def main(page: ft.Page):
     page.dark_theme = ft.Theme(color_scheme_seed=settings_values['app_color'])
     page.theme = ft.Theme(color_scheme_seed=settings_values['app_color'])
     
-    ft.MouseCursor.RESIZE_UP_DOWN
+    def page_theme():
+        if settings_values['dark_theme']: 
+            page.theme_mode = ft.ThemeMode.DARK
+        else:
+            page.theme_mode = ft.ThemeMode.LIGHT
+    
+    page_theme()
     
     def save_page_dimensions(e):
         try:
@@ -128,16 +134,13 @@ def main(page: ft.Page):
             print(f"Something went wrong with saving page dimensions, {e}")
         
     page.on_resize = save_page_dimensions
-    page.snack_bar = ft.SnackBar(ft.Text("", ), duration=3000)
+    page.snack_bar = ft.SnackBar(ft.Text(""))
     
     def update_settings(e):
         if cg.value:
             settings_values['app_color'] = cg.value
         settings_values['dark_theme'] = theme_mode.value
-        if settings_values['dark_theme']: 
-            page.theme_mode = ft.ThemeMode.DARK
-        else:
-            page.theme_mode = ft.ThemeMode.LIGHT
+        page_theme()
         results_container.bgcolor = settings_values['app_color']
         printer_wiz_list_container.bgcolor = settings_values['app_color']
         page.dark_theme.color_scheme_seed = settings_values['app_color']
@@ -151,7 +154,7 @@ def main(page: ft.Page):
         load_settings(e, update=True)
         try:
             if e.control.text == "Save":
-                show_message("Settings have been saved.")
+                show_message("Saved.", duration=700)
         except AttributeError:
             pass
         page.update()
@@ -530,7 +533,12 @@ def main(page: ft.Page):
                 close_dynamic_modal(e)
         return answer
     
-    def show_message(message):
+    def show_message(message, **kwargs):
+        duration = 3000
+        for key, value in kwargs.items():
+            if key == "duration":
+                duration = value
+        page.snack_bar.duration = duration
         page.snack_bar.content.value = message
         page.snack_bar.open = True
         page.update()
@@ -2420,7 +2428,7 @@ Registry path: {program['RegPath']}"""
     
     # -------------------- SETTINGS --------------------
     # Settings color choice radio
-    app_color_label = ft.Text("App Color:", )
+    app_color_label = ft.Text("App appearance:", )
     red_color_radio = ft.Radio(value="red", label="Red", fill_color="red")
     blue_color_radio = ft.Radio(value="blue", label="Blue", fill_color="blue")
     green_color_radio = ft.Radio(value="green", label="Green", fill_color="green")
@@ -2450,7 +2458,7 @@ admin and be running the IT Remote as admin for most of the functions to work. I
 PowerShell 7, PsTools, and Python's subprocess module to launch built-in custom PowerShell \
 scripts to retrieve the information from remote computers and perform other tasks."], on_click=open_tutorial_modal)
     
-    theme_mode = ft.Switch(label="Dark Theme", value=True)
+    theme_mode = ft.Switch(label="Dark Theme", value=settings_values['dark_theme'])
     
     settings_view = ft.Column([
         ft.Row([
