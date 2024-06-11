@@ -16,6 +16,9 @@ Function Enable-WinRM {
             if ( $winrm_service.Status -eq "Running") {
                 return $true
             }
+            else {
+                return $false
+            }
         }
         catch {
             return $false
