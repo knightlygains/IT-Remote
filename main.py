@@ -2769,7 +2769,7 @@ built in to your windows install with the switch at the top."],
                     ),
                     ft.Container(
                         content=ft.Image(src="assets/images/Github.png", width=70),
-                        url="https://github.com/knightlygains",
+                        url="https://github.com/knightlygains/it-remote",
                         offset=ft.transform.Offset(2, 2),
                         on_hover=on_github_hover,
                         tooltip="https://github.com/knightlygains"

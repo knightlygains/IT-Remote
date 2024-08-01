@@ -20,6 +20,9 @@ custom_scripts = {
 custom_scripts_path = "settings/custom_scripts.json"
 settings_path = "settings/settings.json"
 
+if not os.path.exists("./settings"):
+    os.mkdir("./settings")
+
 def load_settings(e, update):
     
     # Check if settings already exists
