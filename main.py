@@ -67,7 +67,7 @@ def main(page: ft.Page):
             page.window_maximized = False
         page.update()
     
-    page.window_title_bar_hidden = True
+    page.window.title_bar_hidden = True
     
     drag_window = ft.Container(
         content=ft.Row([
@@ -84,15 +84,15 @@ def main(page: ft.Page):
         bgcolor=settings_values['app_color']
     )
     
-    page.window_width = settings_values['window_width']
-    page.window_height = settings_values['window_height']
-    page.window_min_width = 745
-    page.window_min_height = 525
+    page.window.width = settings_values['window_width']
+    page.window.height = settings_values['window_height']
+    page.window.min_width = 745
+    page.window.min_height = 525
     page.padding=0
-    if page.window_width < page.window_min_width:
-        page.window_width = page.window_min_width
-    if page.window_height < page.window_min_height:
-        page.window_height = page.window_min_height
+    if page.window.width < page.window.min_width:
+        page.window.width = page.window.min_width
+    if page.window.height < page.window.min_height:
+        page.window.height = page.window.min_height
     page.dark_theme = ft.Theme(color_scheme_seed=settings_values['app_color'])
     page.theme = ft.Theme(color_scheme_seed=settings_values['app_color'])
     
@@ -114,8 +114,9 @@ def main(page: ft.Page):
         except ValueError as e:
             print(f"Something went wrong with saving page dimensions, {e}")
         
-    page.on_resize = save_page_dimensions
-    page.snack_bar = ft.SnackBar(ft.Text(""))
+    page.on_resized = save_page_dimensions
+    snack_bar = ft.SnackBar(ft.Text(""))
+    page.overlay.append(snack_bar)
     
     def update_settings(e):
         if cg.value:
@@ -258,16 +259,17 @@ def main(page: ft.Page):
         modal = DynamicModal(
             title="Select a recent computer:",
             content=content,
-            close_modal_func=close_dynamic_modal,
+            close_modal_func=close_dialog,
             nolistview=False,
             width=700
         )
         
-        page.dialog = modal.get_modal()
-        page.dialog.open = True
+        # page.dialog = modal.get_modal()
+        # page.dialog.open = True
+        page.open(modal.get_modal())
         page.update()
         
-        while page.dialog.open:
+        while modal.modal.open:
             pass
         
         if recent_pc_radio_grp.value != None:
@@ -304,9 +306,14 @@ def main(page: ft.Page):
         e.control.update()
     
     # -------------------- Dynamic Modal --------------------
-    def close_dynamic_modal(e):
-        page.dialog.open = False
-        page.update()
+    def close_dialog(e):
+        """Close all currently
+        open dialog boxes
+        """
+        for dialog in page.overlay:
+            if dialog.open:
+                print("closed")
+                page.close(dialog)
     
     # -------------------- PROCESSES --------------------
     running_processes_count = 0
@@ -330,7 +337,7 @@ def main(page: ft.Page):
         modal = DynamicModal(
             title="Running Processes",
             content=running_processes_container,
-            close_modal_func=close_dynamic_modal,
+            close_modal_func=close_dialog,
             nolistview=True,
             width=200
         )
@@ -503,7 +510,7 @@ def main(page: ft.Page):
                 no_text = value
             if key == "yes_text":
                 yes_text = value
-        sure_modal = YouSure(text, title, close_dynamic_modal, no_text=no_text, yes_text=yes_text)
+        sure_modal = YouSure(text, title, close_dialog, no_text=no_text, yes_text=yes_text)
         page.dialog = sure_modal.get_modal()
         page.dialog.open = True
         page.update()
@@ -511,7 +518,7 @@ def main(page: ft.Page):
         while page.dialog.open:
             answer = sure_modal.said_yes
             if answer:
-                close_dynamic_modal(e)
+                close_dialog(e)
         return answer
     
     def show_message(message, **kwargs):
@@ -519,9 +526,8 @@ def main(page: ft.Page):
         for key, value in kwargs.items():
             if key == "duration":
                 duration = value
-        page.snack_bar.duration = duration
-        page.snack_bar.content.value = message
-        page.snack_bar.open = True
+        snack_bar = ft.SnackBar(ft.Text(f"{message}"), duration=duration, open=True)
+        page.overlay.append(snack_bar)
         page.update()
     
     def check_computer_name():
@@ -728,7 +734,7 @@ def main(page: ft.Page):
         modal = DynamicModal(
             title=f"Filter results:",
             content=content_container,
-            close_modal_func=close_dynamic_modal,
+            close_modal_func=close_dialog,
         )
         
         page.dialog = modal.get_modal()
@@ -771,7 +777,7 @@ def main(page: ft.Page):
         title=ft.Text("Title"),
         content=ft.Text("No content"),
         actions=[
-            ft.TextButton("Close", on_click=close_dynamic_modal),
+            ft.TextButton("Close", on_click=close_dialog),
         ],
         actions_alignment=ft.MainAxisAlignment.END,
     )
@@ -964,7 +970,7 @@ def main(page: ft.Page):
         modal = DynamicModal(
             title=title,
             content=card_content,
-            close_modal_func=close_dynamic_modal
+            close_modal_func=close_dialog
         )
         
         page.dialog = modal.get_modal()
@@ -1104,7 +1110,7 @@ def main(page: ft.Page):
         modal = DynamicModal(
             title=f"{e.control.title.value}, {ctr_computer}",
             content=card_content,
-            close_modal_func=close_dynamic_modal
+            close_modal_func=close_dialog
         )
         
         page.dialog = modal.get_modal()
@@ -1163,7 +1169,7 @@ def main(page: ft.Page):
                             list_of_results.append(value)
                         writer.writerow(list_of_results)
                     
-                close_dynamic_modal(e)
+                close_dialog(e)
             else:
                 if os.path.exists(f"{save_location.value}") == False:
                     save_location.error_text = "Path must be correct"
@@ -1185,7 +1191,7 @@ def main(page: ft.Page):
             ]),
             ft.FilledTonalButton("Save", on_click=save)
         ])
-        export_modal = DynamicModal("Export data:", content, close_dynamic_modal)
+        export_modal = DynamicModal("Export data:", content, close_dialog)
         page.dialog = export_modal.get_modal()
         page.dialog.open = True
         page.update()
@@ -1284,7 +1290,7 @@ Registry path: {program['RegPath']}"""
                     data=btn_data
                 )
             ]),
-            close_modal_func=close_dynamic_modal
+            close_modal_func=close_dialog
         )
         page.dialog = modal.get_modal()
         page.dialog.open = True
@@ -1308,7 +1314,7 @@ Registry path: {program['RegPath']}"""
         modal = DynamicModal(
             title=f"{help_topic}",
             content=content,
-            close_modal_func=close_dynamic_modal,
+            close_modal_func=close_dialog,
             nolistview=True
         )
         
@@ -1448,7 +1454,7 @@ Registry path: {program['RegPath']}"""
         modal = DynamicModal(
             title=f"{more_info_printer['Name']}",
             content=content,
-            close_modal_func=close_dynamic_modal,
+            close_modal_func=close_dialog,
             nolistview=True,
             width=300
         )
@@ -1718,7 +1724,7 @@ Registry path: {program['RegPath']}"""
             
             # If we arent using list and we dont have a computername entered, close
             if use_list_checkbox.value == False and check_computer_name() == False:
-                close_dynamic_modal(e)
+                close_dialog(e)
             else:
                 # Schedule restart
                 if shutdown_checkbox.value:
@@ -1726,7 +1732,7 @@ Registry path: {program['RegPath']}"""
                 if schedule_checkbox.value:
                     if date_text.value == "" or time_text.value == "":
                         show_message("Date or Time was not specified.")
-                        close_dynamic_modal(e)
+                        close_dialog(e)
                         return
                     try:
                         scheduled = schedule_checkbox.value
@@ -1739,9 +1745,9 @@ Registry path: {program['RegPath']}"""
                         month = date[1]
                         day = date[2]
                         time = time_picker.value
-                        close_dynamic_modal(e)
+                        close_dialog(e)
                     except AttributeError:
-                        close_dynamic_modal(e)
+                        close_dialog(e)
                         show_message("Picke a date and time")
                 else:
                     doing_action = True
@@ -1753,12 +1759,12 @@ Registry path: {program['RegPath']}"""
                     day = date.day
                     time = str(date).split()
                     time = time[1]
-                    close_dynamic_modal(e)
+                    close_dialog(e)
         
         modal = DynamicModal(
             title=f"Shutdown/Restart",
             content=content,
-            close_modal_func=close_dynamic_modal,
+            close_modal_func=close_dialog,
             nolistview=True,
             add_action=ft.TextButton("Shutdown/Restart", on_click=finalize)
         )
@@ -2183,7 +2189,7 @@ Registry path: {program['RegPath']}"""
                     ]),
                     width= 500
                 ),
-            close_modal_func=close_dynamic_modal
+            close_modal_func=close_dialog
         )
         page.dialog = modal.get_modal()
         page.dialog.open = True
@@ -2328,7 +2334,7 @@ Registry path: {program['RegPath']}"""
         modal = DynamicModal(
             title=f"Logged in users for {computer}:",
             content=content,
-            close_modal_func=close_dynamic_modal
+            close_modal_func=close_dialog
         )
         
         page.dialog = modal.get_modal()
