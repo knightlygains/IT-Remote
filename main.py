@@ -79,7 +79,7 @@ def main(page: ft.Page):
             ), height=37, expand=True),
             ft.IconButton(ft.icons.MINIMIZE, data="min", on_click=min_max),
             ft.IconButton(ft.icons.SQUARE_OUTLINED, data="toggle", on_click=min_max),
-            ft.IconButton(ft.icons.CLOSE, on_click=lambda _: page.window_close())
+            ft.IconButton(ft.icons.CLOSE, on_click=lambda _: page.window.close())
         ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
         bgcolor=settings_values['app_color']
     )
@@ -311,9 +311,12 @@ def main(page: ft.Page):
         open dialog boxes
         """
         for dialog in page.overlay:
-            if dialog.open:
-                print("closed")
-                page.close(dialog)
+            try:
+                if dialog.open:
+                    print("closed")
+                    page.close(dialog)
+            except AttributeError as e:
+                print(e)
     
     # -------------------- PROCESSES --------------------
     running_processes_count = 0
@@ -333,16 +336,16 @@ def main(page: ft.Page):
     list_of_actionss = []
     
     # Running Processes Modal \/
+    
+    running_proc_modal = DynamicModal(
+        title="Running Processes",
+        content=running_processes_container,
+        close_modal_func=close_dialog,
+        nolistview=True,
+        width=200
+    ).get_modal()
     def show_processes_modal(e):
-        modal = DynamicModal(
-            title="Running Processes",
-            content=running_processes_container,
-            close_modal_func=close_dialog,
-            nolistview=True,
-            width=200
-        )
-        page.dialog = modal.get_modal()
-        page.dialog.open = True
+        page.open(running_proc_modal)
         page.update()
     
     running_processes_icon = ft.IconButton(
@@ -511,11 +514,12 @@ def main(page: ft.Page):
             if key == "yes_text":
                 yes_text = value
         sure_modal = YouSure(text, title, close_dialog, no_text=no_text, yes_text=yes_text)
-        page.dialog = sure_modal.get_modal()
-        page.dialog.open = True
+        # page.dialog = sure_modal.get_modal()
+        # page.dialog.open = True
+        page.open(sure_modal.get_modal())
         page.update()
         answer = False
-        while page.dialog.open:
+        while sure_modal.modal.open:
             answer = sure_modal.said_yes
             if answer:
                 close_dialog(e)
@@ -767,8 +771,9 @@ def main(page: ft.Page):
     
     # Card modal Stuff \/
     def show_card_modal():
-        page.dialog = result_card_modal
-        result_card_modal.open = True
+        # page.dialog = result_card_modal
+        # result_card_modal.open = True
+        page.open(result_card_modal)
         page.update()
     
     # Define card modal
@@ -903,6 +908,11 @@ def main(page: ft.Page):
     printer_wiz_target_computer = ""
     printer_to_change = ""
     
+    print_log_card_modal = DynamicModal(
+        title=None,
+        content=None,
+        close_modal_func=close_dialog
+    ).get_modal()
     def open_print_log_card(e):
         """
         Sets print log card modal content and opens it.
@@ -972,9 +982,10 @@ def main(page: ft.Page):
             content=card_content,
             close_modal_func=close_dialog
         )
+        print_log_card_modal.title = title
+        print_log_card_modal.content = card_content
         
-        page.dialog = modal.get_modal()
-        page.dialog.open = True
+        page.open(print_log_card_modal)
         page.update()
     
     def open_card_print_wiz(e):
