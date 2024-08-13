@@ -19,6 +19,8 @@ class DynamicModal(ft.AlertDialog):
             width=500
         )
         
+        self.title = title
+        
         self.actions = [
             ft.TextButton("Close", on_click=close_modal_func)
         ]
@@ -36,7 +38,7 @@ class DynamicModal(ft.AlertDialog):
         
         self.modal = ft.AlertDialog(
             modal=True,
-            title=ft.Text(f"{title}"),
+            title=ft.Text(self.title),
             content=self.content,
             actions=self.actions,
             actions_alignment=ft.MainAxisAlignment.END,

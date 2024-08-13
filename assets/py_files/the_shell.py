@@ -88,7 +88,7 @@ class Power_Shell():
                     results += f"________\nMessage:\n{evt['Message']}\n\nTime Created:\n{evt['TimeCreated']}\n\nId: {evt['Id']}\n\nLevel: {evt['Level']}\n________\n"
             return f"Retreived logs from {computer}. Click to open."
         else:
-            return f"Failed to retreive logs from {computer}."
+            return f"Failed to retreive logs from {computer}. Log may be empty."
     
     def rename_printer(self, computer, printerName, newName):
         p = subprocess.call([self.pspath, "-File", f"./assets/scripts/rename_printer.ps1", f"{computer}", f"{printerName}", f"{newName}"], creationflags=self.no_window)

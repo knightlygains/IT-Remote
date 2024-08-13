@@ -19,9 +19,21 @@ custom_scripts = {
 
 custom_scripts_path = "settings/custom_scripts.json"
 settings_path = "settings/settings.json"
+computerlist_path = "settings/lists/computers.txt"
 
+# Make settings directory
 if not os.path.exists("./settings"):
-    os.mkdir("./settings")
+    try:
+        os.mkdir("./settings")
+    except Exception as e:
+        print(e)
+
+# Make lists directory
+if not os.path.exists("./settings/lists"):
+    try:
+        os.mkdir("./settings/lists")
+    except Exception as e:
+        print(e)
 
 def load_settings(e, update):
     

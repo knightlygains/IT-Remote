@@ -913,16 +913,14 @@ def main(page: ft.Page):
         content=None,
         close_modal_func=close_dialog
     ).get_modal()
+    
+    is_log_empty = False # Track if log returned 0 items
     def open_print_log_card(e):
         """
         Sets print log card modal content and opens it.
         """
         logs_list_view = ft.ListView(expand=1, padding= 20)
-        card_content = ft.Container(
-            content=logs_list_view,
-            expand=1,
-            width= 500
-        )
+        
         ctr_data = "None"
         ctr_computer = "None"
         for key, value in e.control.data.items():
@@ -931,57 +929,74 @@ def main(page: ft.Page):
             if key == "computer":
                 ctr_computer = value
         log_json_path = ctr_data
+        
         with open(log_json_path, "r") as file:
-            data = json.load(file)
-            for event in data:
-                num = f"{event}"
-                evt = data[event]
-                card = ft.Card(
-                    content=ft.Container(
-                        content=ft.Column([
-                            ft.Text(f"{num}", weight=ft.FontWeight.BOLD),
-                            ft.Row([
-                                ft.Text("Time Created:", weight=ft.FontWeight.BOLD),
-                                ft.Text(f"{evt['TimeCreated']}", selectable=True),
-                            ]),
-                            ft.Row([
-                                ft.Text("Message:", weight=ft.FontWeight.BOLD),
-                                ft.Text(f"{evt['Message']}", selectable=True),
-                            ], wrap=True),
-                            ft.Row([
-                                ft.Text("Id:", weight=ft.FontWeight.BOLD),
-                                ft.Text(f"{evt['Id']}", selectable=True),
-                            ]),
-                            ft.Row([
-                                ft.Text("Level:", weight=ft.FontWeight.BOLD),
-                                ft.Text(f"{evt['Level']}", selectable=True),
-                            ]),
-                            
-                        ], expand = 1),
-                        expand = 1,
-                        padding=20
-                    ),
-                    expand = 1
-                )
-                logs_list_view.controls.append(card)
+            nonlocal is_log_empty
+            try:
+                data = json.load(file)
+                for event in data:
+                    num = f"{event}"
+                    evt = data[event]
+                    card = ft.Card(
+                        content=ft.Container(
+                            content=ft.Column([
+                                ft.Text(f"{num}", weight=ft.FontWeight.BOLD),
+                                ft.Row([
+                                    ft.Text("Time Created:", weight=ft.FontWeight.BOLD),
+                                    ft.Text(f"{evt['TimeCreated']}", selectable=True),
+                                ]),
+                                ft.Row([
+                                    ft.Text("Message:", weight=ft.FontWeight.BOLD),
+                                    ft.Text(f"{evt['Message']}", selectable=True),
+                                ], wrap=True),
+                                ft.Row([
+                                    ft.Text("Id:", weight=ft.FontWeight.BOLD),
+                                    ft.Text(f"{evt['Id']}", selectable=True),
+                                ]),
+                                ft.Row([
+                                    ft.Text("Level:", weight=ft.FontWeight.BOLD),
+                                    ft.Text(f"{evt['Level']}", selectable=True),
+                                ]),
+                                
+                            ], expand = 1),
+                            expand = 1,
+                            padding=20
+                        ),
+                        expand = 1
+                    )
+                    logs_list_view.controls.append(card)
+                is_log_empty = False
+            except Exception as e:
+                is_log_empty = True
+                print(e)
+        
         ctr_data = "None"
         ctr_computer = "None"
-        for key, value in e.control.data.items():
-            if key == "data":
-                ctr_data = value
-            if key == "computer":
-                ctr_computer = value
+        
+        if is_log_empty:
+            card_content = ft.Container(
+                content=ft.Text("Test"),
+                expand=1,
+                width= 500
+            )
+        else:
+            card_content = ft.Container(
+                content=logs_list_view,
+                expand=1,
+                width= 500
+            )
+        
+            for key, value in e.control.data.items():
+                if key == "data":
+                    ctr_data = value
+                if key == "computer":
+                    ctr_computer = value
         
         if "Operational" in ctr_data:
             title = f"{ctr_computer}'s Operational Print Logs"
         else:
             title = f"{ctr_computer}'s Admin Print Logs"
         
-        modal = DynamicModal(
-            title=title,
-            content=card_content,
-            close_modal_func=close_dialog
-        )
         print_log_card_modal.title = title
         print_log_card_modal.content = card_content
         
@@ -1046,6 +1061,14 @@ def main(page: ft.Page):
                 result = powershell.restart_print_spool(computer=computer)
                 update_results("Restart Print Spooler", result, id, computer)
                 end_of_process(id)
+    
+    # AlertDialog for when we click on a result from checking space on
+    # a computer.
+    check_space_card = DynamicModal(
+        title=f"",
+        content=None,
+        close_modal_func=close_dialog
+    )
     
     def open_space_card(e):
         """
@@ -1118,14 +1141,18 @@ def main(page: ft.Page):
             if key == "computer":
                 ctr_computer = value
         
-        modal = DynamicModal(
-            title=f"{e.control.title.value}, {ctr_computer}",
-            content=card_content,
-            close_modal_func=close_dialog
-        )
+        # modal = DynamicModal(
+        #     title=f"{e.control.title.value}, {ctr_computer}",
+        #     content=card_content,
+        #     close_modal_func=close_dialog
+        # )
         
-        page.dialog = modal.get_modal()
-        page.dialog.open = True
+        check_space_card.title = f"{e.control.title.value}, {ctr_computer}"
+        check_space_card.content = card_content
+        
+        # page.dialog = modal.get_modal()
+        # page.dialog.open = True
+        page.open(check_space_card.get_modal())
         page.update()
     
     def export_data(e):
