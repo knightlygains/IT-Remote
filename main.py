@@ -491,7 +491,7 @@ def main(page: ft.Page):
             ft.NavigationRailDestination(
                 icon=ft.icons.DESCRIPTION_OUTLINED,
                 selected_icon_content=ft.Icon(ft.icons.DESCRIPTION),
-                label_content=ft.Text("My Scripts"),
+                label_content=ft.Text("My Scripts"), # custom_scripts_view
             ),
             ft.NavigationRailDestination(
                 icon=ft.icons.FAVORITE_OUTLINE_OUTLINED,
@@ -2825,12 +2825,27 @@ scripts to retrieve the information from remote computers and perform other task
 
     page.overlay.append(pick_script_dialog) 
     
-    scripts_list_view = ft.ListView(expand=1, spacing=10, padding=20)
+    scripts_list_view = ft.Column(scroll="AUTO")
     scripts_list_view.controls = list_of_script_tiles
     custom_scripts_container = ft.Container(
         content=scripts_list_view,
         expand=True,
     )
+    
+    def script_search(e):
+        search_term = e.control.value.lower()
+        scripts_to_search = scripts_list_view.controls
+        if search_term != "":
+            for control in scripts_to_search:
+                if search_term in control.data['name'].lower() or search_term in control.data['description'].lower():
+                    control.visible = True
+                else:
+                    control.visible = False
+        else:
+            for control in scripts_to_search:
+                control.visible = True
+        page.update()
+                
     
     cust_scripts_tutorial = TutorialBtn(
         data=["About Custom Scripts", "Here you can add your own scripts so they \
@@ -2855,6 +2870,10 @@ built in to your windows install with the switch at the top."],
             use_ps1,
             cust_scripts_tutorial
         ], spacing=0, alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+        ft.Row([
+            ft.Text("Search:"),
+            ft.TextField(on_change=script_search),
+        ]),
         ft.Divider(),
         custom_scripts_container
     ], expand=True)
