@@ -63,6 +63,7 @@ def load_settings(e, update):
                 
                 # Get current scripts and apply to data
                 for key, value in custom_scripts.items():
+                    print("Found description:", key, value['description'])
                     data.update({
                         f"{key}": value
                     })

@@ -6,6 +6,7 @@ from assets.py_files.dynamic_modal import DynamicModal
 from assets.py_files.are_you_sure import YouSure
 from assets.py_files.settings_values import settings_values, custom_scripts, load_settings, settings_path
 
+
 # Create settings.json if not exists and/or load saved values
 load_settings(e=None, update=False)
 
@@ -257,7 +258,7 @@ def main(page: ft.Page):
         )
         
         modal = DynamicModal(
-            title="Select a recent computer:",
+            title="Select a recent computer",
             content=content,
             close_modal_func=close_dialog,
             nolistview=False,
@@ -313,10 +314,10 @@ def main(page: ft.Page):
         for dialog in page.overlay:
             try:
                 if dialog.open:
-                    print("closed")
+                    print(f"closed {dialog.title.value}")
                     page.close(dialog)
             except AttributeError as e:
-                print(e)
+                pass
     
     # -------------------- PROCESSES --------------------
     running_processes_count = 0
@@ -728,24 +729,56 @@ def main(page: ft.Page):
             can_tap_header=True
         )
         
+        def select(e):
+            for box in comp_checkboxes:
+                if e.control.data == "select":
+                    box.value = True
+                else:
+                    box.value = False
+            for box in action_checkboxes:
+                if e.control.data == "select":
+                    box.value = True
+                else:
+                    box.value = False
+            page.update()
+        
+        select_all_btn = ft.OutlinedButton("Select All", 
+            icon="check_box", 
+            data="select",
+            on_click=select
+        )
+        deselect_all_btn = ft.OutlinedButton("Deselect All", 
+            icon="check_box_outline_blank", 
+            data="deselect",
+            on_click=select
+        )
+        
         content_container = ft.Container(
-            content=ft.ExpansionPanelList([
-                comp_checkboxes_tile,
-                actions_checkboxes_tile
-            ]),
+            content=ft.Column([
+                ft.Row([
+                    select_all_btn,
+                    deselect_all_btn
+                ]),
+                ft.ListView([
+                    ft.ExpansionPanelList([
+                        comp_checkboxes_tile,
+                        actions_checkboxes_tile
+                    ]),
+                ], expand=1)
+            ])
         )
         
         modal = DynamicModal(
-            title=f"Filter results:",
+            title=f"Filter results",
             content=content_container,
             close_modal_func=close_dialog,
+            nolistview=True
         )
         
-        page.dialog = modal.get_modal()
-        page.dialog.open = True
+        page.open(modal.get_modal())
         page.update()
         
-        while page.dialog.open:
+        while modal.modal.open:
             pass
         
         for checkbox in comp_checkboxes:
@@ -880,7 +913,7 @@ def main(page: ft.Page):
                 title=title,
                 subtitle=subtitle_content,
                 on_click=on_click_function,
-                data={"data": data, "computer": computer}
+                data={"data": data, "computer": computer, "date": date}
             ),
         ])
         
@@ -1157,6 +1190,8 @@ def main(page: ft.Page):
     
     def export_data(e):
         for key, value in e.control.data.items():
+            if key == "FileName":
+                filename = value
             if key == "results":
                 data = value
             if key == "columns":
@@ -1172,7 +1207,7 @@ def main(page: ft.Page):
         name = ft.TextField(
             label="Filename",
             on_change=format_text_specialchar,
-            value="results"
+            value=filename
         )
         
         save_location = ft.TextField(
@@ -1216,6 +1251,7 @@ def main(page: ft.Page):
                 page.update()
                 
         content = ft.Column([
+            ft.Text("(Do not include file extension)"),
             name,
             ft.Row([
                 save_location,
@@ -1230,11 +1266,11 @@ def main(page: ft.Page):
             ft.FilledTonalButton("Save", on_click=save)
         ])
         export_modal = DynamicModal("Export data:", content, close_dialog)
-        page.dialog = export_modal.get_modal()
-        page.dialog.open = True
+        
+        page.open(export_modal.get_modal())
         page.update()
         
-        while page.dialog.open:
+        while export_modal.modal.open:
             pass
     
     def open_software_card(e):
@@ -1312,26 +1348,30 @@ Registry path: {program['RegPath']}"""
         for pc in list_of_pcs:
             expansion_list.controls.append(list_of_pcs[f'{pc}'])
         
-        btn_data = {"columns": ['Computer", "Program", "Version", "Install Date", "Registry Path'], "results": list_of_results}
-        
         for key, value in e.control.data.items():
             if key == "computer":
                 ctr_computer = value
+            if key == "date":
+                date = value.replace(":", "-")
+                date = date.replace(",", "")
+                date = date = " - "
+        
+        btn_data = {"FileName": f"{date}{ctr_computer} software results", "columns": ['Computer", "Program", "Version", "Install Date", "Registry Path'], "results": list_of_results}
         
         modal = DynamicModal(
-            title=f"{e.control.title.value}, {ctr_computer}",
+            title=f"{e.control.title.value}",
             content=ft.Column(controls=[
                 expansion_list,
                 ft.TextButton(
                     "Export csv", 
-                    on_click=export_data, 
+                    on_click=export_data,
                     data=btn_data
                 )
             ]),
             close_modal_func=close_dialog
         )
-        page.dialog = modal.get_modal()
-        page.dialog.open = True
+        page.open(modal.get_modal())
+
         page.update()
         
     def open_tutorial_modal(e):
@@ -2020,6 +2060,12 @@ Registry path: {program['RegPath']}"""
         
         for script in custom_scripts:
             script_props = custom_scripts[script]
+            
+            # Check for existing script description
+            try: 
+                description = script_props["description"]
+            except KeyError:
+                description = ""
 
             script_list_tile = ft.ListTile(
                 title=ft.Text(f"{script}"),
@@ -2046,11 +2092,31 @@ Registry path: {program['RegPath']}"""
                 ft.Text(f"{script}", size=12, color="white")
             ], offset=ft.transform.Offset(0.2, 1))
             
-            draggable = ft.Draggable(
-                group="scripts",
-                content=script_list_tile,
-                content_feedback=feedback,
-                data={"index": script_props['index'], "name": script}
+            def description_edit(e):
+                print("")
+                print("updating:", script, custom_scripts[script]['description'])
+                custom_scripts.update({
+                    f"{script}": {
+                        "path": f"{script_props['path']}",
+                        "index": script_props['index'],
+                        "description": f"{e.control.value}"
+                    }
+                })
+                print("Done updating:", script, custom_scripts[script]['description'])
+            
+            draggable = ft.Container(
+                content=ft.Column([
+                    ft.Draggable(
+                        group="scripts",
+                        content=script_list_tile,
+                        content_feedback=feedback,
+                        data={"index": script_props['index'], "name": script, "description": description}
+                    ),
+                    ft.Row([
+                        ft.Text("Description:"),
+                        ft.TextField(value=description, on_change=description_edit, expand=True)
+                    ])
+                ])
             )
             
             drag_target=ft.DragTarget(
@@ -2059,7 +2125,7 @@ Registry path: {program['RegPath']}"""
                 on_accept=drag_script_accept,
                 on_will_accept=drag_script_will_accept,
                 on_leave=drag_script_leave,
-                data={"index": script_props['index'], "name": script}
+                data={"index": script_props['index'], "name": script, "description": description}
             )
             
             def sort_funct(dict):
@@ -2729,24 +2795,29 @@ scripts to retrieve the information from remote computers and perform other task
     
     # Filepicker for picking custom scripts
     def select_script(e: ft.FilePickerResultEvent):
-        for file in e.files:
-            
-            # Figure out the index
-            if file.name in custom_scripts:
-                index = custom_scripts[f'{file.name}']['index']
-            elif len(custom_scripts) == 0:
-                index = 0
-            else:
-                index = len(custom_scripts)
-            
-            custom_scripts.update({
-                f"{file.name}": {
-                    f"path": f"{file.path}",
-                    "index": index
-                }
-            })
-        update_settings(e)
-        generate_commands()
+        try:
+            for file in e.files:
+                
+                # Figure out the index
+                if file.name in custom_scripts:
+                    index = custom_scripts[f'{file.name}']['index']
+                elif len(custom_scripts) == 0:
+                    index = 0
+                else:
+                    index = len(custom_scripts)
+                
+                custom_scripts.update({
+                    f"{file.name}": {
+                        "path": f"{file.path}",
+                        "index": index,
+                        "description": ""
+                    }
+                })
+            update_settings(e)
+            generate_commands()
+        except TypeError as e:
+            pass
+        
 
     pick_script_dialog = ft.FilePicker(
         on_result=select_script,

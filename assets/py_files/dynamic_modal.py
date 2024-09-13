@@ -37,7 +37,7 @@ class DynamicModal(ft.AlertDialog):
                 self.content_container.width = value
         
         self.modal = ft.AlertDialog(
-            modal=True,
+            modal=False,
             title=ft.Text(self.title),
             content=self.content,
             actions=self.actions,
