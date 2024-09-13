@@ -4,7 +4,7 @@ import datetime, json, re, subprocess, os, time, socket, pathlib, uuid, csv
 from assets.py_files.tutorial_btn import TutorialBtn
 from assets.py_files.dynamic_modal import DynamicModal
 from assets.py_files.are_you_sure import YouSure
-from assets.py_files.settings_values import settings_values, custom_scripts, load_settings, settings_path
+from assets.py_files.settings_values import settings_values, custom_scripts, load_settings, update_scripts, settings_path
 
 
 # Create settings.json if not exists and/or load saved values
@@ -129,6 +129,7 @@ def main(page: ft.Page):
         page.dark_theme.color_scheme_seed = settings_values['app_color']
         page.theme.color_scheme_seed = settings_values['app_color']
         actions_view_container.bgcolor = settings_values['app_color']
+        custom_scripts_container.bgcolor = settings_values['app_color']
         drag_window.bgcolor = settings_values['app_color']
         settings_values['enable_win_rm'] = winrm_checkbox.value
         settings_values['supress_winrm_results'] = winrm_results_checkbox.value
@@ -2028,30 +2029,39 @@ Registry path: {program['RegPath']}"""
     def drag_script_accept(e: ft.DragTargetAcceptEvent):
         for key, value in e.control.data.items():
             if key == "index":
-                drag_target_index = value
+                drag_target_index = value # Index of where we drop the item
 
         src = page.get_control(e.src_id)
         
+        # Find the index of the dragged item
         for key, value in src.data.items():
             if key == "index":  
                 dragged_index = value
-                
+        
+        # If we dragged a dropped to the same place
         if drag_target_index == dragged_index:
             return
         
         print(f"Dragged index: {dragged_index}, drag target: {drag_target_index}")
         
+        # Change the indices
         if src.data['name'] in custom_scripts:
             custom_scripts[src.data['name']]['index'] = drag_target_index
         if e.control.data['name'] in custom_scripts:
             custom_scripts[e.control.data['name']]['index'] = dragged_index
         
-        update_settings(e)
+        update_scripts(e)
         generate_commands()
         page.update()
     
     def drag_script_leave(e):
         pass
+    
+    def description_edit(e):
+        script_name = e.control.data['name']
+        script = custom_scripts[script_name]
+        script.update({"description": f"{e.control.value}"})
+        update_scripts(e)
     
     def generate_commands():
         
@@ -2068,7 +2078,7 @@ Registry path: {program['RegPath']}"""
                 description = ""
 
             script_list_tile = ft.ListTile(
-                title=ft.Text(f"{script}"),
+                title=ft.Text(f"{script}", weight="bold"),
                 leading=ft.IconButton(
                     ft.icons.PLAY_ARROW,
                     data=f"{script_props['path']}",
@@ -2085,23 +2095,19 @@ Registry path: {program['RegPath']}"""
                 ], width=50)
             )
             
-            feedback = ft.Row([
-                ft.Icon(
-                    ft.icons.DESCRIPTION,
+            feedback = ft.Card(
+                content=ft.Container(
+                    content=ft.Row([
+                        ft.Icon(
+                            ft.icons.DESCRIPTION,
+                        ),
+                        ft.Text(f"{script}", size=12, color="white")
+                    ]),
+                    padding=10,
+                    border=ft.border.all(1, settings_values['app_color'])
                 ),
-                ft.Text(f"{script}", size=12, color="white")
-            ], offset=ft.transform.Offset(0.2, 1))
-            
-            def description_edit(e):
-                
-                custom_scripts.update({
-                    f"{script}": {
-                        "path": f"{script_props['path']}",
-                        "index": script_props['index'],
-                        "description": f"{e.control.value}"
-                    }
-                })
-                # add save button
+                offset=ft.transform.Offset(0.2, 0)
+            )
             
             draggable = ft.Container(
                 content=ft.Column([
@@ -2112,15 +2118,32 @@ Registry path: {program['RegPath']}"""
                         data={"index": script_props['index'], "name": script, "description": description}
                     ),
                     ft.Row([
-                        ft.Text("Description:"),
-                        ft.TextField(value=description, on_change=description_edit, expand=True)
+                        ft.Text("Description:", weight="bold"),
+                        ft.Container(
+                            content=ft.TextField(
+                                value=description, 
+                                on_change=description_edit, 
+                                expand=True,
+                                multiline=True,
+                                max_lines=3,
+                                data={"index": script_props['index'], "name": script}
+                            ),
+                            padding=ft.padding.only(0, 0, 20, 0),
+                            expand=True
+                        )
                     ])
-                ])
+                ]),
+                border_radius=20,
+                padding=10
+            )
+            
+            script_card = ft.Card(
+                content=draggable
             )
             
             drag_target=ft.DragTarget(
                 group="scripts",
-                content=draggable,
+                content=script_card,
                 on_accept=drag_script_accept,
                 on_will_accept=drag_script_will_accept,
                 on_leave=drag_script_leave,
@@ -2301,7 +2324,7 @@ Registry path: {program['RegPath']}"""
     def check_battery(e):
         id = uuid.uuid4()
         powershell = the_shell.Power_Shell()
-        use_list = are_you_sure(e, text="Do you want to check the battery status for each computer in the list of computers?", title="Use List of Computers?", no_text="No", yes_text="Use list")
+        use_list = are_you_sure(e, text="Do you want to check the battery status for each computer in the list of computers?", title="Use List of Computers?", no_text="Use Computer Name", yes_text="Use list")
         if use_list and check_list():
             computer = "list of computers"
             add_new_process(new_process("Check Battery", [computer], date_time(), id))
@@ -2829,22 +2852,45 @@ scripts to retrieve the information from remote computers and perform other task
     custom_scripts_container = ft.Container(
         content=scripts_list_view,
         expand=True,
+        bgcolor=settings_values['app_color'],
+        border_radius=20,
+        padding=20
     )
     
-    def script_search(e):
-        search_term = e.control.value.lower()
+    def script_search(e = None):
+        if e != None:
+            search_term = e.control.value.lower()
+            search_term = search_term.split(' ') # Convert search to array of words
+            if '' in search_term:
+                search_term.remove('')
+            print("Your search terms sir:", search_term)
+        else:
+            search_term = None
+            
         scripts_to_search = scripts_list_view.controls
-        if search_term != "":
+        if search_term != None:
             for control in scripts_to_search:
-                if search_term in control.data['name'].lower() or search_term in control.data['description'].lower():
-                    control.visible = True
+                # Find scripts with any of the words in search_term
+                if len(search_term) > 1:
+                    if any(term in control.data['name'].lower() or term in control.data['description'].lower() for term in search_term):
+                        control.visible = True
+                        print(f"true")
+                    else:
+                        control.visible = False
                 else:
-                    control.visible = False
+                    if search_term[0] in control.data['name'].lower() or search_term[0] in control.data['description'].lower():
+                        control.visible = True
+                        print(f"true")
+                    else:
+                        control.visible = False
         else:
             for control in scripts_to_search:
                 control.visible = True
         page.update()
-                
+    
+    def reset_script_search(e):
+        script_search_field.value = ""
+        script_search()
     
     cust_scripts_tutorial = TutorialBtn(
         data=["About Custom Scripts", "Here you can add your own scripts so they \
@@ -2855,24 +2901,36 @@ built in to your windows install with the switch at the top."],
     )
     
     use_ps1 = ft.Switch(label="Use Powershell 7", value=True)
-    
+    script_search_field = ft.TextField(on_change=script_search, width=200)
     custom_scripts_view = ft.Column([
         ft.Row([
-            ft.IconButton(
-                icon=ft.icons.ADD,
-                tooltip="Add a script",
-                on_click=lambda _: pick_script_dialog.pick_files(
-                    allow_multiple=True,
-                    allowed_extensions=['ps1']
-                )
-            ),
-            use_ps1,
-            cust_scripts_tutorial
+            ft.Row([
+                ft.IconButton(
+                    icon=ft.icons.ADD,
+                    tooltip="Add a script",
+                    on_click=lambda _: pick_script_dialog.pick_files(
+                        allow_multiple=True,
+                        allowed_extensions=['ps1']
+                    )
+                ),
+                ft.Container(
+                    content=ft.Row([
+                        ft.Text("Search:"),
+                        script_search_field,
+                        ft.IconButton("close", on_click=reset_script_search)
+                    ])
+                ),
+            ]),
+            
+            ft.Row([
+                use_ps1,
+                cust_scripts_tutorial
+            ])
+            
         ], spacing=0, alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-        ft.Row([
-            ft.Text("Search:"),
-            ft.TextField(on_change=script_search),
-        ]),
+        # ft.Row([
+            
+        # ]),
         ft.Divider(),
         custom_scripts_container
     ], expand=True)

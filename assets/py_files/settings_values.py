@@ -35,6 +35,27 @@ if not os.path.exists("./settings/lists"):
     except Exception as e:
         print(e)
 
+def update_scripts(e):
+    try:
+        # Update custom scripts.
+        # Should pull from dictionary and
+        # replace all values in the json.
+        with open(custom_scripts_path, "r") as file:
+            data = {}
+            
+            # Get current scripts and save to data
+            for script, properties in custom_scripts.items():
+                print("Found description:", script, properties['description'])
+                data.update({
+                    f"{script}": properties
+                })
+        
+        # Dump to the json
+        with open(custom_scripts_path, "w") as scripts:
+            json.dump(data, scripts, indent=4)
+    except ValueError as e:
+            print(f"Something went wrong updating custom scripts, {e}")
+
 def load_settings(e, update):
     
     # Check if settings already exists
@@ -54,25 +75,7 @@ def load_settings(e, update):
         except ValueError as e:
             print(f"Something went wrong updating settings, {e}")
         
-        try:
-            # Update custom scripts.
-            # Should pull from dictionary and
-            # replace all values in the json.
-            with open(custom_scripts_path, "r") as file:
-                data = {}
-                
-                # Get current scripts and apply to data
-                for key, value in custom_scripts.items():
-                    print("Found description:", key, value['description'])
-                    data.update({
-                        f"{key}": value
-                    })
-            
-            # Dump to the json
-            with open(custom_scripts_path, "w") as scripts:
-                json.dump(data, scripts, indent=4)
-        except ValueError as e:
-            print(f"Something went wrong updating settings, {e}")
+        update_scripts(e)
             
     # Apply settings
     try:
