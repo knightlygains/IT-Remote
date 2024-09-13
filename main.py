@@ -2093,8 +2093,7 @@ Registry path: {program['RegPath']}"""
             ], offset=ft.transform.Offset(0.2, 1))
             
             def description_edit(e):
-                print("")
-                print("updating:", script, custom_scripts[script]['description'])
+                
                 custom_scripts.update({
                     f"{script}": {
                         "path": f"{script_props['path']}",
@@ -2102,7 +2101,7 @@ Registry path: {program['RegPath']}"""
                         "description": f"{e.control.value}"
                     }
                 })
-                print("Done updating:", script, custom_scripts[script]['description'])
+                # add save button
             
             draggable = ft.Container(
                 content=ft.Column([
