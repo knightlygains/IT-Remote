@@ -316,7 +316,6 @@ def main(page: ft.Page):
         for dialog in page.overlay:
             try:
                 if dialog.open:
-                    print(f"closed {dialog.title.value}")
                     page.close(dialog)
             except AttributeError as e:
                 pass
@@ -443,8 +442,6 @@ def main(page: ft.Page):
         except AttributeError:
             index = int(e)
             rail.selected_index = index
-        print("Index is", index)
-        print(type(index) is int)
         if index == 0:
             current_view.controls = [settings_view]
         if index == 1:
@@ -455,7 +452,6 @@ def main(page: ft.Page):
             current_view.controls = [actions_view]
         if index == 3:
             current_view.controls = [custom_scripts_view]
-            print("scripts view")
         if index == 4:
             # Donate
             current_view.controls = [donate_view]
@@ -2056,8 +2052,6 @@ Registry path: {program['RegPath']}"""
         if drag_target_index == dragged_index:
             return
         
-        print(f"Dragged index: {dragged_index}, drag target: {drag_target_index}")
-        
         # Change the indices
         if src.data['name'] in custom_scripts:
             custom_scripts[src.data['name']]['index'] = drag_target_index
@@ -2973,7 +2967,6 @@ scripts to retrieve the information from remote computers and perform other task
             search_term = search_term.split(' ') # Convert search to array of words
             if '' in search_term:
                 search_term.remove('')
-            print("Your search terms sir:", search_term)
         else:
             search_term = None
             
@@ -3014,8 +3007,6 @@ scripts to retrieve the information from remote computers and perform other task
             e.control.error_text = None
         elif e != None:
             e.control.error_text = None
-        
-        print(found_scripts)
         page.update()
     
     def reset_script_search(e):
