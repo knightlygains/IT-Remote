@@ -1,12 +1,11 @@
 import flet as ft
 import assets.py_files.the_shell as the_shell
-import datetime, json, re, subprocess, os, time, socket, pathlib, uuid, csv, sys
+import datetime, json, re, subprocess, os, time, socket, pathlib, uuid, csv
 from assets.py_files.tutorial_btn import TutorialBtn
 from assets.py_files.dynamic_modal import DynamicModal
 from assets.py_files.are_you_sure import YouSure
 from assets.py_files.settings_values import settings_values, custom_scripts, load_settings, update_scripts, settings_path
 
-print(sys.version)
 # Create settings.json if not exists and/or load saved values
 load_settings(e=None, update=False)
 
@@ -309,7 +308,7 @@ def main(page: ft.Page):
         e.control.update()
     
     # -------------------- Dynamic Modal --------------------
-    def close_dialog(e):
+    def close_dialog(e = None):
         """Close all currently
         open dialog boxes
         """
@@ -509,6 +508,8 @@ def main(page: ft.Page):
         title = "Confirm:"
         no_text = "Cancel"
         yes_text = "Yes"
+        yes_color = None
+        no_color = None
         for key, value in kwargs.items():
             if key == "title":
                 title = value
@@ -516,9 +517,13 @@ def main(page: ft.Page):
                 no_text = value
             if key == "yes_text":
                 yes_text = value
-        sure_modal = YouSure(text, title, close_dialog, no_text=no_text, yes_text=yes_text)
-        # page.dialog = sure_modal.get_modal()
-        # page.dialog.open = True
+            if key == "yes_color":
+                yes_color = value
+            if key == "no_color":
+                no_color = value
+        
+        sure_modal = YouSure(text, title, close_dialog, no_text=no_text, yes_text=yes_text, yes_color=yes_color, no_color=no_color)
+
         page.open(sure_modal.get_modal())
         page.update()
         answer = False
@@ -2017,9 +2022,13 @@ Registry path: {program['RegPath']}"""
     
     def remove_script(e):
         remove_me = e.control.data
-        custom_scripts.pop(f"{remove_me}")
-        update_settings(e)
-        generate_commands()
+        
+        if are_you_sure(e, f"Remove {remove_me}?", yes_text="REMOVE", yes_color="red"):
+            custom_scripts.pop(f"{remove_me}")
+            update_settings(e)
+            generate_commands()
+        else:
+            close_dialog()
     
     list_of_script_cards = []
     
@@ -2063,10 +2072,21 @@ Registry path: {program['RegPath']}"""
         script.update({"description": f"{e.control.value}"})
         update_scripts(e)
     
+    def pin_script(e):
+        script = e.control.data
+        custom_scripts[script]['pinned'] = not custom_scripts[script]['pinned']
+        generate_commands()
+        if custom_scripts[script]['pinned']:
+            show_message(f"Pinned {script}")
+        else:
+            show_message(f"Unpinned {script}")
+        update_scripts(e)
+
     def generate_commands():
-        print("hello?")
+        # This breaks if flet is updated to 0.24
         list_of_script_cards.clear()
-        # list_of_script_dragtargets.clear()
+        
+        pinned_scripts = []
         
         for script in custom_scripts:
             script_props = custom_scripts[script]
@@ -2106,12 +2126,31 @@ Registry path: {program['RegPath']}"""
                 data={"index": script_props['index'], "name": script, "description": description}
             )
             
+            if script_props['pinned']:
+                script_draggable = ft.Container(
+                    content=ft.Container(
+                    content=ft.Text(f"{script}", weight="bold"),
+                    border=ft.border.all(1, settings_values['app_color']),
+                    padding=ft.padding.only(5, 0, 5, 0)
+                )
+            )
+            
             if not os.path.exists(script_props['path']):
                 script_draggable.content.content = ft.Row([
                     ft.Text(f"(Missing)", color="Red"),
                     ft.Text(f"{script}", weight="bold")
                 ])
-                pass
+            
+            pin_icon = "push_pin_outlined"
+            if script_props['pinned']:
+                pin_icon = "push_pin"
+            
+            pin = ft.IconButton(
+                pin_icon,
+                data=f"{script}",
+                on_click=pin_script,
+                tooltip="Pin to top"
+            )
             
             new_script_card = ft.Row([
                 ft.Row([
@@ -2123,12 +2162,16 @@ Registry path: {program['RegPath']}"""
                     ),
                     script_draggable,
                 ]),
-                ft.IconButton(
-                    "DELETE",
-                    data=f"{script}",
-                    on_click=remove_script,
-                    tooltip="Remove script"
-                )
+                ft.Row([
+                    pin,
+                    ft.IconButton(
+                        "DELETE",
+                        data=f"{script}",
+                        on_click=remove_script,
+                        tooltip="Remove script"
+                    )
+                ])
+                
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
             
             draggable = ft.Container(
@@ -2154,8 +2197,10 @@ Registry path: {program['RegPath']}"""
                 padding=10
             )
             
-            script_card = ft.Card(
-                content=draggable
+            script_card = ft.Container(
+                content=ft.Card(
+                    content=draggable
+                )
             )
             
             drag_target=ft.DragTarget(
@@ -2167,11 +2212,32 @@ Registry path: {program['RegPath']}"""
                 data={"index": script_props['index'], "name": script, "description": description}
             )
             
+            if script_props['pinned']:
+                drag_target=ft.Container(
+                content=script_card,
+                data={"index": script_props['index'], "name": script, "description": description}
+            )
+            
             def sort_funct(dict):
                 return dict.data['index']
             
-            list_of_script_cards.append(drag_target)
-            list_of_script_cards.sort(key=sort_funct)
+            if script_props['pinned']:
+                pinned_scripts.append(drag_target)
+            else:
+                list_of_script_cards.append(drag_target)
+                list_of_script_cards.sort(key=sort_funct)
+        
+        if len(pinned_scripts) > 0:
+            pinned_scripts.sort(key=lambda s: s.data['name'].casefold(), reverse=True) #sort alphabetically
+            for script in pinned_scripts:
+                list_of_script_cards.insert(0, script)
+        
+        # Set padding so things look good
+        for card in list_of_script_cards:
+            if card == list_of_script_cards[0]:
+                card.content.padding = ft.padding.only(5, 10, 5, 5)
+            if card == list_of_script_cards[len(list_of_script_cards)-1]:
+                card.content.padding = ft.padding.only(5, 5, 5, 10)
         
         page.update()
     
@@ -2849,7 +2915,8 @@ scripts to retrieve the information from remote computers and perform other task
                     f"{file.name}": {
                         "path": f"{file.path}",
                         "index": index,
-                        "description": ""
+                        "description": "",
+                        "pinned": False
                     }
                 })
             update_settings(e)
@@ -2864,14 +2931,20 @@ scripts to retrieve the information from remote computers and perform other task
 
     page.overlay.append(pick_script_dialog) 
     
-    scripts_list_view = ft.Column(scroll="AUTO", expand=True)
+    scripts_list_view = ft.Column(scroll="auto", expand=1)
     scripts_list_view.controls = list_of_script_cards
     custom_scripts_container = ft.Container(
-        content=scripts_list_view,
+        content=ft.Row([
+            ft.Container(
+                content=scripts_list_view,
+                expand=True
+            )
+        ], expand=True),
         expand=True,
         bgcolor=settings_values['app_color'],
         border_radius=20,
-        padding=20
+        alignment=ft.alignment.top_left,
+        padding=ft.padding.only(10,0,10,0)
     )
     
     def script_search(e = None):
@@ -2886,7 +2959,7 @@ scripts to retrieve the information from remote computers and perform other task
             
         scripts_to_search = scripts_list_view.controls
         found_scripts = len(scripts_to_search)
-        if len(search_term) > 0:
+        if search_term != None and len(search_term) > 0:
             found_scripts = 0
             for control in scripts_to_search:
                 # Find scripts with any of the words in search_term
@@ -2896,7 +2969,8 @@ scripts to retrieve the information from remote computers and perform other task
                         found_scripts += 1
                     else:
                         control.visible = False
-                    
+                
+                # Else If there's only 1 search term
                 elif len(search_term) == 1:
                     if search_term[0] in control.data['name'].lower() or search_term[0] in control.data['description'].lower():
                         control.visible = True
@@ -2910,20 +2984,22 @@ scripts to retrieve the information from remote computers and perform other task
         else:
             for control in scripts_to_search:
                 control.visible = True
+                e.control.error_text = None
         
         if found_scripts <= 0:
             for control in scripts_to_search:
                 control.visible = True
             e.control.error_text = "No results"
-        elif e.control.value == "":
+        elif e != None and e.control.value == "":
             e.control.error_text = None
-        else:
+        elif e != None:
             e.control.error_text = None
+        
         print(found_scripts)
         page.update()
     
     def reset_script_search(e):
-        script_search_field.value = ""
+        script_search_field.value = None
         script_search()
     
     cust_scripts_tutorial = TutorialBtn(
@@ -2966,7 +3042,10 @@ built in to your windows install with the switch at the top."],
             
         # ]),
         ft.Divider(),
+        
         custom_scripts_container
+            
+        
     ], expand=True)
     
     def on_donate_hover(e):
@@ -3000,7 +3079,6 @@ built in to your windows install with the switch at the top."],
                         tooltip="https://github.com/knightlygains"
                     )
                 ]),
-                
                 ft.Text("Steven Whitney (KnightlyGains)", weight=ft.FontWeight.BOLD)
             ]),
         ], alignment=ft.MainAxisAlignment.CENTER, spacing=30),
