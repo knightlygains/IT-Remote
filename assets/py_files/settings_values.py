@@ -10,7 +10,8 @@ settings_values = {
     "dark_theme": True,
     "warn_about_profile_deletion": True,
     "pwsh_path": "C:\\Program Files\\Powershell\\7\\pwsh.exe",
-    "pstools_path": "C:\\Windows\\System32"
+    "pstools_path": "C:\\Windows\\System32",
+    "home_tab": 1
 }
 
 custom_scripts = {

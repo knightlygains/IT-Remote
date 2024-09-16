@@ -134,6 +134,7 @@ def main(page: ft.Page):
         settings_values['supress_winrm_results'] = winrm_results_checkbox.value
         settings_values['use_24hr'] = use_24hr_checkbox.value
         settings_values['warn_about_profile_deletion'] = warn_checkbox.value
+        settings_values['home_tab'] = home_tab_radio_grp.value
         load_settings(e, update=True)
         try:
             if e.control.text == "Save":
@@ -436,11 +437,14 @@ def main(page: ft.Page):
     def navigate_view(e):
         #If called by a control set equal to control value
         # Otherwise we are likely passing a specific index
+        
         try:
             index = e.control.selected_index
         except AttributeError:
-            index = e
-        
+            index = int(e)
+            rail.selected_index = index
+        print("Index is", index)
+        print(type(index) is int)
         if index == 0:
             current_view.controls = [settings_view]
         if index == 1:
@@ -451,6 +455,7 @@ def main(page: ft.Page):
             current_view.controls = [actions_view]
         if index == 3:
             current_view.controls = [custom_scripts_view]
+            print("scripts view")
         if index == 4:
             # Donate
             current_view.controls = [donate_view]
@@ -1403,8 +1408,7 @@ Registry path: {program['RegPath']}"""
             nolistview=True
         )
         
-        page.dialog = modal.get_modal()
-        page.dialog.open = True
+        page.open(modal.get_modal())
         page.update()
     
     def enable_winrm(computer):
@@ -2646,7 +2650,7 @@ Registry path: {program['RegPath']}"""
     winrm_results_checkbox = ft.Checkbox("Supress WinRM results", value=settings_values['supress_winrm_results'])
     use_24hr_checkbox = ft.Checkbox("Use 24hr time format", value=settings_values['use_24hr'])
     warn_checkbox = ft.Checkbox("Warn before clearing profiles", value=settings_values['warn_about_profile_deletion'])
-    settings_save_btn = ft.FilledButton("Save", icon=ft.icons.SAVE, on_click=update_settings)
+    settings_save_btn = ft.FilledButton("Apply", icon=ft.icons.SAVE, on_click=update_settings)
     settings_about_app = TutorialBtn(["About IT Remote", "IT Remote is a PowerShell GUI designed to \
 make troubleshooting remote Windows computers on your domain easy. \n\nIT Remote will allow you to query \
 information on devices within the same domain as your computer. You must be an \
@@ -2656,10 +2660,20 @@ scripts to retrieve the information from remote computers and perform other task
     
     theme_mode = ft.Switch(label="Dark Theme", value=settings_values['dark_theme'])
     
+    home_tab_radio_grp = ft.RadioGroup(
+        content=ft.Row([
+            ft.Radio(value=1, label="Results"),
+            ft.Radio(value=2, label="Actions"),
+            ft.Radio(value=3, label="My Scripts")
+        ]),
+        value = settings_values['home_tab']
+    )
+    
     settings_view = ft.Column([
         ft.Row([
+            
             ft.Column([
-            app_color_label,
+                app_color_label,
                 ft.Row([
                     cg
                 ]),
@@ -2667,13 +2681,19 @@ scripts to retrieve the information from remote computers and perform other task
                     theme_mode
                 ]),
             ]),
+            
             ft.VerticalDivider(),
+
             ft.Column([
                 winrm_checkbox,
                 winrm_results_checkbox,
                 use_24hr_checkbox,
-                warn_checkbox
+                warn_checkbox,
+                ft.Divider(),
+                ft.Text("Home Tab"),
+                home_tab_radio_grp
             ]),
+
             ft.VerticalDivider(),
             ft.Column([
                 settings_about_app
@@ -3112,6 +3132,7 @@ built in to your windows install with the switch at the top."],
     
     # We assign different views to this in navigation
     current_view = ft.Row([home], expand=True)
+    navigate_view(settings_values['home_tab']) #Set view to home tab saved in settings
     
     # Filepicker for picking paths
     def select_path(e: ft.FilePickerResultEvent):
