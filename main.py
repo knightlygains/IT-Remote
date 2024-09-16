@@ -1,12 +1,12 @@
 import flet as ft
 import assets.py_files.the_shell as the_shell
-import datetime, json, re, subprocess, os, time, socket, pathlib, uuid, csv
+import datetime, json, re, subprocess, os, time, socket, pathlib, uuid, csv, sys
 from assets.py_files.tutorial_btn import TutorialBtn
 from assets.py_files.dynamic_modal import DynamicModal
 from assets.py_files.are_you_sure import YouSure
 from assets.py_files.settings_values import settings_values, custom_scripts, load_settings, update_scripts, settings_path
 
-
+print(sys.version)
 # Create settings.json if not exists and/or load saved values
 load_settings(e=None, update=False)
 
@@ -141,6 +141,7 @@ def main(page: ft.Page):
                 show_message("Saved.", duration=700)
         except AttributeError:
             pass
+        generate_commands() # Call this mainly to update colors
         page.update()
     
     # -------------------- COMPUTER NAME --------------------
@@ -2020,7 +2021,7 @@ Registry path: {program['RegPath']}"""
         update_settings(e)
         generate_commands()
     
-    list_of_script_tiles = []
+    list_of_script_cards = []
     
     def drag_script_will_accept(e):
         pass
@@ -2052,7 +2053,6 @@ Registry path: {program['RegPath']}"""
         
         update_scripts(e)
         generate_commands()
-        page.update()
     
     def drag_script_leave(e):
         pass
@@ -2064,8 +2064,8 @@ Registry path: {program['RegPath']}"""
         update_scripts(e)
     
     def generate_commands():
-        
-        list_of_script_tiles.clear()
+        print("hello?")
+        list_of_script_cards.clear()
         # list_of_script_dragtargets.clear()
         
         for script in custom_scripts:
@@ -2076,24 +2076,6 @@ Registry path: {program['RegPath']}"""
                 description = script_props["description"]
             except KeyError:
                 description = ""
-
-            script_list_tile = ft.ListTile(
-                title=ft.Text(f"{script}", weight="bold"),
-                leading=ft.IconButton(
-                    ft.icons.PLAY_ARROW,
-                    data=f"{script_props['path']}",
-                    on_click=launch_script,
-                    tooltip="Launch script"
-                ),
-                trailing=ft.Row([
-                    ft.IconButton(
-                        ft.icons.DELETE,
-                        data=f"{script}",
-                        on_click=remove_script,
-                        tooltip="Remove script"
-                    )
-                ], width=50)
-            )
             
             feedback = ft.Card(
                 content=ft.Container(
@@ -2105,18 +2087,53 @@ Registry path: {program['RegPath']}"""
                     ]),
                     padding=10,
                     border=ft.border.all(1, settings_values['app_color'])
-                ),
-                offset=ft.transform.Offset(0.2, 0)
+                )
             )
+            
+            def draggable_hover(e):
+                e.control.bgcolor = ft.colors.with_opacity(0.5, '#ffffff') if e.data == "true" else None
+                e.control.update()
+            
+            script_draggable = ft.Draggable(
+                group="scripts",
+                content=ft.Container(
+                    content=ft.Text(f"{script}", weight="bold"),
+                    border=ft.border.all(1, settings_values['app_color']),
+                    padding=ft.padding.only(5, 0, 5, 0),
+                    on_hover=draggable_hover
+                ),
+                content_feedback=feedback,
+                data={"index": script_props['index'], "name": script, "description": description}
+            )
+            
+            if not os.path.exists(script_props['path']):
+                script_draggable.content.content = ft.Row([
+                    ft.Text(f"(Missing)", color="Red"),
+                    ft.Text(f"{script}", weight="bold")
+                ])
+                pass
+            
+            new_script_card = ft.Row([
+                ft.Row([
+                    ft.IconButton(
+                        "PLAY_ARROW",
+                        data=f"{script_props['path']}",
+                        on_click=launch_script,
+                        tooltip="Launch script"
+                    ),
+                    script_draggable,
+                ]),
+                ft.IconButton(
+                    "DELETE",
+                    data=f"{script}",
+                    on_click=remove_script,
+                    tooltip="Remove script"
+                )
+            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
             
             draggable = ft.Container(
                 content=ft.Column([
-                    ft.Draggable(
-                        group="scripts",
-                        content=script_list_tile,
-                        content_feedback=feedback,
-                        data={"index": script_props['index'], "name": script, "description": description}
-                    ),
+                    new_script_card,
                     ft.Row([
                         ft.Text("Description:", weight="bold"),
                         ft.Container(
@@ -2153,9 +2170,9 @@ Registry path: {program['RegPath']}"""
             def sort_funct(dict):
                 return dict.data['index']
             
-            list_of_script_tiles.append(drag_target)
-            list_of_script_tiles.sort(key=sort_funct)
-            
+            list_of_script_cards.append(drag_target)
+            list_of_script_cards.sort(key=sort_funct)
+        
         page.update()
     
     # Populate controls on initial app load
@@ -2847,8 +2864,8 @@ scripts to retrieve the information from remote computers and perform other task
 
     page.overlay.append(pick_script_dialog) 
     
-    scripts_list_view = ft.Column(scroll="AUTO")
-    scripts_list_view.controls = list_of_script_tiles
+    scripts_list_view = ft.Column(scroll="AUTO", expand=True)
+    scripts_list_view.controls = list_of_script_cards
     custom_scripts_container = ft.Container(
         content=scripts_list_view,
         expand=True,
@@ -2868,24 +2885,41 @@ scripts to retrieve the information from remote computers and perform other task
             search_term = None
             
         scripts_to_search = scripts_list_view.controls
-        if search_term != None:
+        found_scripts = len(scripts_to_search)
+        if len(search_term) > 0:
+            found_scripts = 0
             for control in scripts_to_search:
                 # Find scripts with any of the words in search_term
                 if len(search_term) > 1:
                     if any(term in control.data['name'].lower() or term in control.data['description'].lower() for term in search_term):
                         control.visible = True
-                        print(f"true")
+                        found_scripts += 1
                     else:
                         control.visible = False
-                else:
+                    
+                elif len(search_term) == 1:
                     if search_term[0] in control.data['name'].lower() or search_term[0] in control.data['description'].lower():
                         control.visible = True
-                        print(f"true")
+                        found_scripts += 1
                     else:
                         control.visible = False
+                    
+                else:
+                    for control in scripts_to_search:
+                        control.visible = True
         else:
             for control in scripts_to_search:
                 control.visible = True
+        
+        if found_scripts <= 0:
+            for control in scripts_to_search:
+                control.visible = True
+            e.control.error_text = "No results"
+        elif e.control.value == "":
+            e.control.error_text = None
+        else:
+            e.control.error_text = None
+        print(found_scripts)
         page.update()
     
     def reset_script_search(e):

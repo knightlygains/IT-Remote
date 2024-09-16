@@ -35,6 +35,14 @@ if not os.path.exists("./settings/lists"):
     except Exception as e:
         print(e)
 
+def script_sort_key(e):
+    return e['index']
+
+def re_index_scripts(e):
+    print(custom_scripts)
+    custom_scripts.sort(key=script_sort_key)
+    print(custom_scripts)
+
 def update_scripts(e):
     try:
         # Update custom scripts.
@@ -45,7 +53,6 @@ def update_scripts(e):
             
             # Get current scripts and save to data
             for script, properties in custom_scripts.items():
-                print("Found description:", script, properties['description'])
                 data.update({
                     f"{script}": properties
                 })
