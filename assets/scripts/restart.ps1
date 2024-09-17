@@ -104,7 +104,7 @@ Function Restart-PCs {
         }
         
         if (-not($LastExitCode -eq 0)) {
-            Add-Content -Path ".\assets\results\Restart\$id-Restart.txt" -Value "$action failed on $comp. A restart may already be pending or it is offline."
+            Add-Content -Path ".\assets\results\Restart\$id-Restart.txt" -Value "$action failed on $comp. A restart may already be pending, WinRM couldn't be neabled, or it is offline."
         }
         else {
             Add-Content -Path ".\assets\results\Restart\$id-Restart.txt" -Value "$((Get-Culture).TextInfo.ToTitleCase($action)) $comp at $restartTime."

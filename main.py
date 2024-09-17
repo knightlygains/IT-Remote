@@ -57,14 +57,14 @@ def main(page: ft.Page):
     
     def min_max(e):
         if e.control.data == "min":
-            page.window_minimized = True
+            page.window.minimized = True
             page.update()
             return
         
-        if page.window_maximized == False:
-            page.window_maximized = True
+        if page.window.maximized == False:
+            page.window.maximized = True
         else:
-            page.window_maximized = False
+            page.window.maximized = False
         page.update()
     
     page.window.title_bar_hidden = True
@@ -141,7 +141,7 @@ def main(page: ft.Page):
                 show_message("Saved.", duration=700)
         except AttributeError:
             pass
-        generate_commands() # Call this mainly to update colors
+        generate_scripts() # Call this mainly to update colors
         page.update()
     
     # -------------------- COMPUTER NAME --------------------
@@ -1854,11 +1854,10 @@ Registry path: {program['RegPath']}"""
             add_action=ft.TextButton("Shutdown/Restart", on_click=finalize)
         )
         
-        page.dialog = modal.get_modal()
-        page.dialog.open = True
+        page.open(modal.get_modal()) 
         page.update()
         
-        while page.dialog.open:
+        while modal.modal.open:
             pass
         
         if list:
@@ -2026,7 +2025,8 @@ Registry path: {program['RegPath']}"""
         if are_you_sure(e, f"Remove {remove_me}?", yes_text="REMOVE", yes_color="red"):
             custom_scripts.pop(f"{remove_me}")
             update_settings(e)
-            generate_commands()
+            generate_scripts()
+            show_message(f"Removed {remove_me}")
         else:
             close_dialog()
     
@@ -2059,28 +2059,38 @@ Registry path: {program['RegPath']}"""
             custom_scripts[e.control.data['name']]['index'] = dragged_index
         
         update_scripts(e)
-        generate_commands()
+        generate_scripts()
     
     def drag_script_leave(e):
         pass
     
     def description_edit(e):
+        if e.control.value != e.control.data['description']:
+            e.control.helper_text = "Press ENTER to save"
+        else:
+            e.control.helper_text = None
+        e.control.update()
+    
+    def submit_script_description(e):
         script_name = e.control.data['name']
         script = custom_scripts[script_name]
         script.update({"description": f"{e.control.value}"})
+        e.control.helper_text = None
+        e.control.update()
         update_scripts(e)
+        generate_scripts()
     
     def pin_script(e):
         script = e.control.data
         custom_scripts[script]['pinned'] = not custom_scripts[script]['pinned']
-        generate_commands()
+        generate_scripts()
         if custom_scripts[script]['pinned']:
             show_message(f"Pinned {script}")
         else:
             show_message(f"Unpinned {script}")
         update_scripts(e)
 
-    def generate_commands():
+    def generate_scripts():
         # This breaks if flet is updated to 0.24
         list_of_script_cards.clear()
         
@@ -2101,10 +2111,11 @@ Registry path: {program['RegPath']}"""
                         ft.Icon(
                             ft.icons.DESCRIPTION,
                         ),
-                        ft.Text(f"{script}", size=12, color="white")
+                        ft.Text(f"{script}", size=12)
                     ]),
                     padding=10,
-                    border=ft.border.all(1, settings_values['app_color'])
+                    border=ft.border.all(1, settings_values['app_color']),
+                    border_radius=10
                 )
             )
             
@@ -2179,12 +2190,14 @@ Registry path: {program['RegPath']}"""
                         ft.Text("Description:", weight="bold"),
                         ft.Container(
                             content=ft.TextField(
-                                value=description, 
-                                on_change=description_edit, 
+                                value=description,
+                                on_change=description_edit,
+                                on_submit=submit_script_description,
                                 expand=True,
                                 multiline=True,
+                                shift_enter=True,
                                 max_lines=3,
-                                data={"index": script_props['index'], "name": script}
+                                data={"index": script_props['index'], "name": script, "description": description}
                             ),
                             padding=ft.padding.only(0, 0, 20, 0),
                             expand=True
@@ -2237,10 +2250,19 @@ Registry path: {program['RegPath']}"""
             if card == list_of_script_cards[len(list_of_script_cards)-1]:
                 card.content.padding = ft.padding.only(5, 5, 5, 10)
         
+        no_scripts = ft.Container(
+            content=ft.Row([
+                ft.Text("No scripts added yet", expand=True, text_align="center")
+            ], expand=True),
+            padding=ft.padding.only(0, 20, 0, 0)
+        )
+        if len(list_of_script_cards) <= 0:
+            list_of_script_cards.append(no_scripts)
+        
         page.update()
     
     # Populate controls on initial app load
-    generate_commands()
+    generate_scripts()
     
     def check_space(e):
         id = uuid.uuid4()
@@ -2622,7 +2644,7 @@ Registry path: {program['RegPath']}"""
     
     # -------------------- SETTINGS --------------------
     # Settings color choice radio
-    app_color_label = ft.Text("App appearance:", )
+    app_color_label = ft.Text("App appearance", weight="bold")
     red_color_radio = ft.Radio(value="red", label="Red", fill_color="red")
     blue_color_radio = ft.Radio(value="blue", label="Blue", fill_color="blue")
     green_color_radio = ft.Radio(value="green", label="Green", fill_color="green")
@@ -2640,6 +2662,7 @@ Registry path: {program['RegPath']}"""
         white_color_radio
     ]))
     
+    actions_settings_label = ft.Text("Actions", weight="bold")
     winrm_checkbox = ft.Checkbox("Enable WinRM before actions", value=settings_values['enable_win_rm'])
     winrm_results_checkbox = ft.Checkbox("Supress WinRM results", value=settings_values['supress_winrm_results'])
     use_24hr_checkbox = ft.Checkbox("Use 24hr time format", value=settings_values['use_24hr'])
@@ -2679,12 +2702,13 @@ scripts to retrieve the information from remote computers and perform other task
             ft.VerticalDivider(),
 
             ft.Column([
+                actions_settings_label,
                 winrm_checkbox,
                 winrm_results_checkbox,
                 use_24hr_checkbox,
                 warn_checkbox,
                 ft.Divider(),
-                ft.Text("Home Tab"),
+                ft.Text("Home Tab", weight="bold"),
                 home_tab_radio_grp
             ]),
 
@@ -2934,7 +2958,7 @@ scripts to retrieve the information from remote computers and perform other task
                     }
                 })
             update_settings(e)
-            generate_commands()
+            generate_scripts()
         except TypeError as e:
             pass
         
@@ -2971,15 +2995,15 @@ scripts to retrieve the information from remote computers and perform other task
             search_term = None
             
         scripts_to_search = scripts_list_view.controls
-        found_scripts = len(scripts_to_search)
-        if search_term != None and len(search_term) > 0:
-            found_scripts = 0
+        scripts_matching_search = len(scripts_to_search)
+        if search_term != None and len(search_term) > 0 and len(list(custom_scripts)) > 0:
+            scripts_matching_search = 0
             for control in scripts_to_search:
                 # Find scripts with any of the words in search_term
                 if len(search_term) > 1:
                     if any(term in control.data['name'].lower() or term in control.data['description'].lower() for term in search_term):
                         control.visible = True
-                        found_scripts += 1
+                        scripts_matching_search += 1
                     else:
                         control.visible = False
                 
@@ -2987,7 +3011,7 @@ scripts to retrieve the information from remote computers and perform other task
                 elif len(search_term) == 1:
                     if search_term[0] in control.data['name'].lower() or search_term[0] in control.data['description'].lower():
                         control.visible = True
-                        found_scripts += 1
+                        scripts_matching_search += 1
                     else:
                         control.visible = False
                     
@@ -2997,20 +3021,19 @@ scripts to retrieve the information from remote computers and perform other task
         else:
             for control in scripts_to_search:
                 control.visible = True
-                e.control.error_text = None
         
-        if found_scripts <= 0:
+        if scripts_matching_search <= 0 and e != None:
             for control in scripts_to_search:
                 control.visible = True
             e.control.error_text = "No results"
         elif e != None and e.control.value == "":
             e.control.error_text = None
-        elif e != None:
-            e.control.error_text = None
+        
         page.update()
     
     def reset_script_search(e):
         script_search_field.value = None
+        script_search_field.error_text = None
         script_search()
     
     cust_scripts_tutorial = TutorialBtn(
@@ -3022,7 +3045,7 @@ built in to your windows install with the switch at the top."],
     )
     
     use_ps1 = ft.Switch(label="Use Powershell 7", value=True)
-    script_search_field = ft.TextField(on_change=script_search, width=200)
+    script_search_field = ft.TextField(on_change=script_search, width=200, hint_text="Search scripts")
     custom_scripts_view = ft.Column([
         ft.Row([
             ft.Row([
@@ -3036,7 +3059,6 @@ built in to your windows install with the switch at the top."],
                 ),
                 ft.Container(
                     content=ft.Row([
-                        ft.Text("Search:"),
                         script_search_field,
                         ft.IconButton("close", on_click=reset_script_search)
                     ])
