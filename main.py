@@ -362,9 +362,13 @@ def main(page: ft.Page):
     
     def process_not_running(name, computer):
         for process in list_of_processes:
-            if computer in process['computers'] and process['name'] == name or process['name'] == "WinRM":
+            if process['name'] == "WinRM" and computer in process['computers']:
+                # Check if WinRM is running on computer
+                show_message(f"Wait until process 'WinRM' on {computer} finishes.")
+                return False
+            elif computer in process['computers'] and process['name'] == name:
                 # Proc is running on computer already
-                show_message(f"Wait until '{name}' on {computer} finishes.")
+                show_message(f"Wait until process '{name}' on {computer} finishes.")
                 return False
         return True
     
@@ -471,9 +475,9 @@ def main(page: ft.Page):
     rail = ft.NavigationRail(
         selected_index=1,
         label_type=ft.NavigationRailLabelType.ALL,
-        min_width=100,
+        min_width=50,
         min_extended_width=400,
-        group_alignment=-0.9,
+        group_alignment=-1,
         destinations=[
             ft.NavigationRailDestination(
                 icon=ft.icons.SETTINGS_OUTLINED,
@@ -2687,32 +2691,43 @@ scripts to retrieve the information from remote computers and perform other task
     )
     
     settings_view = ft.Column([
+        
         ft.Row([
             
-            ft.Column([
-                app_color_label,
-                ft.Row([
-                    cg
+            ft.Container(
+                content=ft.Column([
+                    app_color_label,
+                    ft.Row([
+                        cg
+                    ]),
+                    ft.Row([
+                        theme_mode
+                    ]),
                 ]),
-                ft.Row([
-                    theme_mode
+                border=ft.border.only(right=ft.border.BorderSide(1, "grey")),
+                padding=ft.padding.only(0, 0, 10, 0)
+            ),
+
+            ft.Container(
+                content=ft.Column([
+                    actions_settings_label,
+                    winrm_checkbox,
+                    winrm_results_checkbox,
+                    use_24hr_checkbox,
+                    warn_checkbox,
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Text("Home Tab", weight="bold"),
+                            home_tab_radio_grp
+                        ]),
+                        border=ft.border.only(top=ft.border.BorderSide(1, "grey")),
+                        padding=ft.padding.only(0, 10, 10, 0)
+                    )
                 ]),
-            ]),
-            
-            ft.VerticalDivider(),
+                border=ft.border.only(right=ft.border.BorderSide(1, "grey")),
+                padding=ft.padding.only(0, 0, 10, 0)
+            ),
 
-            ft.Column([
-                actions_settings_label,
-                winrm_checkbox,
-                winrm_results_checkbox,
-                use_24hr_checkbox,
-                warn_checkbox,
-                ft.Divider(),
-                ft.Text("Home Tab", weight="bold"),
-                home_tab_radio_grp
-            ]),
-
-            ft.VerticalDivider(),
             ft.Column([
                 settings_about_app
             ], expand=True, horizontal_alignment=ft.CrossAxisAlignment.END)
@@ -3071,14 +3086,9 @@ built in to your windows install with the switch at the top."],
             ])
             
         ], spacing=0, alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-        # ft.Row([
-            
-        # ]),
-        ft.Divider(),
         
         custom_scripts_container
             
-        
     ], expand=True)
     
     def on_donate_hover(e):
@@ -3181,8 +3191,11 @@ built in to your windows install with the switch at the top."],
     # This is the "main" view for when we have passed setup
     main_view = ft.Container(
         content=ft.Row([
-            rail,
-            ft.VerticalDivider(width=9, thickness=3),
+            ft.Container(
+                content=rail,
+                border=ft.border.only(right=ft.border.BorderSide(1, "grey")),
+                width=80
+            ),
             current_view
         ], expand=True),
         padding=ft.padding.only(left=5, bottom=10, right=10, top=0),
