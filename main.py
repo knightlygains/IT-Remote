@@ -119,8 +119,8 @@ def main(page: ft.Page):
     page.overlay.append(snack_bar)
     
     def update_settings(e):
-        if cg.value:
-            settings_values['app_color'] = cg.value
+        if app_color_radio_group.value:
+            settings_values['app_color'] = app_color_radio_group.value
         settings_values['dark_theme'] = theme_mode.value
         page_theme()
         results_container.bgcolor = settings_values['app_color']
@@ -247,7 +247,7 @@ def main(page: ft.Page):
                     "computers": []
                 }
                 json.dump(g, file, indent=4)
-            page.dialog.open = False
+            close_dialog()
             show_message("Cleared recent PCs.")
         
         clear_recent_pcs_btn = ft.TextButton("Clear Recent PCs", on_click=clear_recent_pcs)
@@ -266,9 +266,7 @@ def main(page: ft.Page):
             nolistview=False,
             width=700
         )
-        
-        # page.dialog = modal.get_modal()
-        # page.dialog.open = True
+
         page.open(modal.get_modal())
         page.update()
         
@@ -816,8 +814,6 @@ def main(page: ft.Page):
     
     # Card modal Stuff \/
     def show_card_modal():
-        # page.dialog = result_card_modal
-        # result_card_modal.open = True
         page.open(result_card_modal)
         page.update()
     
@@ -1186,17 +1182,9 @@ def main(page: ft.Page):
             if key == "computer":
                 ctr_computer = value
         
-        # modal = DynamicModal(
-        #     title=f"{e.control.title.value}, {ctr_computer}",
-        #     content=card_content,
-        #     close_modal_func=close_dialog
-        # )
-        
         check_space_card.title = f"{e.control.title.value}, {ctr_computer}"
         check_space_card.content = card_content
-        
-        # page.dialog = modal.get_modal()
-        # page.dialog.open = True
+
         page.open(check_space_card.get_modal())
         page.update()
     
@@ -1471,8 +1459,7 @@ Registry path: {program['RegPath']}"""
         for key, value in e.control.data.items():
             if key == "printer":
                 printer_to_change = value
-        page.dialog = printer_name_modal
-        printer_name_modal.open = True
+        page.open(printer_name_modal)
         page.update()
     
     # More info printer modal
@@ -1548,8 +1535,7 @@ Registry path: {program['RegPath']}"""
             width=300
         )
         
-        page.dialog = modal.get_modal()
-        page.dialog.open = True
+        page.open(modal.get_modal())
         page.update()
     
     def get_printers(e, **kwargs):
@@ -2424,8 +2410,7 @@ Registry path: {program['RegPath']}"""
                 ),
             close_modal_func=close_dialog
         )
-        page.dialog = modal.get_modal()
-        page.dialog.open = True
+        page.open(modal.get_modal())
         page.update()
     
     def check_battery(e):
@@ -2570,11 +2555,10 @@ Registry path: {program['RegPath']}"""
             close_modal_func=close_dialog
         )
         
-        page.dialog = modal.get_modal()
-        page.dialog.open = True
+        page.open(modal.get_modal())
         page.update()
         
-        while page.dialog.open:
+        while modal.modal.open:
             pass
         
     # "Views". We swap these in and out of current_view
@@ -2656,15 +2640,18 @@ Registry path: {program['RegPath']}"""
     yellow_color_radio = ft.Radio(value="yellow", label="Yellow", fill_color="yellow")
     white_color_radio = ft.Radio(value="white", label="White", fill_color="white")
     orange_color_radio = ft.Radio(value="orange", label="Orange", fill_color="orange")
-    cg = ft.RadioGroup(content=ft.Column([
-        red_color_radio,
-        blue_color_radio,
-        green_color_radio,
-        purple_color_radio,
-        yellow_color_radio,
-        orange_color_radio,
-        white_color_radio
-    ]))
+    app_color_radio_group = ft.RadioGroup(
+        content=ft.Column([
+            red_color_radio,
+            blue_color_radio,
+            green_color_radio,
+            purple_color_radio,
+            yellow_color_radio,
+            orange_color_radio,
+            white_color_radio
+        ]),
+        value=settings_values['app_color']
+    )
     
     actions_settings_label = ft.Text("Actions", weight="bold")
     winrm_checkbox = ft.Checkbox("Enable WinRM before actions", value=settings_values['enable_win_rm'])
@@ -2698,7 +2685,7 @@ scripts to retrieve the information from remote computers and perform other task
                 content=ft.Column([
                     app_color_label,
                     ft.Row([
-                        cg
+                        app_color_radio_group
                     ]),
                     ft.Row([
                         theme_mode
