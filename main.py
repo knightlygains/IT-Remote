@@ -135,6 +135,7 @@ def main(page: ft.Page):
         settings_values['use_24hr'] = use_24hr_checkbox.value
         settings_values['warn_about_profile_deletion'] = warn_checkbox.value
         settings_values['home_tab'] = home_tab_radio_grp.value
+        settings_save_btn.disabled = True
         load_settings(e, update=True)
         try:
             if e.control.text == "Save":
@@ -2044,12 +2045,16 @@ Registry path: {program['RegPath']}"""
         
         # Change the indices
         if src.data['name'] in custom_scripts:
+            print(f"Changed index for {src.data['name']} to {drag_target_index}")
             custom_scripts[src.data['name']]['index'] = drag_target_index
         if e.control.data['name'] in custom_scripts:
+            print(f"Changed index for {e.control.data['name']} to {dragged_index}")
             custom_scripts[e.control.data['name']]['index'] = dragged_index
-        
-        update_scripts(e)
-        generate_scripts()
+        update = update_scripts(e)
+        if update:
+            generate_scripts()
+        else:
+            show_message("Failed to reorder scripts")
     
     def drag_script_leave(e):
         pass
@@ -2081,14 +2086,23 @@ Registry path: {program['RegPath']}"""
         update_scripts(e)
 
     def generate_scripts():
+        print("loading scripts")
         # This breaks if flet is updated to 0.24
         list_of_script_cards.clear()
         
         pinned_scripts = []
         
+        def draggable_hover(e): # Store this function in the script_draggable variable
+                e.control.bgcolor = ft.colors.with_opacity(0.5, '#ffffff') if e.data == "true" else None
+                e.control.update()
+        
+        def sort_scripts_by_index(dict): # Use this to sort scripts by index before appending to controls
+                return dict.content.data['index']
+        
         for script in custom_scripts:
-            script_props = custom_scripts[script]
             
+            script_props = custom_scripts[script]
+            print(f"-- Found {script}, {script_props['index']}")
             # Check for existing script description
             try: 
                 description = script_props["description"]
@@ -2108,10 +2122,6 @@ Registry path: {program['RegPath']}"""
                     border_radius=10
                 )
             )
-            
-            def draggable_hover(e):
-                e.control.bgcolor = ft.colors.with_opacity(0.5, '#ffffff') if e.data == "true" else None
-                e.control.update()
             
             script_draggable = ft.Draggable(
                 group="scripts",
@@ -2204,13 +2214,15 @@ Registry path: {program['RegPath']}"""
                 )
             )
             
-            drag_target=ft.DragTarget(
-                group="scripts",
-                content=script_card,
-                on_accept=drag_script_accept,
-                on_will_accept=drag_script_will_accept,
-                on_leave=drag_script_leave,
-                data={"index": script_props['index'], "name": script, "description": description}
+            drag_target=ft.Container(
+                content=ft.DragTarget(
+                    group="scripts",
+                    content=script_card,
+                    on_accept=drag_script_accept,
+                    on_will_accept=drag_script_will_accept,
+                    on_leave=drag_script_leave,
+                    data={"index": script_props['index'], "name": script, "description": description}
+                )
             )
             
             if script_props['pinned']:
@@ -2219,36 +2231,35 @@ Registry path: {program['RegPath']}"""
                 data={"index": script_props['index'], "name": script, "description": description}
             )
             
-            def sort_funct(dict):
-                return dict.data['index']
-            
             if script_props['pinned']:
                 pinned_scripts.append(drag_target)
             else:
                 list_of_script_cards.append(drag_target)
-                list_of_script_cards.sort(key=sort_funct)
+                list_of_script_cards.sort(key=sort_scripts_by_index)
         
         if len(pinned_scripts) > 0:
+            print("There are pinned scripts")
             pinned_scripts.sort(key=lambda s: s.data['name'].casefold(), reverse=True) #sort alphabetically
-            for script in pinned_scripts:
+            for script in pinned_scripts: # Insert pinned scripts at start of list so they are always on top
                 list_of_script_cards.insert(0, script)
         
         # Set padding so things look good
         for card in list_of_script_cards:
             if card == list_of_script_cards[0]:
-                card.content.padding = ft.padding.only(5, 10, 5, 5)
+                card.padding = ft.padding.only(5, 10, 5, 5)
             if card == list_of_script_cards[len(list_of_script_cards)-1]:
-                card.content.padding = ft.padding.only(5, 5, 5, 10)
+                card.padding = ft.padding.only(5, 5, 5, 10)
         
-        no_scripts = ft.Container(
+        no_scripts = ft.Container( # Show this if no scripts are added
             content=ft.Row([
                 ft.Text("No scripts added yet", expand=True, text_align="center")
             ], expand=True),
             padding=ft.padding.only(0, 20, 0, 0)
         )
-        if len(list_of_script_cards) <= 0:
-            list_of_script_cards.append(no_scripts)
         
+        if len(list_of_script_cards) <= 0:
+            print("No scripts")
+            list_of_script_cards.append(no_scripts)
         page.update()
     
     # Populate controls on initial app load
@@ -2631,6 +2642,10 @@ Registry path: {program['RegPath']}"""
     ], expand=True)
     
     # -------------------- SETTINGS --------------------
+    def check_for_changes(e):
+        settings_save_btn.disabled = False
+        settings_save_btn.update()
+    
     # Settings color choice radio
     app_color_label = ft.Text("App appearance", weight="bold")
     red_color_radio = ft.Radio(value="red", label="Red", fill_color="red")
@@ -2650,15 +2665,16 @@ Registry path: {program['RegPath']}"""
             orange_color_radio,
             white_color_radio
         ]),
-        value=settings_values['app_color']
+        value=settings_values['app_color'],
+        on_change=check_for_changes
     )
     
     actions_settings_label = ft.Text("Actions", weight="bold")
-    winrm_checkbox = ft.Checkbox("Enable WinRM before actions", value=settings_values['enable_win_rm'])
-    winrm_results_checkbox = ft.Checkbox("Supress WinRM results", value=settings_values['supress_winrm_results'])
-    use_24hr_checkbox = ft.Checkbox("Use 24hr time format", value=settings_values['use_24hr'])
-    warn_checkbox = ft.Checkbox("Warn before clearing profiles", value=settings_values['warn_about_profile_deletion'])
-    settings_save_btn = ft.FilledButton("Apply", icon=ft.icons.SAVE, on_click=update_settings)
+    winrm_checkbox = ft.Checkbox("Enable WinRM before actions", value=settings_values['enable_win_rm'], on_change=check_for_changes)
+    winrm_results_checkbox = ft.Checkbox("Supress WinRM results", value=settings_values['supress_winrm_results'], on_change=check_for_changes)
+    use_24hr_checkbox = ft.Checkbox("Use 24hr time format", value=settings_values['use_24hr'], on_change=check_for_changes)
+    warn_checkbox = ft.Checkbox("Warn before clearing profiles", value=settings_values['warn_about_profile_deletion'], on_change=check_for_changes)
+    settings_save_btn = ft.FilledButton("Apply", tooltip="test", icon=ft.icons.SAVE, on_click=update_settings, disabled=True)
     settings_about_app = TutorialBtn(["About IT Remote", "IT Remote is a PowerShell GUI designed to \
 make troubleshooting remote Windows computers on your domain easy. \n\nIT Remote will allow you to query \
 information on devices within the same domain as your computer. You must be an \
@@ -2674,7 +2690,8 @@ scripts to retrieve the information from remote computers and perform other task
             ft.Radio(value=2, label="Actions"),
             ft.Radio(value=3, label="My Scripts")
         ]),
-        value = settings_values['home_tab']
+        value = settings_values['home_tab'],
+        on_change=check_for_changes
     )
     
     settings_view = ft.Column([
@@ -2971,19 +2988,12 @@ scripts to retrieve the information from remote computers and perform other task
 
     page.overlay.append(pick_script_dialog) 
     
-    scripts_list_view = ft.Column(scroll="auto", expand=1)
-    scripts_list_view.controls = list_of_script_cards
+    scripts_list_view = ft.Column(list_of_script_cards, scroll=ft.ScrollMode.ADAPTIVE, expand=True)
     custom_scripts_container = ft.Container(
-        content=ft.Row([
-            ft.Container(
-                content=scripts_list_view,
-                expand=True
-            )
-        ], expand=True),
+        content=scripts_list_view,
         expand=True,
         bgcolor=settings_values['app_color'],
         border_radius=20,
-        alignment=ft.alignment.top_left,
         padding=ft.padding.only(10,0,10,0)
     )
     
@@ -3049,7 +3059,9 @@ built in to your windows install with the switch at the top."],
     use_ps1 = ft.Switch(label="Use Powershell 7", value=True)
     script_search_field = ft.TextField(on_change=script_search, width=200, hint_text="Search scripts")
     custom_scripts_view = ft.Column([
+        
         ft.Row([
+            
             ft.Row([
                 ft.IconButton(
                     icon=ft.icons.ADD,
@@ -3073,7 +3085,7 @@ built in to your windows install with the switch at the top."],
             ])
             
         ], spacing=0, alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-        
+
         custom_scripts_container
             
     ], expand=True)

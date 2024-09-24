@@ -61,8 +61,10 @@ def update_scripts(e):
         # Dump to the json
         with open(custom_scripts_path, "w") as scripts:
             json.dump(data, scripts, indent=4)
+        return True
     except ValueError as error:
-            print(f"Something went wrong updating custom scripts, {error}")
+        print(f"Something went wrong updating custom scripts, {error}")
+        return False
 
 def load_settings(e, update):
     
