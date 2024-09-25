@@ -294,7 +294,7 @@ def main(page: ft.Page):
             if key == "force_24" and value == True:
                 return x.strftime("%X")
             if key == "result_card" and value == True:
-                return x.strftime("%c")
+                return x.strftime("%c") #Ex: Mon Dec 31 17:41:00 2018
             
         return f"{day} {month} {day_num}, {time}"
     
@@ -334,7 +334,10 @@ def main(page: ft.Page):
     list_of_computernames = []
     
     # Store a list of actions we have run.
-    list_of_actionss = []
+    list_of_actions = []
+    
+    # Store a list of dates logged by result cards
+    list_of_days = []
     
     # Running Processes Modal \/
     
@@ -595,6 +598,8 @@ def main(page: ft.Page):
         check_space_card = False
         subtitle=data
         
+        date = date_time()
+        
         if computer.lower() == "localhost":
             computer = socket.gethostname()
         
@@ -614,12 +619,18 @@ def main(page: ft.Page):
             list_of_computernames.append(computer)
             comp_checkboxes.append(ft.Checkbox(label=f"{computer}", value=True, data=f"{computer}"))
         
-        if title_text not in list_of_actionss:
-            list_of_actionss.append(title_text)
+        if title_text not in list_of_actions:
+            list_of_actions.append(title_text)
             action_checkboxes.append(ft.Checkbox(label=f"{title_text}", value=True, data=f"{title_text}"))
         
+        p = re.compile("^([A-Z][a-z]{2,})") # Wed
+        day = p.search(date)
+        if day.group(1) not in list_of_days:
+            list_of_days.append(day.group(1))
+            date_checkboxes.append(ft.Checkbox(label=f"{day.group(1)}", value=True, data=f"{day.group(1)}"))
+        
         if computer != "list of computers":
-            update_recent_computers(computer, date_time(), title_text)
+            update_recent_computers(computer, date, title_text)
         
         if print_log_card:
             data = f"assets/results/Printers/{computer}-Printers-{type}-logs.json"
@@ -646,6 +657,8 @@ def main(page: ft.Page):
         
         apply_results_filter(False)
     
+    result_count = 0 # Used to store as an ID in a result_card to sort results
+    
     # Console text output
     result_data = ft.ListView(expand=1, spacing=10, padding=20)
 
@@ -669,11 +682,14 @@ def main(page: ft.Page):
     # temp list to hold controls that we removed from result_data
     remove_these_controls = []
     
-    # Store all checkboxes generated for PCs we ran actions on
-    comp_checkboxes = []
+    # Store all action checkboxes generated for PCs we ran actions on
+    date_checkboxes = []
     
     # Store all action checkboxes generated for PCs we ran actions on
     action_checkboxes = []
+    
+    # Store all checkboxes generated for PCs we ran actions on
+    comp_checkboxes = []
     
     def apply_results_filter(clear_filter):
         
@@ -705,7 +721,7 @@ def main(page: ft.Page):
         remove_these_controls.clear()
         
         # Sort results by their date
-        result_data.controls.sort(key=lambda control: control.data['SortDate'], reverse=True)
+        result_data.controls.sort(key=lambda control: control.data['SortId'], reverse=True)
         if len(filter_out_PCs) > 0:
             filter_btn.icon = ft.icons.FILTER_ALT
             filter_btn.tooltip = "On"
@@ -715,7 +731,19 @@ def main(page: ft.Page):
         page.update()
 
     def filter_results(e):
-        # Set up modal
+        # Set up filter modal
+        date_tile = ft.ExpansionPanel(
+            header=ft.ListTile(
+                title=ft.Text("Day")
+            ),
+            content=ft.Row(
+                date_checkboxes,  
+                wrap=True,
+                scroll=ft.ScrollMode.ADAPTIVE
+            ),
+            can_tap_header=True
+        )
+        
         comp_checkboxes_tile = ft.ExpansionPanel(
             header=ft.ListTile(
                 title=ft.Text("Computers")
@@ -751,6 +779,11 @@ def main(page: ft.Page):
                     box.value = True
                 else:
                     box.value = False
+            for box in date_checkboxes:
+                if e.control.data == "select":
+                    box.value = True
+                else:
+                    box.value = False
             page.update()
         
         select_all_btn = ft.OutlinedButton("Select All", 
@@ -772,6 +805,7 @@ def main(page: ft.Page):
                 ]),
                 ft.ListView([
                     ft.ExpansionPanelList([
+                        date_tile,
                         comp_checkboxes_tile,
                         actions_checkboxes_tile
                     ]),
@@ -866,6 +900,7 @@ def main(page: ft.Page):
         Clickable card that shows in the console.
         Is called from update_results()
         """
+        nonlocal result_count
         for key,value in kwargs.items():
             if key == "subtitle":
                 subtitle_data = value
@@ -928,8 +963,10 @@ def main(page: ft.Page):
         
         result_card = ft.Card(
             content=card_content,
-            data={"Id": id, "Computer": computer, "SortDate": date_time(result_card=True), "action": action}
+            data={"Id": id, "Computer": computer, "SortId": result_count, "action": action}
         )
+        
+        result_count += 1
         
         return result_card
     
