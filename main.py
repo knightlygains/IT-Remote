@@ -536,9 +536,8 @@ def main(page: ft.Page):
         answer = False
         while sure_modal.modal.open:
             answer = sure_modal.said_yes
-            if answer:
-                close_dialog(e)
-        return answer
+            if answer != None:
+                return answer
     
     def show_message(message, **kwargs):
         duration = 3000
@@ -2123,7 +2122,6 @@ Registry path: {program['RegPath']}"""
         update_scripts(e)
 
     def generate_scripts():
-        print("loading scripts")
         # This breaks if flet is updated to 0.24
         list_of_script_cards.clear()
         
@@ -2139,7 +2137,6 @@ Registry path: {program['RegPath']}"""
         for script in custom_scripts:
             
             script_props = custom_scripts[script]
-            print(f"-- Found {script}, {script_props['index']}")
             # Check for existing script description
             try: 
                 description = script_props["description"]
@@ -2464,8 +2461,16 @@ Registry path: {program['RegPath']}"""
     def check_battery(e):
         id = uuid.uuid4()
         powershell = the_shell.Power_Shell()
-        use_list = are_you_sure(e, text="Do you want to check the battery status for each computer in the list of computers?", title="Use List of Computers?", no_text="Use Computer Name", yes_text="Use list")
+        use_list = are_you_sure(
+            e, 
+            text="Do you want to check the battery status for each computer in the list of computers?", 
+            title="Use List of Computers?", 
+            no_text="Use Computer Name", 
+            yes_text="Use list"
+        )
+        
         if use_list and check_list():
+            close_dialog()
             computer = "list of computers"
             add_new_process(new_process("Check Battery", [computer], date_time(), id))
             show_message(f"Checking battery on {computer}")
@@ -2478,8 +2483,9 @@ Registry path: {program['RegPath']}"""
                     subtitle=result
                 )
             end_of_process(id)
-        
+
         if use_list != True:
+            close_dialog()
             if check_computer_name() and process_not_running("Check Battery", computer_name.value):
                 computer = computer_name.value
                 enable_winrm(computer)
@@ -2503,7 +2509,7 @@ Registry path: {program['RegPath']}"""
                         subtitle=result
                     )
                 end_of_process(id)
-    
+            
     def get_uptime(e):
         if check_computer_name() and process_not_running("Get Uptime", computer_name.value):
             id = uuid.uuid4()
@@ -3048,9 +3054,11 @@ scripts to retrieve the information from remote computers and perform other task
         if search_term != None and len(search_term) > 0 and len(list(custom_scripts)) > 0:
             scripts_matching_search = 0
             for control in scripts_to_search:
+                script_name = control.content.data['name'].lower()
+                script_description = control.content.data['description'].lower()
                 # Find scripts with any of the words in search_term
                 if len(search_term) > 1:
-                    if any(term in control.data['name'].lower() or term in control.data['description'].lower() for term in search_term):
+                    if any(term in script_name or term in script_description for term in search_term):
                         control.visible = True
                         scripts_matching_search += 1
                     else:
@@ -3058,7 +3066,7 @@ scripts to retrieve the information from remote computers and perform other task
                 
                 # Else If there's only 1 search term
                 elif len(search_term) == 1:
-                    if search_term[0] in control.data['name'].lower() or search_term[0] in control.data['description'].lower():
+                    if search_term[0] in script_name or search_term[0] in script_description:
                         control.visible = True
                         scripts_matching_search += 1
                     else:

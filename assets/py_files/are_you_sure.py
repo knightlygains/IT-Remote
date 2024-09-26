@@ -3,7 +3,7 @@ import flet as ft
 class YouSure(ft.AlertDialog):
     def __init__(self, text, title, close_modal_func, **kwargs):
         super().__init__()
-        self.said_yes = False
+        self.said_yes = None
         self.modal_not_dismissed = True
         self.no_text = "Cancel"
         self.yes_text = "Yes"
@@ -22,6 +22,11 @@ class YouSure(ft.AlertDialog):
         
         def yes(e = None):
             self.said_yes = True
+            
+        
+        def no(e = None):
+            self.said_yes = False
+
         
         self.modal = ft.AlertDialog(
             modal=False,
@@ -39,7 +44,7 @@ class YouSure(ft.AlertDialog):
                 ),
                 ft.Container(
                     content=ft.Text(f"{self.no_text}"),
-                    on_click=close_modal_func,
+                    on_click=no,
                     bgcolor=self.no_color,
                     padding=10,
                     border_radius=15
