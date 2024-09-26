@@ -2484,7 +2484,7 @@ Registry path: {program['RegPath']}"""
                 )
             end_of_process(id)
 
-        if use_list != True:
+        if use_list != True and use_list != None:
             close_dialog()
             if check_computer_name() and process_not_running("Check Battery", computer_name.value):
                 computer = computer_name.value
