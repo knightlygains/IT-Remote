@@ -589,7 +589,19 @@ def main(page: ft.Page):
             with open(list_path, "x") as file:
                 print("Computer list file created.")
         
-        
+    def find_day(date):
+        """Feed this function a date and it will return the  day of the week
+
+        Args:
+            date (string): the date
+
+        Returns:
+            string: "Mon"
+        """
+        p = re.compile("^([A-Z][a-z]{2,})") # Wed
+        day = p.search(date)
+        day = day.group(1)
+        return day
     
     def update_results(title_text, data, id, computer, **kwargs):
         print_log_card = False
@@ -622,11 +634,11 @@ def main(page: ft.Page):
             list_of_actions.append(title_text)
             action_checkboxes.append(ft.Checkbox(label=f"{title_text}", value=True, data=f"{title_text}"))
         
-        p = re.compile("^([A-Z][a-z]{2,})") # Wed
-        day = p.search(date)
-        if day.group(1) not in list_of_days:
-            list_of_days.append(day.group(1))
-            date_checkboxes.append(ft.Checkbox(label=f"{day.group(1)}", value=True, data=f"{day.group(1)}"))
+        # Get the day of the week the result was generated
+        day = find_day(date)
+        if day not in list_of_days:
+            list_of_days.append(day)
+            date_checkboxes.append(ft.Checkbox(label=f"{day}", value=True, data=f"{day}"))
         
         if computer != "list of computers":
             update_recent_computers(computer, date, title_text)
@@ -678,8 +690,11 @@ def main(page: ft.Page):
     # Actions we want to filter out
     filter_out_actions = []
     
+    # Days of the week we want to filter out
+    filter_out_days = []
+    
     # temp list to hold controls that we removed from result_data
-    remove_these_controls = []
+    controls_we_filtered_out = []
     
     # Store all action checkboxes generated for PCs we ran actions on
     date_checkboxes = []
@@ -691,36 +706,44 @@ def main(page: ft.Page):
     comp_checkboxes = []
     
     def apply_results_filter(clear_filter):
+        """Removes result cards from result_data based on filter settings
+
+        Args:
+            clear_filter (bool): If True, will reset the filtering
+        """
+        results = result_data.controls
         
-        for control in result_data.controls:
+        for control in results:
             if clear_filter:
                 filter_out_PCs.clear()
                 filter_out_actions.clear()
+                filter_out_days.clear()
     
-                # If the controls data is equal to a computer in the filters list
+                # If the controls data:'Computer', 'action' or 'day'
+                # is found in the the filter_out lists
                 # Remove it and add it to another list
-            if control.data['Computer'] in filter_out_PCs or control.data['action'] in filter_out_actions:
+            if control.data['Computer'] in filter_out_PCs or control.data['action'] in filter_out_actions or control.data['day'] in filter_out_days:
+                print(f"Found {control.data['day']}")
                 filtered_out_results.append(control)
-               
+                results.remove(control)
+            
         for control in filtered_out_results:
-            # If the controls computer isnt in the filter,
+            # If the controls data isnt in the filter_out lists,
             # we want to re-add it to result_data
-            if control.data['Computer'] not in filter_out_PCs and control.data['action'] not in filter_out_actions:
-                result_data.controls.append(control)
-                remove_these_controls.append(control)
+            if control.data['Computer'] not in filter_out_PCs and control.data['action'] not in filter_out_actions and control.data['day'] not in filter_out_days:
+                results.append(control)
+                filtered_out_results.remove(control)
+                print(f"Removed {control.data} from filtered_out_results")
+                # controls_we_filtered_out.append(control)
             else:
                 try:
-                    result_data.controls.remove(control)
+                    results.remove(control)
+                    print(f"Removed {control.data}")
                 except ValueError:  # The control was already removed
                     pass
-            
-        for control in remove_these_controls:
-            filtered_out_results.remove(control)
-        
-        remove_these_controls.clear()
-        
+
         # Sort results by their date
-        result_data.controls.sort(key=lambda control: control.data['SortId'], reverse=True)
+        results.sort(key=lambda control: control.data['SortId'], reverse=True)
         if len(filter_out_PCs) > 0:
             filter_btn.icon = ft.icons.FILTER_ALT
             filter_btn.tooltip = "On"
@@ -826,13 +849,9 @@ def main(page: ft.Page):
             pass
         
         for checkbox in comp_checkboxes:
-            
-            # If computer is checked and was previously filtered out,
-            # remove from filtered out list
+
             if checkbox.value and checkbox.data in filter_out_PCs:
                 filter_out_PCs.remove(checkbox.data)
-            
-            # Else if computer is not in filtered out list and box isnt checked
             elif checkbox.data not in filter_out_PCs and checkbox.value == False:
                 filter_out_PCs.append(checkbox.data)
             
@@ -840,8 +859,14 @@ def main(page: ft.Page):
             
             if checkbox.value and checkbox.data in filter_out_actions:
                 filter_out_actions.remove(checkbox.data)
-            
             elif checkbox.data not in filter_out_actions and checkbox.value == False:
+                filter_out_actions.append(checkbox.data)
+        
+        for checkbox in date_checkboxes:
+            
+            if checkbox.value and checkbox.data in filter_out_days:
+                filter_out_actions.remove(checkbox.data)
+            elif checkbox.data not in filter_out_days and checkbox.value == False:
                 filter_out_actions.append(checkbox.data)
         
         apply_results_filter(False)
@@ -962,8 +987,10 @@ def main(page: ft.Page):
         
         result_card = ft.Card(
             content=card_content,
-            data={"Id": id, "Computer": computer, "SortId": result_count, "action": action}
+            data={"Id": id, "Computer": computer, "SortId": result_count, "action": action, "day": f"{find_day(date)}"}
         )
+        
+        print(result_card.data)
         
         result_count += 1
         
