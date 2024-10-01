@@ -693,9 +693,6 @@ def main(page: ft.Page):
     # Days of the week we want to filter out
     filter_out_days = []
     
-    # temp list to hold controls that we removed from result_data
-    controls_we_filtered_out = []
-    
     # Store all action checkboxes generated for PCs we ran actions on
     date_checkboxes = []
     
@@ -712,35 +709,36 @@ def main(page: ft.Page):
             clear_filter (bool): If True, will reset the filtering
         """
         results = result_data.controls
-        
-        for control in results:
-            if clear_filter:
+        if clear_filter:
                 filter_out_PCs.clear()
                 filter_out_actions.clear()
                 filter_out_days.clear()
-    
+
+        for control in results:
                 # If the controls data:'Computer', 'action' or 'day'
                 # is found in the the filter_out lists
-                # Remove it and add it to another list
+                # Remove the control and add it to another list
             if control.data['Computer'] in filter_out_PCs or control.data['action'] in filter_out_actions or control.data['day'] in filter_out_days:
-                print(f"Found {control.data['day']}")
                 filtered_out_results.append(control)
-                results.remove(control)
-            
+
+        restore_filtered_results = [] # Reference controls to be restored
+        # If we remove the controls while looping through them it messes up the loop iterations
+        
         for control in filtered_out_results:
             # If the controls data isnt in the filter_out lists,
             # we want to re-add it to result_data
             if control.data['Computer'] not in filter_out_PCs and control.data['action'] not in filter_out_actions and control.data['day'] not in filter_out_days:
                 results.append(control)
-                filtered_out_results.remove(control)
-                print(f"Removed {control.data} from filtered_out_results")
-                # controls_we_filtered_out.append(control)
+                restore_filtered_results.append(control)
             else:
                 try:
                     results.remove(control)
-                    print(f"Removed {control.data}")
                 except ValueError:  # The control was already removed
                     pass
+
+        # No loop through referenced controls and remove them from filtered_out_results
+        for control in restore_filtered_results:
+            filtered_out_results.remove(control)
 
         # Sort results by their date
         results.sort(key=lambda control: control.data['SortId'], reverse=True)
@@ -753,6 +751,7 @@ def main(page: ft.Page):
         page.update()
 
     def filter_results(e):
+        nonlocal comp_checkboxes
         # Set up filter modal
         date_tile = ft.ExpansionPanel(
             header=ft.ListTile(
@@ -765,7 +764,10 @@ def main(page: ft.Page):
             ),
             can_tap_header=True
         )
-        
+        if len(comp_checkboxes) < 1:
+            comp_checkboxes = [ft.Text("Nothing here")]
+        else:
+            comp_checkboxes.remove(ft.Text("Nothing here"))
         comp_checkboxes_tile = ft.ExpansionPanel(
             header=ft.ListTile(
                 title=ft.Text("Computers")
@@ -865,9 +867,10 @@ def main(page: ft.Page):
         for checkbox in date_checkboxes:
             
             if checkbox.value and checkbox.data in filter_out_days:
-                filter_out_actions.remove(checkbox.data)
+                filter_out_days.remove(checkbox.data)
             elif checkbox.data not in filter_out_days and checkbox.value == False:
-                filter_out_actions.append(checkbox.data)
+                filter_out_days.append(checkbox.data)
+            print(f"{filter_out_days}, {checkbox.data}")
         
         apply_results_filter(False)
     
@@ -931,7 +934,7 @@ def main(page: ft.Page):
         
         # if computer.lower() == "localhost":
         #     computer = socket.gethostname()
-                
+
         data_max_length = 60
         # Format and shorten text
         subtitle_text = subtitle_data[0:data_max_length]
@@ -1062,7 +1065,6 @@ def main(page: ft.Page):
                                     ft.Text("Level:", weight=ft.FontWeight.BOLD),
                                     ft.Text(f"{evt['Level']}", selectable=True),
                                 ]),
-                                
                             ], expand = 1),
                             expand = 1,
                             padding=20
@@ -1090,7 +1092,7 @@ def main(page: ft.Page):
                 expand=1,
                 width= 500
             )
-        
+
             for key, value in e.control.data.items():
                 if key == "data":
                     ctr_data = value
@@ -1850,7 +1852,7 @@ Registry path: {program['RegPath']}"""
         scheduled = False
         shutdown_only = False
         list = False
-        def finalize(e):
+        def finalize(e): # 
             nonlocal doing_action
             nonlocal date
             nonlocal year
