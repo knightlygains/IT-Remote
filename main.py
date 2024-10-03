@@ -538,6 +538,8 @@ def main(page: ft.Page):
             answer = sure_modal.said_yes
             if answer != None:
                 return answer
+            else:
+                pass
     
     def show_message(message, **kwargs):
         duration = 3000
@@ -1720,6 +1722,7 @@ Registry path: {program['RegPath']}"""
                 process_not_running("Test Page", ctr_computer) and
                 process_not_running("Rename Printer", ctr_computer)
             ):
+            close_dialog()
             id = uuid.uuid4()
             add_new_process(new_process("Uninstall Printer", [ctr_computer], date_time(), id))
             show_message(f"Uninstalling printer from {ctr_computer}.")
