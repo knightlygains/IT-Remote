@@ -870,7 +870,6 @@ def main(page: ft.Page):
                 filter_out_days.remove(checkbox.data)
             elif checkbox.data not in filter_out_days and checkbox.value == False:
                 filter_out_days.append(checkbox.data)
-            print(f"{filter_out_days}, {checkbox.data}")
         
         apply_results_filter(False)
     
@@ -992,8 +991,6 @@ def main(page: ft.Page):
             content=card_content,
             data={"Id": id, "Computer": computer, "SortId": result_count, "action": action, "day": f"{find_day(date)}"}
         )
-        
-        print(result_card.data)
         
         result_count += 1
         
@@ -2110,10 +2107,8 @@ Registry path: {program['RegPath']}"""
         
         # Change the indices
         if src.data['name'] in custom_scripts:
-            print(f"Changed index for {src.data['name']} to {drag_target_index}")
             custom_scripts[src.data['name']]['index'] = drag_target_index
         if e.control.data['name'] in custom_scripts:
-            print(f"Changed index for {e.control.data['name']} to {dragged_index}")
             custom_scripts[e.control.data['name']]['index'] = dragged_index
         update = update_scripts(e)
         if update:
@@ -2161,7 +2156,7 @@ Registry path: {program['RegPath']}"""
                 e.control.update()
         
         def sort_scripts_by_index(dict): # Use this to sort scripts by index before appending to controls
-                return dict.content.data['index']
+                return dict.data['index']
         
         for script in custom_scripts:
             
@@ -2199,13 +2194,16 @@ Registry path: {program['RegPath']}"""
             )
             
             if script_props['pinned']:
+                # Remove draggable component since it will be pinned
                 script_draggable = ft.Container(
                     content=ft.Container(
-                    content=ft.Text(f"{script}", weight="bold"),
-                    border=ft.border.all(1, settings_values['app_color']),
-                    padding=ft.padding.only(5, 0, 5, 0)
+                        content=ft.Text(f"{script}", weight="bold"),
+                        border=ft.border.all(1, settings_values['app_color']),
+                        padding=ft.padding.only(5, 0, 5, 0),
+                        on_hover=draggable_hover
+                    ),
+                    data={"index": script_props['index'], "name": script, "description": description}
                 )
-            )
             
             if not os.path.exists(script_props['path']):
                 script_draggable.content.content = ft.Row([
@@ -2284,8 +2282,9 @@ Registry path: {program['RegPath']}"""
                     on_accept=drag_script_accept,
                     on_will_accept=drag_script_will_accept,
                     on_leave=drag_script_leave,
-                    data={"index": script_props['index'], "name": script, "description": description}
-                )
+                    
+                ),
+                data={"index": script_props['index'], "name": script, "description": description}
             )
             
             if script_props['pinned']:
@@ -2301,7 +2300,6 @@ Registry path: {program['RegPath']}"""
                 list_of_script_cards.sort(key=sort_scripts_by_index)
         
         if len(pinned_scripts) > 0:
-            print("There are pinned scripts")
             pinned_scripts.sort(key=lambda s: s.data['name'].casefold(), reverse=True) #sort alphabetically
             for script in pinned_scripts: # Insert pinned scripts at start of list so they are always on top
                 list_of_script_cards.insert(0, script)
@@ -2321,7 +2319,6 @@ Registry path: {program['RegPath']}"""
         )
         
         if len(list_of_script_cards) <= 0:
-            print("No scripts")
             list_of_script_cards.append(no_scripts)
         page.update()
     
@@ -3083,8 +3080,8 @@ scripts to retrieve the information from remote computers and perform other task
         if search_term != None and len(search_term) > 0 and len(list(custom_scripts)) > 0:
             scripts_matching_search = 0
             for control in scripts_to_search:
-                script_name = control.content.data['name'].lower()
-                script_description = control.content.data['description'].lower()
+                script_name = control.data['name'].lower()
+                script_description = control.data['description'].lower()
                 # Find scripts with any of the words in search_term
                 if len(search_term) > 1:
                     if any(term in script_name or term in script_description for term in search_term):
