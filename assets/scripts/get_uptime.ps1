@@ -2,10 +2,10 @@ param(
     [string]$Computer
 )
 
-$result_path = "./assets/results/Uptime"
+$result_path = ".\assets\results\Uptime"
 
 if (-not(Test-Path $result_path)) {
-    New-Item "$result_path/$Computer-uptime.txt" -ItemType File
+    New-Item "$result_path\$Computer-uptime.txt" -ItemType File -Force
 }
 
 try {

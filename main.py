@@ -119,16 +119,18 @@ def main(page: ft.Page):
     page.overlay.append(snack_bar)
     
     def update_settings(e):
+        # App color setting updates
         if app_color_radio_group.value:
             settings_values['app_color'] = app_color_radio_group.value
         settings_values['dark_theme'] = theme_mode.value
-        page_theme()
+        page_theme() # Set light/dark theme accordingly
         results_container.bgcolor = settings_values['app_color']
         printer_wiz_list_container.bgcolor = settings_values['app_color']
         page.dark_theme.color_scheme_seed = settings_values['app_color']
         page.theme.color_scheme_seed = settings_values['app_color']
         actions_view_container.bgcolor = settings_values['app_color']
         custom_scripts_container.bgcolor = settings_values['app_color']
+        running_processes_container.bgcolor = settings_values['app_color']
         drag_window.bgcolor = settings_values['app_color']
         settings_values['enable_win_rm'] = winrm_checkbox.value
         settings_values['supress_winrm_results'] = winrm_results_checkbox.value
@@ -325,10 +327,7 @@ def main(page: ft.Page):
     # Store list of runing processes here for tooltip
     list_of_processes = []
     
-    # Container for running process cards
-    running_processes_container = ft.Column(
-        scroll=ft.ScrollMode.ADAPTIVE
-    )
+    
     
     # Store a list of computernames we have run actions on.
     list_of_computernames = []
@@ -341,14 +340,32 @@ def main(page: ft.Page):
     
     # Running Processes Modal \/
     
-    running_proc_modal = DynamicModal(
-        title="Running Processes",
-        content=running_processes_container,
-        close_modal_func=close_dialog,
-        nolistview=True,
-        width=200
-    ).get_modal()
+    running_processes_controls = []
+    # Container for running process cards
+    running_processes_container = ft.Container(
+        content=ft.Column(
+            running_processes_controls,
+            scroll=ft.ScrollMode.ADAPTIVE
+        ),
+        bgcolor=settings_values['app_color'],
+        border_radius=20
+    )
+    
     def show_processes_modal(e):
+        nonlocal running_processes_container
+        
+        running_proc_modal = DynamicModal(
+            title="Running Processes",
+            content=running_processes_container,
+            close_modal_func=close_dialog,
+            nolistview=True,
+            width=400
+        ).get_modal()
+        
+        if len(running_processes_controls) == 0:
+            # Change content to say nothing here if there are no running processes
+            running_proc_modal.content = ft.Text("Nothing here")
+        
         page.open(running_proc_modal)
         page.update()
     
@@ -389,7 +406,7 @@ def main(page: ft.Page):
         existing ones.
         """
         # Reset lsit of controls
-        running_processes_container.controls.clear()
+        running_processes_controls.clear()
         
         # The loop through existing ones and re-add
         for process in list_of_processes:
@@ -407,7 +424,7 @@ def main(page: ft.Page):
                     )
                 ])
             )
-            running_processes_container.controls.append(new_proc_card)
+            running_processes_controls.append(new_proc_card)
         if len(list_of_processes) > 0:
             loading_ring.visible = True
         else:
@@ -419,7 +436,7 @@ def main(page: ft.Page):
         nonlocal running_processes_count
         for process in list_of_processes:
             if process['id'] == id:
-                show_message(f"{process['name']} - {process['computers']}: has finished.")
+                show_message(f"{process['name']} - {process['computers']}: has finished")
                 list_of_processes.remove(process)
                 running_processes_count -= 1
                 running_processes_count_text.value = f"{running_processes_count}"
@@ -541,13 +558,17 @@ def main(page: ft.Page):
             else:
                 pass
     
+    snack_bar = ft.SnackBar(content=ft.Text(""))
+    page.overlay.append(snack_bar)
     def show_message(message, **kwargs):
-        duration = 3000
+        nonlocal snack_bar
+        snack_bar.duration = 3000
         for key, value in kwargs.items():
             if key == "duration":
-                duration = value
-        snack_bar = ft.SnackBar(ft.Text(f"{message}"), duration=duration, open=True)
-        page.overlay.append(snack_bar)
+                snack_bar.duration = value
+        
+        snack_bar.content.value = message
+        snack_bar.open = True
         page.update()
     
     def check_computer_name():
@@ -695,14 +716,20 @@ def main(page: ft.Page):
     # Days of the week we want to filter out
     filter_out_days = []
     
-    # Store all action checkboxes generated for PCs we ran actions on
-    date_checkboxes = []
+    # Informational control to show if there are no attributes to filter by.
+    # We will change to not visible when there are filterable attributes.
+    comp_checkbx_nothing_here = ft.Text("Nothing here")
+    action_checkbx_nothing_here = ft.Text("Nothing here")
+    day_checkbx_nothing_here = ft.Text("Nothing here")
     
     # Store all action checkboxes generated for PCs we ran actions on
-    action_checkboxes = []
+    date_checkboxes = [day_checkbx_nothing_here]
+    
+    # Store all action checkboxes generated for PCs we ran actions on
+    action_checkboxes = [action_checkbx_nothing_here]
     
     # Store all checkboxes generated for PCs we ran actions on
-    comp_checkboxes = []
+    comp_checkboxes = [comp_checkbx_nothing_here]
     
     def apply_results_filter(clear_filter):
         """Removes result cards from result_data based on filter settings
@@ -710,17 +737,21 @@ def main(page: ft.Page):
         Args:
             clear_filter (bool): If True, will reset the filtering
         """
+        show_filter_message = False
         results = result_data.controls
+        
         if clear_filter:
                 filter_out_PCs.clear()
                 filter_out_actions.clear()
                 filter_out_days.clear()
-
+        total_filtered_controls = 0
         for control in results:
                 # If the controls data:'Computer', 'action' or 'day'
                 # is found in the the filter_out lists
                 # Remove the control and add it to another list
             if control.data['Computer'] in filter_out_PCs or control.data['action'] in filter_out_actions or control.data['day'] in filter_out_days:
+                show_filter_message = True
+                total_filtered_controls += 1
                 filtered_out_results.append(control)
 
         restore_filtered_results = [] # Reference controls to be restored
@@ -738,7 +769,7 @@ def main(page: ft.Page):
                 except ValueError:  # The control was already removed
                     pass
 
-        # No loop through referenced controls and remove them from filtered_out_results
+        # Now loop through referenced controls and remove them from filtered_out_results
         for control in restore_filtered_results:
             filtered_out_results.remove(control)
 
@@ -750,26 +781,48 @@ def main(page: ft.Page):
         else:
             filter_btn.icon = ft.icons.FILTER_ALT_OFF
             filter_btn.tooltip = "Off"
+        
+        if show_filter_message:
+            show_message(f"Filtered out {total_filtered_controls} results")
+        
         page.update()
 
     def filter_results(e):
         nonlocal comp_checkboxes
         # Set up filter modal
+        
+        def is_filterable(checkboxes: list):
+            """Checks comp_checkboxes, date_checkboxes, and action_checkboxes
+            to see if there are any checkboxes in them. If there are we change
+            the crresponding 'nothing_here' Text control to not visible.
+
+            Args:
+                checkboxes (list): a list of controls,.
+            """
+            for list in checkboxes:
+                if len(list) > 1:
+                    for item in list:
+                        if item.value == "Nothing here":
+                            item.visible = False
+                else:
+                    for item in list:
+                        if item.value == "Nothing here":
+                            item.visible = True
+
+        is_filterable([date_checkboxes, action_checkboxes, comp_checkboxes])
+        
         date_tile = ft.ExpansionPanel(
             header=ft.ListTile(
                 title=ft.Text("Day")
             ),
             content=ft.Row(
-                date_checkboxes,  
+                date_checkboxes,
                 wrap=True,
                 scroll=ft.ScrollMode.ADAPTIVE
             ),
             can_tap_header=True
         )
-        if len(comp_checkboxes) < 1:
-            comp_checkboxes = [ft.Text("Nothing here")]
-        else:
-            comp_checkboxes.remove(ft.Text("Nothing here"))
+        
         comp_checkboxes_tile = ft.ExpansionPanel(
             header=ft.ListTile(
                 title=ft.Text("Computers")
@@ -784,7 +837,7 @@ def main(page: ft.Page):
         
         actions_checkboxes_tile = ft.ExpansionPanel(
             header=ft.ListTile(
-                title=ft.Text("Actions")
+                title=ft.Text("Actions"),
             ),
             content=ft.Row(
                 action_checkboxes,  
@@ -812,12 +865,12 @@ def main(page: ft.Page):
                     box.value = False
             page.update()
         
-        select_all_btn = ft.OutlinedButton("Select All", 
+        select_all_btn = ft.FilledTonalButton("Select All", 
             icon="check_box", 
             data="select",
             on_click=select
         )
-        deselect_all_btn = ft.OutlinedButton("Deselect All", 
+        deselect_all_btn = ft.FilledTonalButton("Deselect All", 
             icon="check_box_outline_blank", 
             data="deselect",
             on_click=select
@@ -825,18 +878,18 @@ def main(page: ft.Page):
         
         content_container = ft.Container(
             content=ft.Column([
-                ft.Row([
-                    select_all_btn,
-                    deselect_all_btn
-                ]),
-                ft.ListView([
-                    ft.ExpansionPanelList([
-                        date_tile,
-                        comp_checkboxes_tile,
-                        actions_checkboxes_tile
+                    ft.Row([
+                        select_all_btn,
+                        deselect_all_btn
                     ]),
-                ], expand=1)
-            ])
+                    ft.ListView([
+                        ft.ExpansionPanelList([
+                            date_tile,
+                            comp_checkboxes_tile,
+                            actions_checkboxes_tile
+                        ]),
+                    ], expand=1)
+                ])
         )
         
         modal = DynamicModal(
@@ -852,26 +905,30 @@ def main(page: ft.Page):
         while modal.modal.open:
             pass
         
-        for checkbox in comp_checkboxes:
-
-            if checkbox.value and checkbox.data in filter_out_PCs:
-                filter_out_PCs.remove(checkbox.data)
-            elif checkbox.data not in filter_out_PCs and checkbox.value == False:
-                filter_out_PCs.append(checkbox.data)
-            
-        for checkbox in action_checkboxes:
-            
-            if checkbox.value and checkbox.data in filter_out_actions:
-                filter_out_actions.remove(checkbox.data)
-            elif checkbox.data not in filter_out_actions and checkbox.value == False:
-                filter_out_actions.append(checkbox.data)
+        if len(comp_checkboxes) != 1:
+            for checkbox in comp_checkboxes:
+                
+                if checkbox.value and checkbox.data in filter_out_PCs:
+                    filter_out_PCs.remove(checkbox.data)
+                elif checkbox.data not in filter_out_PCs and checkbox.value == False:
+                    filter_out_PCs.append(checkbox.data)
         
-        for checkbox in date_checkboxes:
-            
-            if checkbox.value and checkbox.data in filter_out_days:
-                filter_out_days.remove(checkbox.data)
-            elif checkbox.data not in filter_out_days and checkbox.value == False:
-                filter_out_days.append(checkbox.data)
+        
+        if len(comp_checkboxes) != 1:
+            for checkbox in action_checkboxes:
+                
+                if checkbox.value and checkbox.data in filter_out_actions:
+                    filter_out_actions.remove(checkbox.data)
+                elif checkbox.data not in filter_out_actions and checkbox.value == False:
+                    filter_out_actions.append(checkbox.data)
+        
+        if len(comp_checkboxes) != 1:
+            for checkbox in date_checkboxes:
+                
+                if checkbox.value and checkbox.data in filter_out_days:
+                    filter_out_days.remove(checkbox.data)
+                elif checkbox.data not in filter_out_days and checkbox.value == False:
+                    filter_out_days.append(checkbox.data)
         
         apply_results_filter(False)
     
@@ -1168,19 +1225,16 @@ def main(page: ft.Page):
                 update_results("Restart Print Spooler", result, id, computer)
                 end_of_process(id)
     
-    # AlertDialog for when we click on a result from checking space on
-    # a computer.
-    check_space_card = DynamicModal(
-        title=f"",
-        content=None,
-        close_modal_func=close_dialog
-    )
     
     def open_space_card(e):
+        
         """
         Uses dynamic modal to show info about the disk
         space on a computer.
         """
+        # AlertDialog for when we click on a result from checking space on
+        # a computer.
+        
         ctr_data = "None"
         ctr_computer = "None"
         for key, value in e.control.data.items():
@@ -1189,40 +1243,41 @@ def main(page: ft.Page):
             if key == "computer":
                 ctr_computer = value
         
-        space_list_view = ft.ExpansionPanelList(
-            elevation=8,
-            controls=[]
+        disk_space_expansion_list = ft.ExpansionPanelList(
+            elevation=8
         )
-        card_content = ft.Container(
-            content=space_list_view,
-            expand=1,
-            width= 500
-        )
+        
+        # card_content = ft.Container(
+        #     content=disk_space_expansion_list,
+        #     expand=1,
+        #     width= 500
+        # )
         
         space_json_path = ctr_data
         with open(space_json_path, "r") as file:
+            print(f"Opened {file}")
             data = json.load(file)
             
             for comp in data:
-                drives_list = []
-                for disk in data[comp]:
+                print(comp)
+                drives_list = [] # Drives found for this computer in the loop
+                for disk in data[comp]:  # Loop through each disk
                     drive = data[comp][disk]
                     drive_ltr = drive['DiskId']
                     freespace = drive['FreeSpace']
                     maxsize = drive['MaxSize']
                     percentfree = drive['PercentFree']
-                    
                     drives_list.append(
                         ft.Column([
                             ft.Text(f"{drive_ltr}", weight=ft.FontWeight.BOLD),
-                                ft.Row([
-                                    ft.Text("Percent Free:", weight=ft.FontWeight.BOLD),
-                                    ft.Text(f"{percentfree}", selectable=True),
-                                ], wrap=True),
-                                ft.Row([
-                                    ft.Text("Space:", weight=ft.FontWeight.BOLD),
-                                    ft.Text(f"{freespace} / {maxsize} GB", selectable=True),
-                                ]),
+                            ft.Row([
+                                ft.Text("Percent Free:", weight=ft.FontWeight.BOLD),
+                                ft.Text(f"{percentfree}", selectable=True),
+                            ], wrap=True),
+                            ft.Row([
+                                ft.Text("Space:", weight=ft.FontWeight.BOLD),
+                                ft.Text(f"{freespace} / {maxsize} GB", selectable=True),
+                            ]),
                         ])
                     )
                 
@@ -1232,24 +1287,26 @@ def main(page: ft.Page):
                             trailing=ft.Icon(name=ft.icons.COMPUTER)
                         ),
                     content=ft.Container(
-                            content=ft.Column([
-                                ft.Column(drives_list)
-                            ], expand = 1),
+                            content=ft.Column(drives_list, expand = 1),
                             expand = 1,
                             padding=ft.padding.only(left=10, right=10, bottom=10)
                         ),
                     can_tap_header=True,
                     expand = 1
                 )
-                space_list_view.controls.append(card)
+                disk_space_expansion_list.controls.append(card)
         
         for key, value in e.control.data.items():
             if key == "computer":
                 ctr_computer = value
         
-        check_space_card.title = f"{e.control.title.value}, {ctr_computer}"
-        check_space_card.content = card_content
-
+        check_space_card = DynamicModal(
+            title=f"{e.control.title.value}",
+            content=disk_space_expansion_list,
+            close_modal_func=close_dialog,
+            nolistview=True
+        )
+        
         page.open(check_space_card.get_modal())
         page.update()
     
@@ -1773,42 +1830,17 @@ Registry path: {program['RegPath']}"""
 
         use_list_checkbox = ft.Checkbox(label="Use list of PCs", value=False)
         shutdown_checkbox = ft.Checkbox(label="Shutdown only", value=False)
-        def show_schedule_options(e):
-            value = e.control.value
-            time_button.visible = value
-            date_button.visible = value
-            page.update()
-        
-        time_button = ft.ElevatedButton(
-            "Pick time",
-            icon=ft.icons.SCHEDULE,
-            on_click=lambda _: time_picker.pick_time(),
-            visible=False
-        )
-        
-        date_button = ft.ElevatedButton(
-            "Pick date",
-            icon=ft.icons.CALENDAR_MONTH,
-            on_click=lambda _: date_picker.pick_date(),
-            visible=False
-        )
-        
-        schedule_checkbox = ft.Checkbox(
-            label="Schedule it", 
-            value=False,
-            on_change=show_schedule_options
-        )
         
         def set_time_text(e):
             time_text.value = e.control.value
             page.update()
-            
+        
         def set_date_text(e):
             text = str(e.control.value).split()
             text = text[0]
             date_text.value = text
             page.update()
-        
+            
         time_picker = ft.TimePicker(
             confirm_text="Confirm",
             error_invalid_text="Time out of range",
@@ -1822,8 +1854,31 @@ Registry path: {program['RegPath']}"""
             on_change=set_date_text
         )
         
-        page.overlay.append(time_picker)
-        page.overlay.append(date_picker)
+        def show_schedule_options(e):
+            value = e.control.value
+            time_button.visible = value
+            date_button.visible = value
+            page.update()
+        
+        time_button = ft.ElevatedButton(
+            "Pick time",
+            icon=ft.icons.SCHEDULE,
+            on_click=lambda _: page.open(time_picker),
+            visible=False
+        )
+        
+        date_button = ft.ElevatedButton(
+            "Pick date",
+            icon=ft.icons.CALENDAR_MONTH,
+            on_click=lambda _: page.open(date_picker),
+            visible=False
+        )
+        
+        schedule_checkbox = ft.Checkbox(
+            label="Schedule it", 
+            value=False,
+            on_change=show_schedule_options
+        )
         
         time_text = ft.Text("")
         date_text = ft.Text("")
@@ -2013,6 +2068,8 @@ Registry path: {program['RegPath']}"""
                     "Are you sure you want to remove profiles? Users could lose valuable data.",
                     no_text = "Don't remove profiles"
                 )
+                
+                close_dialog()
                 
                 if answer == False:
                     users = "False"
@@ -2829,22 +2886,46 @@ scripts to retrieve the information from remote computers and perform other task
     
     clear_space_exp_panel = ft.ExpansionPanel(
         header=ft.ListTile(
-            title=ft.Text("Clear Space", weight=ft.FontWeight.BOLD),
-            trailing=ft.Icon(name=ft.icons.DELETE_FOREVER)
+            title=ft.Text("Disk Space", weight=ft.FontWeight.BOLD),
+            trailing=ft.Icon(name=ft.icons.ALBUM)
         ),
         content=ft.Container(
             content=ft.Column([
+                
+                ft.Container(
+                    content=ft.Row(
+                        [use_list_checkbox],
+                        alignment=ft.MainAxisAlignment.CENTER
+                    ),
+                    border=ft.border.only(bottom=ft.border.BorderSide(1, "grey")),
+                ),
+                
                 ft.Row([
-                    delete_users_checkbox,
-                    clear_space_tut
-                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                logout_users_checkbox,
-                use_list_checkbox,
-                ft.Row([
-                    ft.TextButton(text="Clear Disk Space", icon=ft.icons.DELETE_FOREVER, on_click=clear_space),
-                    check_space_btn
+                    
+                    # Column 1
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Row([
+                                delete_users_checkbox,
+                                clear_space_tut
+                            ]),
+                            logout_users_checkbox,
+                            ft.TextButton(text="Clear Disk Space", icon=ft.icons.DELETE_FOREVER, on_click=clear_space),
+                        ]),
+                        border=ft.border.only(right=ft.border.BorderSide(1, "grey")),
+                        padding=ft.padding.only(0,0,10,0)
+                    ),
+                    
+                    # Column 2
+                    ft.Container(
+                        content=ft.Column([
+                            check_space_btn
+                        ], alignment=ft.MainAxisAlignment.END),
+                        padding=ft.padding.only(0,0,5,0)
+                    ),
+                    
                 ])
-            ]),
+            ], alignment=ft.CrossAxisAlignment.END),
             padding=10
         ),
         can_tap_header=True,
