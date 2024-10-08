@@ -1,7 +1,8 @@
-import flet as ft
+import flet as ft # Must be version 23 for now
 import assets.py_files.the_shell as the_shell
 import datetime, json, re, subprocess, os, time, socket, pathlib, uuid, csv
 from assets.py_files.tutorial_btn import TutorialBtn
+import assets.py_files.text_values as text_values # Long text values stored in separate file
 from assets.py_files.dynamic_modal import DynamicModal
 from assets.py_files.are_you_sure import YouSure
 from assets.py_files.settings_values import settings_values, custom_scripts, load_settings, update_scripts, settings_path
@@ -1980,7 +1981,6 @@ Registry path: {program['RegPath']}"""
             restart(scheduled, shutdown_only, computer, settings_values['enable_win_rm'], month=month, day=day, year=year, time=time)
         elif doing_action and shutdown_only:
             restart(scheduled, shutdown_only, computer, settings_values['enable_win_rm'], month=month, day=day, year=year, time=time)
-       
     
     def restart(scheduled, shutdown, computer, winRM, **kwargs):
         for key, value in kwargs.items():
@@ -2804,12 +2804,7 @@ Registry path: {program['RegPath']}"""
     use_24hr_checkbox = ft.Checkbox("Use 24hr time format", value=settings_values['use_24hr'], on_change=check_for_changes)
     warn_checkbox = ft.Checkbox("Warn before clearing profiles", value=settings_values['warn_about_profile_deletion'], on_change=check_for_changes)
     settings_save_btn = ft.FilledButton("Apply", tooltip="test", icon=ft.icons.SAVE, on_click=update_settings, disabled=True)
-    settings_about_app = TutorialBtn(["About IT Remote", "IT Remote is a PowerShell GUI designed to \
-make troubleshooting remote Windows computers on your domain easy. \n\nIT Remote will allow you to query \
-information on devices within the same domain as your computer. You must be an \
-admin and be running the IT Remote as admin for most of the functions to work. IT Remote uses \
-PowerShell 7, PsTools, and Python's subprocess module to launch built-in custom PowerShell \
-scripts to retrieve the information from remote computers and perform other tasks."], on_click=open_tutorial_modal)
+    settings_about_app = TutorialBtn(["About IT Remote", text_values.settings_about_app_txt], on_click=open_tutorial_modal)
     
     theme_mode = ft.Switch(label="Dark Theme", value=settings_values['dark_theme'])
     
@@ -2879,7 +2874,7 @@ scripts to retrieve the information from remote computers and perform other task
     clear_space_tut = TutorialBtn(
         data=[
             "About Clear Space", 
-            "By default this action will clear recycle bin data, Windows\\Temp, and Windows\\Prefetch. It will also remove any user profiles it finds if you specify."
+            text_values.clear_space_tut_txt
         ],
         on_click=open_tutorial_modal
     )
@@ -2964,7 +2959,7 @@ scripts to retrieve the information from remote computers and perform other task
     )
     
     programs_tutorial = TutorialBtn(
-        data=['About Programs', 'You can use this panel to check for a specific program on a computer, or get a list of all detected installed software.'],
+        data=['About Programs', text_values.programs_tutorial_txt],
         on_click=open_tutorial_modal
     )
     
@@ -2997,7 +2992,7 @@ scripts to retrieve the information from remote computers and perform other task
                         ]),
                         ft.Column([
 
-                            ft.FilledTonalButton(text="Check for ALL software", data="True", on_click=check_software)
+                            ft.TextButton(text="Check for ALL software", data="True", on_click=check_software)
 
                         ]),
                     ], vertical_alignment=ft.CrossAxisAlignment.END)
@@ -3018,7 +3013,7 @@ scripts to retrieve the information from remote computers and perform other task
                     ft.IconButton(icon=ft.icons.RESTART_ALT, icon_size=50, on_click=open_restart_modal, data=""),
                     ft.Text("Shutdown/Restart")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
-               ], wrap=True),
+            ], wrap=True),
             padding=10
         ),
         can_tap_header=True,
@@ -3204,10 +3199,7 @@ scripts to retrieve the information from remote computers and perform other task
         script_search()
     
     cust_scripts_tutorial = TutorialBtn(
-        data=["About Custom Scripts", "Here you can add your own scripts so they \
-are easily accessible and can be launched at the click of a button. Click \
-and drag to reorder them. \n\nToggle the use of PowerShell 7 or native PowerShell \
-built in to your windows install with the switch at the top."],
+        data=["About Custom Scripts", text_values.cust_scripts_tutorial_txt],
         on_click=open_tutorial_modal
     )
     
