@@ -890,7 +890,10 @@ def main(page: ft.Page):
                             actions_checkboxes_tile
                         ]),
                     ], expand=1)
-                ])
+                ]),
+            bgcolor=settings_values['app_color'],
+            border_radius=20,
+            border=ft.border.all(1, settings_values['app_color'])
         )
         
         modal = DynamicModal(
@@ -1508,9 +1511,14 @@ Registry path: {program['RegPath']}"""
         help_topic = e.control.data[0]
         help_text = e.control.data[1]
         
-        content = ft.Row([
+        content = ft.Container(
+            ft.Row([
                 ft.Text(f"{help_text}"),
-            ], wrap=True, width=500)
+            ], wrap=True, width=500),
+            border_radius=20,
+            border=ft.border.all(1, settings_values['app_color']),
+            padding=10,
+        )
 
         modal = DynamicModal(
             title=f"{help_topic}",
