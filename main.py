@@ -1499,7 +1499,7 @@ Registry path: {program['RegPath']}"""
         page.open(modal.get_modal())
 
         page.update()
-        
+
     def open_tutorial_modal(e):
         """
         Uses print_log_card_modal to show help/topic info
