@@ -35,7 +35,9 @@ With Python's subprocess module, IT Remote launches custom powershell scripts wi
 
 # Install (Dev)
 
-**This project must use Python 3.12. Flet does not currently work on Python3.13**
+**This project must use Python 3.12. Flet does not currently work on Python 3.13**
+
+**This project uses Flet, check out the [docs here](https://flet.dev/docs/)**
 
 1. Download the code and unzip the IT-Remote-main folder to your desired directory
 
