@@ -39,7 +39,7 @@ With Python's subprocess module, IT Remote launches custom powershell scripts wi
 
 1. Download the code and unzip the IT-Remote-main folder to your desired directory
 
-2. Run `C:\Program Files\Python312\python.exe -m venv C:\Users\Username\IT-Remote-main\.venv`
+2. Create a virtual environment `"C:\Program Files\Python312\python.exe" -m venv "C:\Users\Username\IT-Remote-main\.venv"`
 
 3. Activate the virtual environment `C:\Users\Username\IT-Remote-main\.venv\Scripts\activate`
 
