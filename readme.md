@@ -50,3 +50,16 @@ With Python's subprocess module, IT Remote launches custom powershell scripts wi
 5. Run the app `flet run C:\Users\Username\IT-Remote-main\main.py`
 
 6. Deactivate the environment when you are done working `deactivate`
+
+# Build the App
+
+1. Install [Flutter sdk for Windows](https://docs.flutter.dev/get-started/install/windows/desktop)
+2. Follow flet build instructions [here](https://flet.dev/docs/publish)
+3. Make sure project structure matches the one showed in the link above
+4. run `flet build windows -o "desired\output\directory"` while in the directory of main.py
+
+# Build Installer
+
+1. Install [NSIS](https://nsis.sourceforge.io/Main_Page)
+2. Open create_installer.nsi in your preferred text editor
+3. Edit values accordingly

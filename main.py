@@ -937,25 +937,15 @@ def main(page: ft.Page):
         apply_results_filter(False)
     
     # Card modal Stuff \/
-    def show_card_modal():
-        page.open(result_card_modal)
+    def show_card_modal(modal):
+        page.open(modal)
         page.update()
-    
-    # Define card modal
-    result_card_modal = ft.AlertDialog(
-        modal=True,
-        title=ft.Text("Title"),
-        content=ft.Text("No content"),
-        actions=[
-            ft.TextButton("Close", on_click=close_dialog),
-        ],
-        actions_alignment=ft.MainAxisAlignment.END,
-    )
     
     def open_results_card(e):
         """
         Sets card modal content and opens it.
         """
+        
         ctr_data = "None"
         ctr_computer = "None"
         for key, value in e.control.data.items():
@@ -963,12 +953,22 @@ def main(page: ft.Page):
                 ctr_data = value
             if key == "computer":
                 ctr_computer = value
-        result_card_modal.content = ft.Container(
-            content=ft.Column([
-                ft.Text(ctr_data, selectable=True)
-            ], scroll=True))
-        result_card_modal.title = ft.Text(e.control.title.value)
-        show_card_modal()
+        
+        # Define card modal
+        result_card_modal = ft.AlertDialog(
+            modal=False,
+            title=ft.Text(e.control.title.value),
+            content=ft.Container(
+                content=ft.Column([
+                    ft.Text(ctr_data, selectable=True)
+            ], scroll=True)),
+            actions=[
+                ft.TextButton("Close", on_click=close_dialog),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        
+        show_card_modal(result_card_modal)
     
     def remove_results_card(e):
         id = e.control.data
@@ -1076,17 +1076,12 @@ def main(page: ft.Page):
     printer_wiz_target_computer = ""
     printer_to_change = ""
     
-    print_log_card_modal = DynamicModal(
-        title=None,
-        content=None,
-        close_modal_func=close_dialog
-    ).get_modal()
-    
     is_log_empty = False # Track if log returned 0 items
     def open_print_log_card(e):
         """
         Sets print log card modal content and opens it.
         """
+        
         logs_list_view = ft.ListView(expand=1, padding= 20)
         
         ctr_data = "None"
@@ -1164,10 +1159,13 @@ def main(page: ft.Page):
         else:
             title = f"{ctr_computer}'s Admin Print Logs"
         
-        print_log_card_modal.title = title
-        print_log_card_modal.content = card_content
+        print_log_card_modal = DynamicModal(
+            title=title,
+            content=card_content,
+            close_modal_func=close_dialog
+        )
         
-        page.open(print_log_card_modal)
+        page.open(print_log_card_modal.get_modal())
         page.update()
     
     def open_card_print_wiz(e):
@@ -2147,6 +2145,7 @@ Registry path: {program['RegPath']}"""
             custom_scripts.pop(f"{remove_me}")
             update_settings(e)
             generate_scripts()
+            close_dialog()
             show_message(f"Removed {remove_me}")
         else:
             close_dialog()
@@ -2171,6 +2170,7 @@ Registry path: {program['RegPath']}"""
         
         # If we dragged a dropped to the same place
         if drag_target_index == dragged_index:
+            print("Same index")
             return
         
         # Change the indices
@@ -2220,11 +2220,11 @@ Registry path: {program['RegPath']}"""
         pinned_scripts = []
         
         def draggable_hover(e): # Store this function in the script_draggable variable
-                e.control.bgcolor = ft.colors.with_opacity(0.5, '#ffffff') if e.data == "true" else None
-                e.control.update()
+            e.control.bgcolor = ft.colors.with_opacity(0.5, '#ffffff') if e.data == "true" else None
+            e.control.update()
         
         def sort_scripts_by_index(dict): # Use this to sort scripts by index before appending to controls
-                return dict.data['index']
+            return dict.data['index']
         
         for script in custom_scripts:
             
@@ -2249,6 +2249,8 @@ Registry path: {program['RegPath']}"""
                 )
             )
             
+            script_data = {"index": script_props['index'], "name": script, "description": description}
+            
             script_draggable = ft.Draggable(
                 group="scripts",
                 content=ft.Container(
@@ -2258,7 +2260,7 @@ Registry path: {program['RegPath']}"""
                     on_hover=draggable_hover
                 ),
                 content_feedback=feedback,
-                data={"index": script_props['index'], "name": script, "description": description}
+                data=script_data
             )
             
             if script_props['pinned']:
@@ -2270,7 +2272,7 @@ Registry path: {program['RegPath']}"""
                         padding=ft.padding.only(5, 0, 5, 0),
                         on_hover=draggable_hover
                     ),
-                    data={"index": script_props['index'], "name": script, "description": description}
+                    data=script_data
                 )
             
             if not os.path.exists(script_props['path']):
@@ -2334,7 +2336,8 @@ Registry path: {program['RegPath']}"""
                     ])
                 ]),
                 border_radius=20,
-                padding=10
+                padding=10,
+                data=script_data
             )
             
             script_card = ft.Container(
@@ -2350,15 +2353,15 @@ Registry path: {program['RegPath']}"""
                     on_accept=drag_script_accept,
                     on_will_accept=drag_script_will_accept,
                     on_leave=drag_script_leave,
-                    
+                    data=script_data
                 ),
-                data={"index": script_props['index'], "name": script, "description": description}
+                data=script_data
             )
             
             if script_props['pinned']:
                 drag_target=ft.Container(
                 content=script_card,
-                data={"index": script_props['index'], "name": script, "description": description}
+                data=script_data
             )
             
             if script_props['pinned']:
@@ -3229,7 +3232,7 @@ Registry path: {program['RegPath']}"""
                 ft.Container(
                     content=ft.Row([
                         script_search_field,
-                        ft.IconButton("close", on_click=reset_script_search)
+                        ft.IconButton("close", on_click=reset_script_search, tooltip="Clear search")
                     ])
                 ),
             ]),
