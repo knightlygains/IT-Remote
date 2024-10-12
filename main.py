@@ -2277,7 +2277,7 @@ Registry path: {program['RegPath']}"""
             
             if not os.path.exists(script_props['path']):
                 script_draggable.content.content = ft.Row([
-                    ft.Text(f"(Missing)", color="Red"),
+                    ft.Text(f"(Missing)", color="red"),
                     ft.Text(f"{script}", weight="bold")
                 ])
             
