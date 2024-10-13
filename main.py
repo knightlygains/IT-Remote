@@ -1,11 +1,11 @@
 import flet as ft # Must be version 23 for now
-import assets.py_files.the_shell as the_shell
+import the_shell
 import datetime, json, re, subprocess, os, time, socket, pathlib, uuid, csv
-from assets.py_files.tutorial_btn import TutorialBtn
-import assets.py_files.text_values as text_values # Long text values stored in separate file
-from assets.py_files.dynamic_modal import DynamicModal
-from assets.py_files.are_you_sure import YouSure
-from assets.py_files.settings_values import settings_values, custom_scripts, load_settings, update_scripts, settings_path
+from tutorial_btn import TutorialBtn
+import text_values as text_values # Long text values stored in separate file
+from dynamic_modal import DynamicModal
+from are_you_sure import YouSure
+from settings_values import settings_values, custom_scripts, load_settings, update_scripts, settings_path
 
 # Create settings.json if not exists and/or load saved values
 load_settings(e=None, update=False)
