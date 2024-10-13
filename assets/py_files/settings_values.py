@@ -18,21 +18,29 @@ custom_scripts = {
     
 }
 
-custom_scripts_path = "settings/custom_scripts.json"
-settings_path = "settings/settings.json"
-computerlist_path = "settings/lists/computers.txt"
+custom_scripts_path = "assets/settings/custom_scripts.json"
+settings_path = "assets/settings/settings.json"
+computerlist_path = "assets/settings/lists/computers.txt"
+logging_path = "assets/settings/log.txt"
 
 # Make settings directory
-if not os.path.exists("./settings"):
+if not os.path.exists("assets/settings"):
     try:
-        os.mkdir("./settings")
+        os.mkdir("assets/settings")
+    except Exception as e:
+        print(e)
+        
+if not os.path.exists(logging_path):
+    try:
+        with open(logging_path, "w") as file:
+            print("Created log.txt")
     except Exception as e:
         print(e)
 
 # Make lists directory
-if not os.path.exists("./settings/lists"):
+if not os.path.exists("assets/settings/lists"):
     try:
-        os.mkdir("./settings/lists")
+        os.mkdir("assets/settings/lists")
     except Exception as e:
         print(e)
 
@@ -122,6 +130,7 @@ def load_settings(e, update):
             json.dump({}, file)
             print(f"{custom_scripts_path} created")
 
+    # Load custom script data
     if os.path.exists(custom_scripts_path):
         with open(custom_scripts_path, "r") as file:
             data = json.load(file)

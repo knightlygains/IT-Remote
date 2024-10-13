@@ -3,6 +3,7 @@ param(
 )
 
 if (Test-Connection $Computer -Quiet) {
+
     eventvwr.exe $Computer
     exit 0
 }

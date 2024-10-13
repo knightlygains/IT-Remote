@@ -1,11 +1,17 @@
-
-
 [CmdletBinding()]
 param (
     [Parameter(Mandatory)]
     [string]$Computer
 )
+
+. .\assets\scripts\functions.ps1
+
 Function getPrinters {
+    $dontInvoke = $false
+
+    if($Computer -eq $env:COMPUTERNAME){
+        $dontInvoke = $true
+    }
     
     # Enable print service log
     $enable_log_sb = {
@@ -17,20 +23,32 @@ Function getPrinters {
     }
 
     try {
-        Invoke-Command -ComputerName $Computer $enable_log_sb -ErrorAction Stop
+
+        if($dontInvoke){
+            & $enable_log_sb
+        }else{
+            Invoke-Command -ComputerName $Computer $enable_log_sb -ErrorAction Stop
+        }
+        
     }
     catch {
-        Write-Host $_
+        Set-Error "$_"
         return "Fail"
     }
     
 
     try {
-        #Variable that allows us to loop through and get all printers on a remote computer.
-        $printers = Get-CimInstance -Class Win32_Printer -ComputerName $Computer -ErrorAction Stop | Select-Object Name, PrinterStatus, Type, PortName, DriverName, Shared, Published
+
+        if($dontInvoke){
+            $printers = Get-CimInstance -Class Win32_Printer -ErrorAction Stop | Select-Object Name, PrinterStatus, Type, PortName, DriverName, Shared, Published
+        }else{
+            #Variable that allows us to loop through and get all printers on a remote computer.
+            $printers = Get-CimInstance -Class Win32_Printer -ComputerName $Computer -ErrorAction Stop | Select-Object Name, PrinterStatus, Type, PortName, DriverName, Shared, Published
+        }
+
     }
     catch {
-        Write-Host $_
+        Set-Error "$_"
         return "Fail"
     }
     

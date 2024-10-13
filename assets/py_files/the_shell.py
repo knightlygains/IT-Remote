@@ -6,7 +6,7 @@ import socket
 class Power_Shell():
     def __init__(self):
         self.pspath = "pwsh.exe"
-        self.list_path = "settings/lists/computers.txt"
+        self.list_path = "assets/settings/lists/computers.txt"
         self.no_window = 0x08000000
     
     def launch_script(self, script, ps_version):

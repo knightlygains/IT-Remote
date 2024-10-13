@@ -2,6 +2,13 @@ param(
     [string]$Computer
 )
 
+. .\assets\scripts\functions.ps1
+
+$dontInvoke = $false
+if($Computer -eq $env:COMPUTERNAME){
+    $dontInvoke = $true
+}
+
 $result_path = ".\assets\results\Uptime"
 
 if (-not(Test-Path $result_path)) {
@@ -10,7 +17,7 @@ if (-not(Test-Path $result_path)) {
 
 try {
 
-    if ($Computer -eq $env:COMPUTERNAME) {
+    if ($dontInvoke) {
         $lastboot = (Get-CimInstance -ClassName Win32_OperatingSystem).LastBootUpTime
         $CurrentDate = Get-Date
         $uptime = $CurrentDate - $lastboot
@@ -18,7 +25,7 @@ try {
         if ($seconds -lt 10) {
             $seconds = "0$seconds"
         }
-        Set-Content -Path "$result_path/$Computer-uptime.txt" -Value "$($uptime.Days) days - $($uptime.Hours):$($uptime.Minutes):$($seconds)"
+        Set-Content -Path "$result_path/$Computer-uptime.txt" -Value "Uptime: $($uptime.Days) days, $($uptime.Hours):$($uptime.Minutes):$($seconds)"
     }
     else {
         
@@ -38,12 +45,12 @@ try {
             if ($mins -lt 10) {
                 $mins = "0$mins"
             }
-            return "$($uptime.Days) days - $($hours):$($mins):$($seconds)"
+            return "Uptime: $($uptime.Days) days, $($hours):$($mins):$($seconds)"
         } -ErrorAction Stop
 
         Set-Content -Path "$result_path/$Computer-uptime.txt" -Value $result
     }
 }
 catch {
-    Write-Output $_
+    Set-Error "$_"
 }

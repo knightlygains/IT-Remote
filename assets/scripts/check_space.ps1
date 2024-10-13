@@ -25,6 +25,7 @@ try {
     }
 }
 catch {
+    Add-Content ".\assets\settings\log.txt" -Value "$_"
     exit 1
 }
 
@@ -72,7 +73,7 @@ Function Get-Space {
                 
             }
             catch {
-                Write-Host "Error checking space. $_"
+                Add-Content ".\assets\settings\log.txt" -Value "$_"
                 exit 1
             }
         }
@@ -84,7 +85,7 @@ Function Get-Space {
         Set-Content -Path $result_json_path -Value (ConvertTo-Json $all_results) -ErrorAction Stop
     }
     catch {
-        Write-Host "Couldnt make json $_"
+        Add-Content ".\assets\settings\log.txt" -Value "$_"
         exit 1
     }
     exit 0
@@ -94,9 +95,9 @@ Function Get-Space {
 try {
 
     Get-Space
-
     exit 0
 }
 catch {
+    Add-Content ".\assets\settings\log.txt" -Value "$_"
     exit 1
 }

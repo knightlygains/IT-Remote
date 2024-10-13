@@ -44,6 +44,7 @@ Function Enable-RemoteRegistry {
         }
         catch {
             $ErrorMessage = $Comp + " Error: " + $_.Exception.Message
+            Add-Content ".\assets\settings\log.txt" -Value "$_"
         }
     }
 }
@@ -121,7 +122,7 @@ Function Get-InstalledSoftware {
             else {
                 $masterKeys = ($masterKeys | Where-Object $woFilter | Select-Object $props | Sort-Object Name)
             }
-           
+
             #$masterKeys
             if ($null -eq $masterKeys) {
                 $notFoundObject = [PSCustomObject]@{

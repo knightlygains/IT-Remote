@@ -95,11 +95,11 @@ Function Restart-PCs {
 
         $restartTime = "$dateMonth/$dateDay/$dateYear, $formatted_time"
 
-        if ($shutdown -eq "True") {
+        if ($shutdown -eq "True") { #Shutdown, don't restart
             shutdown /s /m \\$comp /t $secondsToWait 2>&1 | out-string
             $action = "Shutdown"
         }
-        else {
+        else { # Restart instead
             shutdown /r /m \\$comp /t $secondsToWait 2>&1 | out-string
         }
         

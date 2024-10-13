@@ -22,6 +22,7 @@ try {
     }
 }
 catch {
+    Set-Error -Value "$_"
     exit 1
 }
 
@@ -158,7 +159,7 @@ Function CheckBattery {
         Set-Content -Path $result_json_path -Value (ConvertTo-Json $results) -ErrorAction Stop
     }
     catch {
-        Write-Host "Couldnt make json $_"
+        Set-Error "$_"
         exit 1
     }
 

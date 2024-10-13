@@ -45,7 +45,7 @@ With Python's subprocess module, IT Remote launches custom powershell scripts wi
 
 3. Activate the virtual environment `C:\Users\Username\IT-Remote-main\.venv\Scripts\activate`
 
-4. Install Flet v0.23 `pip install flet==0.23`
+4. Install Flet v0.23.2 `pip install flet==0.23.2`
 
 5. Run the app `flet run C:\Users\Username\IT-Remote-main\main.py`
 
@@ -57,9 +57,3 @@ With Python's subprocess module, IT Remote launches custom powershell scripts wi
 2. Follow flet build instructions [here](https://flet.dev/docs/publish)
 3. Make sure project structure matches the one showed in the link above
 4. run `flet build windows -o "desired\output\directory"` while in the directory of main.py
-
-# Build Installer
-
-1. Install [NSIS](https://nsis.sourceforge.io/Main_Page)
-2. Open create_installer.nsi in your preferred text editor
-3. Edit values accordingly

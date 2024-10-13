@@ -11,7 +11,7 @@ from assets.py_files.settings_values import settings_values, custom_scripts, loa
 load_settings(e=None, update=False)
 
 # Create recent_computers.json
-recent_computers_path = "settings/recent_computers.json"
+recent_computers_path = "assets/settings/recent_computers.json"
 if os.path.exists(recent_computers_path) == False:
     with open(recent_computers_path, "w") as file:
         print(f"{recent_computers_path} created")
@@ -2384,7 +2384,7 @@ Registry path: {program['RegPath']}"""
         
         no_scripts = ft.Container( # Show this if no scripts are added
             content=ft.Row([
-                ft.Text("No scripts added yet", expand=True, text_align="center")
+                ft.Text("No scripts added yet", expand=True, text_align="center", color="black")
             ], expand=True),
             padding=ft.padding.only(0, 20, 0, 0)
         )
@@ -2783,6 +2783,13 @@ Registry path: {program['RegPath']}"""
     
     # -------------------- SETTINGS --------------------
     def check_for_changes(e):
+        """Re-enables the apply button for settings window.
+        This function should only be triggered if a setting
+        option was clicked or changed.
+
+        Args:
+            e (Flet control): Nothing happens with this arg
+        """
         settings_save_btn.disabled = False
         settings_save_btn.update()
     
@@ -2817,7 +2824,7 @@ Registry path: {program['RegPath']}"""
     settings_save_btn = ft.FilledButton("Apply", tooltip="test", icon=ft.icons.SAVE, on_click=update_settings, disabled=True)
     settings_about_app = TutorialBtn(["About IT Remote", text_values.settings_about_app_txt], on_click=open_tutorial_modal)
     
-    theme_mode = ft.Switch(label="Dark Theme", value=settings_values['dark_theme'])
+    theme_mode = ft.Switch(label="Dark Theme", value=settings_values['dark_theme'], on_change=check_for_changes)
     
     home_tab_radio_grp = ft.RadioGroup(
         content=ft.Row([
@@ -3369,9 +3376,7 @@ Registry path: {program['RegPath']}"""
             else:
                 return True
     
-    admin = has_admin()
-    
-    if admin:
+    if has_admin():
         setup_view = ft.Container(
                 content=ft.Column([
                     ft.Text("PowerShell 7 and PsTools are required for this program to work."),
@@ -3405,7 +3410,7 @@ Registry path: {program['RegPath']}"""
     page_view = setup_view
     
     #Finally build the page
-    if os.path.exists(f"{settings_values['pwsh_path']}") and os.path.exists(f"{settings_values['pstools_path']}\\PsExec.exe") and admin:
+    if os.path.exists(f"{settings_values['pwsh_path']}") and os.path.exists(f"{settings_values['pstools_path']}\\PsExec.exe") and has_admin():
         # Main Program page view
         page_view = main_view
     else:
@@ -3416,5 +3421,7 @@ Registry path: {program['RegPath']}"""
         drag_window,
         page_view
     )
+    
+    page.update()
 
 ft.app(target=main)

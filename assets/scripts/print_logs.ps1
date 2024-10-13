@@ -3,8 +3,10 @@ param (
     [string] $type
 )
 
-if ($Computer -like "localhost") {
-    $Computer = $env:COMPUTERNAME
+. .\assets\scripts\functions.ps1
+$dontInvoke = $false
+if ($Computer -like $env:COMPUTERNAME) {
+    $dontInvoke = $true
 }
 
 # Enable print service log
@@ -17,9 +19,16 @@ $enable_log_sb = {
 }
 
 try {
-    Invoke-Command -ComputerName $Computer -ScriptBlock $enable_log_sb -ErrorAction Stop
+
+    if($dontInvoke){
+        & $enable_log_sb
+    }else{
+        Invoke-Command -ComputerName $Computer -ScriptBlock $enable_log_sb -ErrorAction Stop
+    }
+    
 }
 catch {
+    Set-Error "$_"
     exit 1
 }
 
@@ -31,6 +40,7 @@ try {
     }
 }
 catch {
+    Set-Error "$_"
     exit 1
 }
 
@@ -45,11 +55,16 @@ $event_obj = ConvertFrom-Json $json_format
 $event_num = 1
 
 try {
-    $result = Invoke-Command -ComputerName $Computer -ScriptBlock {
-        param($type)
-        $logs = Get-WinEvent "Microsoft-Windows-PrintService/$type" -MaxEvents 100
-        return $logs
-    } -ArgumentList $type -ErrorAction Stop
+
+    if($dontInvoke){
+        $result = Get-WinEvent "Microsoft-Windows-PrintService/$type" -MaxEvents 100
+    }else{
+        $result = Invoke-Command -ComputerName $Computer -ScriptBlock {
+            param($type)
+            $logs = Get-WinEvent "Microsoft-Windows-PrintService/$type" -MaxEvents 100
+            return $logs
+        } -ArgumentList $type -ErrorAction Stop
+    }
 
     function Escape-Text {
         param($text)
@@ -81,6 +96,7 @@ try {
     }
 }
 catch {
+    Set-Error "$_"
     exit 1
 }
 
@@ -88,5 +104,6 @@ try {
     Set-Content -Path $result_json_path -Value (ConvertTo-Json $event_obj) -ErrorAction Stop
 }
 catch {
+    Set-Error "$_"
     exit 1
 }
