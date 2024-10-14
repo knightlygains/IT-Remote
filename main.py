@@ -1,6 +1,6 @@
 import flet as ft # Must be version 0.23.2 for now
 import the_shell
-import datetime, json, re, subprocess, os, time, socket, pathlib, csv
+import datetime, json, re, subprocess, ctypes, os, time, socket, pathlib, csv
 from tutorial_btn import TutorialBtn
 import text_values as text_values # Long text values stored in separate file
 from dynamic_modal import DynamicModal
@@ -3271,7 +3271,7 @@ Registry path: {program['RegPath']}"""
         e.control.bgcolor = "white" if e.data == "true" else None
         e.control.border_radius = 50 if e.data =="true" else 0
         e.control.update()
-        
+    
     donate_view = ft.Column([
         ft.Row([
             ft.Column([
@@ -3373,13 +3373,12 @@ Registry path: {program['RegPath']}"""
     )
     
     def has_admin():
-        if os.name == 'nt':
-            try:
-                # only windows users with admin privileges can read the C:\windows\temp
-                temp = os.listdir(os.sep.join([os.environ.get('SystemRoot','C:\\windows'),'temp']))
-                return True
-            except:
-                return False
+        try:
+            is_admin = os.getuid() == 0
+            return is_admin
+        except AttributeError:
+            is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+            return is_admin
     
     setup_view = ft.Container(
         content=ft.Column([
@@ -3404,14 +3403,21 @@ Registry path: {program['RegPath']}"""
         padding=ft.padding.only(top=10, left=10, bottom=10, right=10)
     )
     
-    if not has_admin():
-        update_results("No Admin", "Please re-run this app as admin.", gen_result_id, "localhost")
-    
     page_view = setup_view
     
+    if not has_admin() == True:
+        update_results("No Admin", "Please re-run this app as admin.", gen_result_id, "localhost")
+        print("No admin detected")
+    else:
+        print("Admin detected")
+
+    
+    # Check if paths to tools are valid, if so show main program view
     if os.path.exists(f"{settings_values['pwsh_path']}") and os.path.exists(f"{settings_values['pstools_path']}"):
         # Main Program page view
+        print("Valid PsTools")
         page_view = main_view
+        page.update()
     
     #Finally build the page
     page.add(
