@@ -1,6 +1,6 @@
-import flet as ft # Must be version 23 for now
+import flet as ft # Must be version 0.23.2 for now
 import the_shell
-import datetime, json, re, subprocess, os, time, socket, pathlib, uuid, csv
+import datetime, json, re, subprocess, os, time, socket, pathlib, csv
 from tutorial_btn import TutorialBtn
 import text_values as text_values # Long text values stored in separate file
 from dynamic_modal import DynamicModal
@@ -18,7 +18,7 @@ if os.path.exists(recent_computers_path) == False:
         init_data = {"computers":[]}
         json.dump(init_data, file, indent=4)
 
-list_path = "settings/lists/computers.txt"
+list_path = "assets/settings/lists/computers.txt"
 
 #Cleanup old files
 printers_path = "assets/results/Printers"
@@ -148,11 +148,17 @@ def main(page: ft.Page):
         generate_scripts() # Call this mainly to update colors
         page.update()
     
+    # generate a unique ID string for results
+    result_id_num = 0
+    def gen_result_id():
+        nonlocal result_id_num
+        return f"result_{result_id_num}"
+    
     # -------------------- COMPUTER NAME --------------------
     def ping(e):
         if check_computer_name() and process_not_running("Ping", computer_name.value):
             computer = computer_name.value
-            id = uuid.uuid4()
+            id = gen_result_id()
             add_new_process(new_process("Ping", [computer_name.value], date_time(), id))
             show_message(f"Pinging {computer_name.value}")
             powershell = the_shell.Power_Shell()
@@ -561,6 +567,7 @@ def main(page: ft.Page):
     
     snack_bar = ft.SnackBar(content=ft.Text(""))
     page.overlay.append(snack_bar)
+    
     def show_message(message, **kwargs):
         nonlocal snack_bar
         snack_bar.duration = 3000
@@ -603,13 +610,12 @@ def main(page: ft.Page):
                     show_message("List is empty.")
                     return False
                 
-                if re.compile('[^a-zA-Z0-9\\n-]').search(computers):
+                if re.compile('[^a-zA-Z0-9\\n-]').search(computers): # Regex: match a single character not present in the set
                     show_message("The list is not formatted properly or contains illegal characters.")
                     return False
                 else:
                     return True
         except FileNotFoundError as e:
-            print(e)
             with open(list_path, "x") as file:
                 print("Computer list file created.")
         
@@ -1206,7 +1212,7 @@ def main(page: ft.Page):
             else:
                 return False
             
-        id = uuid.uuid4()
+        id = gen_result_id()
         if print_wiz_view:
             computer = printer_wiz_target_computer
             if check_processes(computer):
@@ -1532,7 +1538,7 @@ Registry path: {program['RegPath']}"""
         if settings_values['enable_win_rm'] and check_computer_name() and process_not_running("WinRM", computer_name.value):
             if computer == None:
                 computer = computer_name.value
-            id = uuid.uuid4()
+            id = gen_result_id()
             add_new_process(new_process("WinRM", [computer], date_time(), id))
             powershell = the_shell.Power_Shell()
             result = powershell.enable_winrm(computer)
@@ -1549,7 +1555,7 @@ Registry path: {program['RegPath']}"""
                 process_not_running("Get Printers", computer)
             ):
             close_printer_dlg(e)
-            id = uuid.uuid4()
+            id = gen_result_id()
             add_new_process(new_process("Rename Printer", [computer], date_time(), id))
             show_message(f"Renaming printer on {computer}")
             powershell = the_shell.Power_Shell()
@@ -1744,7 +1750,7 @@ Registry path: {program['RegPath']}"""
                     show_message(f"Getting printers on {computer}")
                     enable_winrm(computer)
                 printer_wiz_target_computer = computer
-                id = uuid.uuid4()
+                id = gen_result_id()
                 add_new_process(new_process("Get Printers", [computer], date_time(), id))
                 powershell = the_shell.Power_Shell()
                 result = powershell.printer_wizard(computer=computer)
@@ -1765,7 +1771,7 @@ Registry path: {program['RegPath']}"""
                 process_not_running("Rename Printer", ctr_computer) and
                 process_not_running("Get Printers", ctr_computer)
             ):
-            id = uuid.uuid4()
+            id = gen_result_id()
             add_new_process(new_process("Test Page", [ctr_computer], date_time(), id))
             show_message(f"Printing test page from {ctr_computer}.")
             powershell = the_shell.Power_Shell()
@@ -1787,7 +1793,7 @@ Registry path: {program['RegPath']}"""
                 process_not_running("Rename Printer", ctr_computer)
             ):
             close_dialog()
-            id = uuid.uuid4()
+            id = gen_result_id()
             add_new_process(new_process("Uninstall Printer", [ctr_computer], date_time(), id))
             show_message(f"Uninstalling printer from {ctr_computer}.")
             powershell = the_shell.Power_Shell()
@@ -1801,7 +1807,7 @@ Registry path: {program['RegPath']}"""
         if check_computer_name() and process_not_running(f"{type} Log", computer_name.value):
             computer = computer_name.value
             enable_winrm(computer)
-            id = uuid.uuid4()
+            id = gen_result_id()
             add_new_process(new_process(f"{type} Log", [computer], date_time(), id))
             show_message(f"Getting {type} print logs from {computer}.")
             powershell = the_shell.Power_Shell()
@@ -1812,7 +1818,7 @@ Registry path: {program['RegPath']}"""
     def open_c_share(e):
         if check_computer_name():
             computer = computer_name.value
-            id = uuid.uuid4()
+            id = gen_result_id()
             add_new_process(new_process("C$ Share", [computer], date_time(), id))
             show_message(f"Opening c$ share for {computer}")
             powershell = the_shell.Power_Shell()
@@ -1824,7 +1830,7 @@ Registry path: {program['RegPath']}"""
     def open_event_log(e):
         if check_computer_name() and process_not_running("Event Viewer", computer_name.value):
             computer = computer_name.value
-            id = uuid.uuid4()
+            id = gen_result_id()
             add_new_process(new_process("Event Viewer", [computer], date_time(), id))
             show_message(f"Opening event viewer for {computer}")
             powershell = the_shell.Power_Shell()
@@ -2008,7 +2014,7 @@ Registry path: {program['RegPath']}"""
         else:
             use_list = False
         
-        id = uuid.uuid4()
+        id = gen_result_id()
         powershell = the_shell.Power_Shell()
         if use_list and check_list():
             add_new_process(new_process("Restart", [computer], date_time(), id))
@@ -2029,7 +2035,7 @@ Registry path: {program['RegPath']}"""
         if check_computer_name() and process_not_running("User IDs", computer_name.value):
             computer = computer_name.value
             show_message(f"Getting user IDs on {computer}")
-            id = uuid.uuid4()
+            id = gen_result_id()
             powershell = the_shell.Power_Shell()
             enable_winrm(computer)
             add_new_process(new_process("User IDs", [computer], date_time(), id))
@@ -2086,7 +2092,7 @@ Registry path: {program['RegPath']}"""
                 enable_winrm(computer)
             # else skip winrm here, it will be done in script
             
-            id = uuid.uuid4()
+            id = gen_result_id()
             
             # If we are using a list of pcs,
             # get each pc from list and create
@@ -2397,7 +2403,7 @@ Registry path: {program['RegPath']}"""
     generate_scripts()
     
     def check_space(e):
-        id = uuid.uuid4()
+        id = gen_result_id()
         use_list = use_list_checkbox.value
         if use_list and check_list():
             computer = "list of computers"
@@ -2426,7 +2432,7 @@ Registry path: {program['RegPath']}"""
         
         all = e.control.data
         
-        id = uuid.uuid4()
+        id = gen_result_id()
         powershell = the_shell.Power_Shell()
         use_list = programs_use_list_checkbox.value
         if use_list and check_list():
@@ -2556,7 +2562,7 @@ Registry path: {program['RegPath']}"""
         page.update()
     
     def check_battery(e):
-        id = uuid.uuid4()
+        id = gen_result_id()
         powershell = the_shell.Power_Shell()
         use_list = are_you_sure(
             e, 
@@ -2609,7 +2615,7 @@ Registry path: {program['RegPath']}"""
             
     def get_uptime(e):
         if check_computer_name() and process_not_running("Get Uptime", computer_name.value):
-            id = uuid.uuid4()
+            id = gen_result_id()
             powershell = the_shell.Power_Shell()
             computer = computer_name.value
             enable_winrm(computer)
@@ -2621,7 +2627,7 @@ Registry path: {program['RegPath']}"""
     
     def msinfo_32(e):
         if check_computer_name() and process_not_running("MsInfo32", computer_name.value):
-            id = uuid.uuid4()
+            id = gen_result_id()
             powershell = the_shell.Power_Shell()
             computer = computer_name.value
             enable_winrm(computer)
@@ -2651,7 +2657,7 @@ Registry path: {program['RegPath']}"""
         name = data['name']
         
         if process_not_running("Log Off User", computer):
-            id = uuid.uuid4()
+            id = gen_result_id()
             powershell = the_shell.Power_Shell()
             computer = computer_name.value
             add_new_process(new_process("Log Off User", [computer], date_time(), id))
@@ -3331,7 +3337,7 @@ Registry path: {program['RegPath']}"""
                 powershell_checkmark.visible = True
             elif file.name == "PsExec.exe" or file.name == "PsService.exe": 
                 pstools_path_text.value = f"{file.path}"
-                settings_values['pstools_path'] = file.path.replace(f"\\{file.name}", "")
+                settings_values['pstools_path'] = f"{file.path}"
                 pstools_checkmark.visible = True
             else:
                 show_message("Invalid program.")
@@ -3371,57 +3377,46 @@ Registry path: {program['RegPath']}"""
             try:
                 # only windows users with admin privileges can read the C:\windows\temp
                 temp = os.listdir(os.sep.join([os.environ.get('SystemRoot','C:\\windows'),'temp']))
+                return True
             except:
                 return False
-            else:
-                return True
     
-    if has_admin():
-        setup_view = ft.Container(
-                content=ft.Column([
-                    ft.Text("PowerShell 7 and PsTools are required for this program to work."),
-                    ft.Text("Click browse to select the respective executables in their install location."),
-                    ft.TextButton("Browse", on_click=lambda _: pick_path_dialog.pick_files(
-                        allow_multiple=False,
-                        allowed_extensions=['exe'],
-                        initial_directory="C:\\"
-                    )),
-                    ft.Row([
-                        ft.Text("pwsh.exe: ", weight=ft.FontWeight.BOLD),
-                        powershell_path_text,
-                        powershell_checkmark
-                    ]),
-                    ft.Row([
-                        ft.Text("PsExec.exe\\PsService.exe: ", weight=ft.FontWeight.BOLD),
-                        pstools_path_text,
-                        pstools_checkmark
-                    ])
-                ]),
-                padding=ft.padding.only(top=10, left=10, bottom=10, right=10)
-            )
-    else:
-        setup_view = ft.Container(
-            content=ft.Column([
-                ft.Text("Please re-run this application as an administrator. You can go to the .exe properties -> Compatibility -> check the box: 'Run this program as an administrator'.")
+    setup_view = ft.Container(
+        content=ft.Column([
+            ft.Text(text_values.setup_pstools),
+            ft.Text("Click browse to select the respective executables in their install location."),
+            ft.TextButton("Browse", on_click=lambda _: pick_path_dialog.pick_files(
+                allow_multiple=False,
+                allowed_extensions=['exe'],
+                initial_directory="C:\\"
+            )),
+            ft.Row([
+                ft.Text("pwsh.exe: ", weight=ft.FontWeight.BOLD),
+                powershell_path_text,
+                powershell_checkmark
             ]),
-            padding=ft.padding.only(top=10, left=10, bottom=10, right=10)
-        )
+            ft.Row([
+                ft.Text("PsExec.exe\\PsService.exe: ", weight=ft.FontWeight.BOLD),
+                pstools_path_text,
+                pstools_checkmark
+            ])
+        ]),
+        padding=ft.padding.only(top=10, left=10, bottom=10, right=10)
+    )
+    
+    if not has_admin():
+        update_results("No Admin", "Please re-run this app as admin.", gen_result_id, "localhost")
     
     page_view = setup_view
     
-    #Finally build the page
-    if os.path.exists(f"{settings_values['pwsh_path']}") and os.path.exists(f"{settings_values['pstools_path']}\\PsExec.exe") and has_admin():
+    if os.path.exists(f"{settings_values['pwsh_path']}") and os.path.exists(f"{settings_values['pstools_path']}\\PsExec.exe"):
         # Main Program page view
         page_view = main_view
-    else:
-        # Setup executable locations page view
-        page_view = setup_view
     
+    #Finally build the page
     page.add(
         drag_window,
         page_view
     )
-    
-    page.update()
 
-ft.app(target=main)
+ft.app(target=main, assets_dir="assets")

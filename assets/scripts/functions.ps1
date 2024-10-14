@@ -14,7 +14,8 @@ Function Enable-WinRM {
         [string]$winRM = $true
     )
 
-    if ($winRM -eq $true) {
+    if ($winRM -eq $true -AND $Computer -ne $env:COMPUTERNAME) {
+        # We also check if we are running on local PC. No need for WinRM locally.
         psexec.exe \\$Computer -s -nobanner -accepteula powershell Enable-PSRemoting -Force
 
         try {
