@@ -3409,7 +3409,7 @@ Registry path: {program['RegPath']}"""
     
     page_view = setup_view
     
-    if os.path.exists(f"{settings_values['pwsh_path']}") and os.path.exists(f"{settings_values['pstools_path']}\\PsExec.exe"):
+    if os.path.exists(f"{settings_values['pwsh_path']}") and os.path.exists(f"{settings_values['pstools_path']}"):
         # Main Program page view
         page_view = main_view
     
