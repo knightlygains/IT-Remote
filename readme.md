@@ -2,6 +2,8 @@
 
 <img src="assets/icon.png" alt="IT Remote Logo" width="100">
 
+[Download here](https://github.com/knightlygains/IT-Remote/releases)
+
 ***Dev install instructions at the bottom***
 
 IT Remote is a PowerShell GUI built using Python, Flet, and custom PowerShell scripts. Its goal is to allow you to get useful information from Windows PCs on your domain and troubleshoot them remotely.
