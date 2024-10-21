@@ -23,7 +23,7 @@ With Python's subprocess module, IT Remote launches custom powershell scripts wi
 
 * Ping a remote PC
 * Get a list of installed printers and their info, rename them, uninstall them, and send testpages to them
-* Schedule a restart on 1 or multiple PCs with an untuitive UI
+* Schedule a restart on 1 or multiple PCs with an intuitive UI
 * Obtain a list of all installed software or specific programs on 1 or multiple PCs
 * Check available space on all attached disks on 1 or multiple PCs
 * Clear space on 1 or multiple PCs including user profiles, Windows/Temp, Windows/Prefetch, and recycle bin
