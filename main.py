@@ -152,6 +152,7 @@ def main(page: ft.Page):
     result_id_num = 0
     def gen_result_id():
         nonlocal result_id_num
+        result_id_num += 1
         return f"result_{result_id_num}"
     
     # -------------------- COMPUTER NAME --------------------
