@@ -634,7 +634,7 @@ def main(page: ft.Page):
         day = day.group(1)
         return day
     
-    def update_results(title_text, data, id, computer, **kwargs):
+    def update_results(title_text = None, data = None, id = None, computer = None, **kwargs):
         print_log_card = False
         print_wiz_card = False
         check_space_card = False
@@ -642,8 +642,9 @@ def main(page: ft.Page):
         
         date = date_time()
         
-        if computer.lower() == "localhost":
-            computer = socket.gethostname()
+        if computer != None:
+            if computer.lower() == "localhost":
+                computer = socket.gethostname()
         
         for key, value in kwargs.items():
             if key == "print_log":
@@ -656,30 +657,34 @@ def main(page: ft.Page):
                 check_space_card = value
             if key == "subtitle":
                 subtitle=value  
+            if key == "app_result":
+                app_result = value
         
-        if computer not in list_of_computernames and computer != "list of computers":
-            list_of_computernames.append(computer)
-            comp_checkboxes.append(ft.Checkbox(label=f"{computer}", value=True, data=f"{computer}"))
+        if app_result != True:
         
-        if title_text not in list_of_actions:
-            list_of_actions.append(title_text)
-            action_checkboxes.append(ft.Checkbox(label=f"{title_text}", value=True, data=f"{title_text}"))
-        
-        # Get the day of the week the result was generated
-        day = find_day(date)
-        if day not in list_of_days:
-            list_of_days.append(day)
-            date_checkboxes.append(ft.Checkbox(label=f"{day}", value=True, data=f"{day}"))
-        
-        if computer != "list of computers":
-            update_recent_computers(computer, date, title_text)
-        
-        if print_log_card:
-            data = f"assets/results/Printers/{computer}-Printers-{type}-logs.json"
-        elif print_wiz_card:
-            data = f"assets/results/Printers/{computer}-Printers.json"
-        elif check_space_card:
-            data = f"assets/results/ClearSpace/{id}-Space-Available.json"
+            if computer not in list_of_computernames and computer != "list of computers":
+                list_of_computernames.append(computer)
+                comp_checkboxes.append(ft.Checkbox(label=f"{computer}", value=True, data=f"{computer}"))
+            
+            if title_text not in list_of_actions:
+                list_of_actions.append(title_text)
+                action_checkboxes.append(ft.Checkbox(label=f"{title_text}", value=True, data=f"{title_text}"))
+            
+            # Get the day of the week the result was generated
+            day = find_day(date)
+            if day not in list_of_days:
+                list_of_days.append(day)
+                date_checkboxes.append(ft.Checkbox(label=f"{day}", value=True, data=f"{day}"))
+            
+            if computer != "list of computers":
+                update_recent_computers(computer, date, title_text)
+            
+            if print_log_card:
+                data = f"assets/results/Printers/{computer}-Printers-{type}-logs.json"
+            elif print_wiz_card:
+                data = f"assets/results/Printers/{computer}-Printers.json"
+            elif check_space_card:
+                data = f"assets/results/ClearSpace/{id}-Space-Available.json"
         
         card = generate_result_card(
             leading = ft.Icon(ft.icons.TERMINAL),
@@ -1319,7 +1324,21 @@ def main(page: ft.Page):
         page.open(check_space_card.get_modal())
         page.update()
     
+    
+    
+    
     def export_data(e):
+        """on_click: pass the control's data as a dict.
+
+        Args:
+            e (dict): a dict that should contain either values for csv data or a
+            value for txt_document (bool) and txt_data (string)
+        """
+        filename = None
+        data = None
+        list_of_column_names = None
+        txt_document = None
+        txt_data = None
         for key, value in e.control.data.items():
             if key == "FileName":
                 filename = value
@@ -1327,6 +1346,22 @@ def main(page: ft.Page):
                 data = value
             if key == "columns":
                 list_of_column_names = value
+            if key == "txt_document":
+                txt_document = value
+            if key == "txt_data":
+                txt_data = value
+        
+        # Filepicker for picking directory
+        def select_directory(e: ft.FilePickerResultEvent):
+            save_location.value = e.path
+            save_location.error_text = None
+            save_location.update()
+        
+        pick_directory_dialog = ft.FilePicker(
+            on_result=select_directory,
+        )
+            
+        page.overlay.append(pick_directory_dialog)
         
         def check_directory(e):
             if os.path.exists(f"{e.control.value}"):
@@ -1347,40 +1382,59 @@ def main(page: ft.Page):
             value=pathlib.Path.home()
         )
         
-        # Filepicker for picking directory
-        def select_directory(e: ft.FilePickerResultEvent):
-            save_location.value = e.path
-            save_location.error_text = None
-            save_location.update()
-
-        pick_directory_dialog = ft.FilePicker(
-            on_result=select_directory,
-        )
-        
-        page.overlay.append(pick_directory_dialog) 
-        
         def save(e):
-            if save_location.error_text == None and name.value != "":
-                with open(f"{save_location.value}\\{name.value}.csv", "w", encoding='utf-8', newline='') as file:
-                    writer = csv.writer(file)
-                    # Write column names
-                    writer.writerow(list_of_column_names)
-                    
-                    # for each result, write a row
-                    for result in data:
-                        list_of_results = []
-                        for key, value in result.items():
-                            list_of_results.append(value)
-                        writer.writerow(list_of_results)
-                    
-                close_dialog(e)
-            else:
-                if os.path.exists(f"{save_location.value}") == False:
-                    save_location.error_text = "Path must be correct"
-                if name.value == "":
-                    name.error_text = "Cannot be empty"
-                page.update()
+            if txt_document == None or txt_document == False: # saving csv
                 
+                if save_location.error_text == None and name.value != "":
+                    with open(f"{save_location.value}\\{name.value}.csv", "w", encoding='utf-8', newline='') as file:
+                        writer = csv.writer(file)
+                        # Write column names
+                        writer.writerow(list_of_column_names)
+                        
+                        # for each result, write a row
+                        for result in data:
+                            list_of_results = []
+                            for key, value in result.items():
+                                list_of_results.append(value)
+                            writer.writerow(list_of_results)
+                        
+                    close_dialog(e)
+                else:
+                    if os.path.exists(f"{save_location.value}") == False:
+                        save_location.error_text = "Path must be correct"
+                    if name.value == "":
+                        name.error_text = "Cannot be empty"
+                    page.update()
+                    
+            else: # saving txt
+                
+                if save_location.error_text == None and name.value != "":
+                    
+                    with open(txt_data, "r") as txt:
+                        txt_content = txt.readlines()
+                        
+                    with open(f"{save_location.value}\\{name.value}.txt", "w") as file:
+                        # for each result, write a row
+                        print("Saved:", f"{save_location.value}\\{name.value}.txt")
+
+                        for result in txt_content:
+                            file.write(result)
+                        
+                    close_dialog(e)
+                else:
+                    if os.path.exists(f"{save_location.value}") == False:
+                        save_location.error_text = "Path must be correct"
+                    if name.value == "":
+                        name.error_text = "Cannot be empty"
+                    page.update()
+        
+        def browse(e):
+            pick_directory_dialog.get_directory_path(
+                initial_directory=pathlib.Path.home(),
+                dialog_title="Choose a save location"
+            )
+            page.update()
+        
         content = ft.Column([
             ft.Text("(Do not include file extension)"),
             name,
@@ -1388,10 +1442,7 @@ def main(page: ft.Page):
                 save_location,
                 ft.FilledTonalButton(
                     "Browse",
-                    on_click=lambda _: pick_directory_dialog.get_directory_path(
-                        initial_directory=pathlib.Path.home(),
-                        dialog_title="Choose a save location"
-                    )
+                    on_click=browse
                 )
             ]),
             ft.FilledTonalButton("Save", on_click=save)
@@ -2759,7 +2810,60 @@ Registry path: {program['RegPath']}"""
         on_click=filter_results,
     )
     
+    def open_errors(e):
+        try:
+            with open("assets/settings/log.txt", "r") as file:
+                errors = file.readlines()
+                list_of_errors = []
+                
+                for err in errors:
+                    
+                    err_container = ft.Container(
+                        content=ft.Row([
+                            ft.Text(f"{err}", selectable=True)    
+                        ], wrap=True),
+                        padding=2,
+                        border=ft.border.all(2, settings_values['app_color']),
+                        width=500
+                    )
+                    
+                    list_of_errors.append(err_container)
+                
+                if len(list_of_errors) < 1:
+                    list_of_errors.append(ft.Text("No errors found"))
+                
+                data = {
+                    "txt_document": True,
+                    "txt_data": "assets/settings/log.txt"
+                }
+                
+                content_container = ft.Column([
+                    ft.TextButton("Export", on_click=export_data, data=data),
+                    ft.Column(
+                        list_of_errors,
+                        spacing=1,
+                        scroll=ft.ScrollMode.AUTO
+                    )
+                ])
+                
+                modal = DynamicModal(
+                    title=f"PowerShell Error Log",
+                    content=content_container,
+                    close_modal_func=close_dialog,
+                    nolistview=True
+                )
+                
+                page.open(modal.get_modal())
+                page.update()
+                
+                while modal.modal.open:
+                    pass
+                
+        except Exception as e:
+            update_results("Error Logs", f"Error: {e}", gen_result_id(), app_result=True)
+        
     clear_results_label = ft.Text("Clear Results:", weight=ft.FontWeight.BOLD)
+    error_log = ft.TextButton("View Error Log", on_click=open_errors)
     
     home = ft.Column([
         computer_top_row,
@@ -2774,6 +2878,7 @@ Registry path: {program['RegPath']}"""
             
             ft.Column([
                 ft.Row([
+                    error_log,
                     clear_results_label,
                     ft.IconButton(
                         icon=ft.icons.CLOSE,
