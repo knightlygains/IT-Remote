@@ -638,6 +638,7 @@ def main(page: ft.Page):
         print_log_card = False
         print_wiz_card = False
         check_space_card = False
+        app_result = False
         subtitle=data
         
         date = date_time()
@@ -659,6 +660,7 @@ def main(page: ft.Page):
                 subtitle=value  
             if key == "app_result":
                 app_result = value
+                
         
         if app_result != True:
         
