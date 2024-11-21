@@ -33,13 +33,8 @@ class Power_Shell():
             return f"WinRM could not be enabled on {computer}."
     
     def ping(self, computer):
-        p = subprocess.call([self.pspath, "-File", f"./assets/scripts/ping_computer.ps1", f"{computer}"], creationflags=self.no_window)
-        if p == 0:
-            return f"{computer} is online."
-        elif p == 2:
-            return f"Connection to {computer} timed out."
-        else:
-            return f"Couldn't ping {computer}."
+        p = subprocess.run([self.pspath, "-File", f"./assets/scripts/ping_computer.ps1", f"{computer}"], text=True, capture_output=True, encoding='utf-8').stdout
+        return p
     
     def quser(self, computer):
         p = subprocess.getoutput([self.pspath, "-File", f"./assets/scripts/whosLoggedIn.ps1", f"{computer}" ], creationflags=self.no_window)

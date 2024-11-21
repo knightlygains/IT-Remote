@@ -50,8 +50,13 @@ if os.path.exists(uptime_path):
     for filename in os.listdir(uptime_path):
         pathlib.Path(f"{uptime_path}/{filename}").unlink()
 
+
+
 # Program
 def main(page: ft.Page):
+    #Setup PowerShell
+    powershell = the_shell.Power_Shell()
+    
     page.fonts = {
         "Consola": "assets/fonts/Consola.ttf"
     }
@@ -148,6 +153,8 @@ def main(page: ft.Page):
         generate_scripts() # Call this mainly to update colors
         page.update()
     
+    
+    
     # generate a unique ID string for results
     result_id_num = 0
     def gen_result_id():
@@ -157,12 +164,13 @@ def main(page: ft.Page):
     
     # -------------------- COMPUTER NAME --------------------
     def ping(e):
+        nonlocal powershell
         if check_computer_name() and process_not_running("Ping", computer_name.value):
             computer = computer_name.value
             id = gen_result_id()
             add_new_process(new_process("Ping", [computer_name.value], date_time(), id))
             show_message(f"Pinging {computer_name.value}")
-            powershell = the_shell.Power_Shell()
+            
             result = powershell.ping(computer=computer_name.value)
             update_results("Ping", result, id, computer)
             end_of_process(id)
@@ -334,8 +342,6 @@ def main(page: ft.Page):
     
     # Store list of runing processes here for tooltip
     list_of_processes = []
-    
-    
     
     # Store a list of computernames we have run actions on.
     list_of_computernames = []
@@ -1227,7 +1233,6 @@ def main(page: ft.Page):
                 enable_winrm(computer)
                 add_new_process(new_process("Restart Print Spooler", [computer], date_time(), id))
                 show_message(f"Restarting Print Spooler on {computer}")
-                powershell = the_shell.Power_Shell()
                 result = powershell.restart_print_spool(computer=computer)
                 end_of_process(id)
         else:
@@ -1236,7 +1241,7 @@ def main(page: ft.Page):
                 enable_winrm(computer)
                 add_new_process(new_process("Restart Print Spooler", [computer], date_time(), id))
                 show_message(f"Restarting Print Spooler on {computer}")
-                powershell = the_shell.Power_Shell()
+                
                 result = powershell.restart_print_spool(computer=computer)
                 update_results("Restart Print Spooler", result, id, computer)
                 end_of_process(id)
@@ -1594,7 +1599,7 @@ Registry path: {program['RegPath']}"""
                 computer = computer_name.value
             id = gen_result_id()
             add_new_process(new_process("WinRM", [computer], date_time(), id))
-            powershell = the_shell.Power_Shell()
+            
             result = powershell.enable_winrm(computer)
             if settings_values['supress_winrm_results'] != True:
                 update_results("WinRM", result, id, computer)
@@ -1612,7 +1617,7 @@ Registry path: {program['RegPath']}"""
             id = gen_result_id()
             add_new_process(new_process("Rename Printer", [computer], date_time(), id))
             show_message(f"Renaming printer on {computer}")
-            powershell = the_shell.Power_Shell()
+            
             result = powershell.rename_printer(computer=computer, printerName=printer_to_change, newName=new_printer_name.value)
             update_results("Rename Printer", result, id, computer)
             end_of_process(id)
@@ -1806,7 +1811,7 @@ Registry path: {program['RegPath']}"""
                 printer_wiz_target_computer = computer
                 id = gen_result_id()
                 add_new_process(new_process("Get Printers", [computer], date_time(), id))
-                powershell = the_shell.Power_Shell()
+                
                 result = powershell.printer_wizard(computer=computer)
                 if refresh == False:
                     update_results("Get Printers", data=result, id=id, computer=computer, print_wiz=True, subtitle=result)
@@ -1828,7 +1833,7 @@ Registry path: {program['RegPath']}"""
             id = gen_result_id()
             add_new_process(new_process("Test Page", [ctr_computer], date_time(), id))
             show_message(f"Printing test page from {ctr_computer}.")
-            powershell = the_shell.Power_Shell()
+            
             result = powershell.test_page(computer=ctr_computer, printerName=ctr_printer)
             update_results("Printer Test Page", data=result, id=id, computer=ctr_computer)
             end_of_process(id)
@@ -1850,7 +1855,7 @@ Registry path: {program['RegPath']}"""
             id = gen_result_id()
             add_new_process(new_process("Uninstall Printer", [ctr_computer], date_time(), id))
             show_message(f"Uninstalling printer from {ctr_computer}.")
-            powershell = the_shell.Power_Shell()
+            
             result = powershell.uninstall_printer(computer=ctr_computer, printerName=ctr_printer)
             update_results("Uninstall Printer", result, id, ctr_computer)
             end_of_process(id)
@@ -1864,7 +1869,7 @@ Registry path: {program['RegPath']}"""
             id = gen_result_id()
             add_new_process(new_process(f"{type} Log", [computer], date_time(), id))
             show_message(f"Getting {type} print logs from {computer}.")
-            powershell = the_shell.Power_Shell()
+            
             result = powershell.print_logs(computer, type)
             update_results(title_text=f"{type} Log", data=result, id=id, computer=computer, print_log=True, type=type, subtitle=result)
             end_of_process(id)
@@ -1875,7 +1880,7 @@ Registry path: {program['RegPath']}"""
             id = gen_result_id()
             add_new_process(new_process("C$ Share", [computer], date_time(), id))
             show_message(f"Opening c$ share for {computer}")
-            powershell = the_shell.Power_Shell()
+            
             result = powershell.open_c_share(computer)
             if result != 0:
                 update_results(title_text="C$ Share", data=result, id=id, computer=computer, subtitle=f"Couldn't open C$ share on {computer}.")
@@ -1887,7 +1892,7 @@ Registry path: {program['RegPath']}"""
             id = gen_result_id()
             add_new_process(new_process("Event Viewer", [computer], date_time(), id))
             show_message(f"Opening event viewer for {computer}")
-            powershell = the_shell.Power_Shell()
+            
             result = powershell.event_viewer(computer)
             if result != 0:
                 update_results(title_text="Event Viewer", data=f"Couldn't open event viewer on {computer}.", id=id, computer=computer, subtitle=f"Couldn't open event viewer on {computer}.")
@@ -2069,7 +2074,7 @@ Registry path: {program['RegPath']}"""
             use_list = False
         
         id = gen_result_id()
-        powershell = the_shell.Power_Shell()
+        
         if use_list and check_list():
             add_new_process(new_process("Restart", [computer], date_time(), id))
             show_message(f"Restarting {computer}")
@@ -2090,7 +2095,7 @@ Registry path: {program['RegPath']}"""
             computer = computer_name.value
             show_message(f"Getting user IDs on {computer}")
             id = gen_result_id()
-            powershell = the_shell.Power_Shell()
+            
             enable_winrm(computer)
             add_new_process(new_process("User IDs", [computer], date_time(), id))
             result = powershell.get_user_ids(computer)
@@ -2109,7 +2114,7 @@ Registry path: {program['RegPath']}"""
     )
 
     def open_pc_list(e):
-        powershell = the_shell.Power_Shell()
+        
         powershell.open_pc_list()
     
     delete_users_checkbox = ft.Checkbox(label="Remove user profiles", value=False)
@@ -2164,7 +2169,7 @@ Registry path: {program['RegPath']}"""
                 add_new_process(new_process("Clear Space", [computer], date_time(), id))
                 show_message(f"Clearing space on {computer}.")
                 
-            powershell = the_shell.Power_Shell()
+            
             powershell.clear_space(computer=computer, users=users, logout=logout, winRM=settings_values['enable_win_rm'])
             
             if use_list_checkbox.value == True:
@@ -2192,7 +2197,7 @@ Registry path: {program['RegPath']}"""
         script = e.control.data
         if os.path.exists(script):
             ps_version = use_ps1.value
-            powershell = the_shell.Power_Shell()
+            
             powershell.launch_script(script, ps_version)
             show_message(f"Launching {script}.")
         else:
@@ -2463,7 +2468,7 @@ Registry path: {program['RegPath']}"""
             computer = "list of computers"
             add_new_process(new_process("Check Space", [computer], date_time(), id))
             show_message(f"Checking space on {computer}")
-            powershell = the_shell.Power_Shell()
+            
             result = powershell.check_space(computer=computer, id=id, winRM=settings_values['enable_win_rm'])
             update_results("Check Space", result, id=id, computer=computer, check_space=True, subtitle=result)
             end_of_process(id)
@@ -2473,7 +2478,7 @@ Registry path: {program['RegPath']}"""
                 enable_winrm(computer)
                 add_new_process(new_process("Check Space", [computer], date_time(), id))
                 show_message(f"Checking space on {computer}")
-                powershell = the_shell.Power_Shell()
+                
                 result = powershell.check_space(computer=computer, id=id, winRM=False)
                 update_results("Check Space", result, id=id, computer=computer, check_space=True, subtitle=result)
                 end_of_process(id)
@@ -2487,7 +2492,7 @@ Registry path: {program['RegPath']}"""
         all = e.control.data
         
         id = gen_result_id()
-        powershell = the_shell.Power_Shell()
+        
         use_list = programs_use_list_checkbox.value
         if use_list and check_list():
             computer = "list of computers"
@@ -2617,7 +2622,7 @@ Registry path: {program['RegPath']}"""
     
     def check_battery(e):
         id = gen_result_id()
-        powershell = the_shell.Power_Shell()
+        
         use_list = are_you_sure(
             e, 
             text="Do you want to check the battery status for each computer in the list of computers?", 
@@ -2670,7 +2675,7 @@ Registry path: {program['RegPath']}"""
     def get_uptime(e):
         if check_computer_name() and process_not_running("Get Uptime", computer_name.value):
             id = gen_result_id()
-            powershell = the_shell.Power_Shell()
+            
             computer = computer_name.value
             enable_winrm(computer)
             add_new_process(new_process("Get Uptime", [computer], date_time(), id))
@@ -2682,7 +2687,7 @@ Registry path: {program['RegPath']}"""
     def msinfo_32(e):
         if check_computer_name() and process_not_running("MsInfo32", computer_name.value):
             id = gen_result_id()
-            powershell = the_shell.Power_Shell()
+            
             computer = computer_name.value
             enable_winrm(computer)
             add_new_process(new_process("MsInfo32", [computer], date_time(), id))
@@ -2712,7 +2717,7 @@ Registry path: {program['RegPath']}"""
         
         if process_not_running("Log Off User", computer):
             id = gen_result_id()
-            powershell = the_shell.Power_Shell()
+            
             computer = computer_name.value
             add_new_process(new_process("Log Off User", [computer], date_time(), id))
             show_message(f"Logging off {name} on {computer}")
