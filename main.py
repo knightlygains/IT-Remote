@@ -2849,15 +2849,15 @@ Registry path: {program['RegPath']}"""
                     ft.Column(
                         list_of_errors,
                         spacing=1,
-                        scroll=ft.ScrollMode.AUTO
+                        scroll="auto"
                     )
-                ])
+                ], expand=True)
                 
                 modal = DynamicModal(
                     title=f"PowerShell Error Log",
                     content=content_container,
                     close_modal_func=close_dialog,
-                    nolistview=True
+                    nolistview=False
                 )
                 
                 page.open(modal.get_modal())
@@ -2870,7 +2870,7 @@ Registry path: {program['RegPath']}"""
             update_results("Error Logs", f"Error: {e}", gen_result_id(), app_result=True)
         
     clear_results_label = ft.Text("Clear Results:", weight=ft.FontWeight.BOLD)
-    error_log = ft.TextButton("View Error Log", on_click=open_errors)
+    error_log = ft.TextButton("View errors", on_click=open_errors)
     
     home = ft.Column([
         computer_top_row,
