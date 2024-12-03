@@ -52,7 +52,7 @@ def re_index_scripts(e):
     custom_scripts.sort(key=script_sort_key)
     print(custom_scripts)
 
-def update_scripts(e):
+def update_scripts(e=None):
     try:
         # Update custom scripts.
         # Should pull from dictionary and

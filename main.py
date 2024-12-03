@@ -83,9 +83,9 @@ def main(page: ft.Page):
             ),
             ft.WindowDragArea(ft.Container(
             ), height=37, expand=True),
-            ft.IconButton(ft.icons.MINIMIZE, data="min", on_click=min_max),
-            ft.IconButton(ft.icons.SQUARE_OUTLINED, data="toggle", on_click=min_max),
-            ft.IconButton(ft.icons.CLOSE, on_click=lambda _: page.window.close())
+            ft.IconButton("minimize", data="min", on_click=min_max),
+            ft.IconButton("square_outlined", data="toggle", on_click=min_max),
+            ft.IconButton("close", on_click=lambda _: page.window.close())
         ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
         bgcolor=settings_values['app_color']
     )
@@ -384,7 +384,7 @@ def main(page: ft.Page):
         page.update()
     
     running_processes_icon = ft.IconButton(
-        icon=ft.icons.TERMINAL, 
+        icon="terminal", 
         on_click=show_processes_modal, 
         tooltip="Running processes",
     )
@@ -432,7 +432,7 @@ def main(page: ft.Page):
             new_proc_card = ft.Card(
                 content=ft.Column([
                     ft.ListTile(
-                        leading=ft.Icon(name=ft.icons.TERMINAL_ROUNDED),
+                        leading=ft.Icon(name="terminal_rounded"),
                         title=ft.Text(process['name']),
                         subtitle=ft.Text(comps),
                     )
@@ -473,7 +473,6 @@ def main(page: ft.Page):
     def navigate_view(e):
         #If called by a control set equal to control value
         # Otherwise we are likely passing a specific index
-        
         try:
             index = e.control.selected_index
         except AttributeError:
@@ -482,7 +481,7 @@ def main(page: ft.Page):
         if index == 0:
             current_view.controls = [settings_view]
         if index == 1:
-            home_notification_badge.label_visible = False
+            home_badge(reset=True)
             current_view.controls = [home]
         if index == 2:
             # Actions Tab
@@ -500,9 +499,24 @@ def main(page: ft.Page):
             current_view.controls = [print_wizard_view]
         page.update()
     
-    home_notification_badge = ft.Badge(
-        content=ft.Icon(ft.icons.HOME_OUTLINED),
-        label_visible=False
+    home_icon_badge_count = 0
+    
+    def home_badge(e=None, increase=True, reset=False):
+        nonlocal home_icon_badge_count
+        if reset:
+            home_icon_badge_count = 0
+            increase = False
+        if increase:
+            home_icon_badge_count += 1
+        
+        if home_icon_badge_count == 0:
+            home_icon.badge = None
+        else:
+            home_icon.badge = str(home_icon_badge_count)
+    
+    home_icon = ft.Icon(
+        name="home_outlined",
+        badge = str(home_icon_badge_count)
     )
     
     rail = ft.NavigationRail(
@@ -513,28 +527,28 @@ def main(page: ft.Page):
         group_alignment=-1,
         destinations=[
             ft.NavigationRailDestination(
-                icon=ft.icons.SETTINGS_OUTLINED,
-                selected_icon_content=ft.Icon(ft.icons.SETTINGS),
+                icon="settings_outlined",
+                selected_icon="settings",
                 label_content=ft.Text("Settings"),
             ),
             ft.NavigationRailDestination(
-                icon_content=home_notification_badge,
-                selected_icon_content=ft.Icon(ft.icons.HOME),
+                icon=home_icon,
+                selected_icon="home",
                 label_content=ft.Text("Results"),
             ),
             ft.NavigationRailDestination(
-                icon=ft.icons.TERMINAL_OUTLINED,
-                selected_icon_content=ft.Icon(ft.icons.TERMINAL),
+                icon="terminal_outlined",
+                selected_icon="terminal",
                 label_content=ft.Text("Actions"),
             ),
             ft.NavigationRailDestination(
-                icon=ft.icons.DESCRIPTION_OUTLINED,
-                selected_icon_content=ft.Icon(ft.icons.DESCRIPTION),
+                icon="description_outlined",
+                selected_icon="description",
                 label_content=ft.Text("My Scripts"), # custom_scripts_view
             ),
             ft.NavigationRailDestination(
-                icon=ft.icons.FAVORITE_OUTLINE_OUTLINED,
-                selected_icon_content=ft.Icon(ft.icons.FAVORITE),
+                icon="favorite_outline_outlined",
+                selected_icon="favorite",
                 label_content=ft.Text("Donate"),
             ),
         ],
@@ -695,7 +709,7 @@ def main(page: ft.Page):
                 data = f"assets/results/ClearSpace/{id}-Space-Available.json"
         
         card = generate_result_card(
-            leading = ft.Icon(ft.icons.TERMINAL),
+            leading = ft.Icon("terminal"),
             title=ft.Text(f"{title_text} - {computer}"),
             date=date_time(),
             data=data,
@@ -708,7 +722,7 @@ def main(page: ft.Page):
         result_data.controls.insert(0, card)
         if rail.selected_index != 1:
             # If home isnt already selected, add notifcation badge
-            home_notification_badge.label_visible = True
+            home_badge()
         
         apply_results_filter(False)
     
@@ -797,10 +811,10 @@ def main(page: ft.Page):
         # Sort results by their date
         results.sort(key=lambda control: control.data['SortId'], reverse=True)
         if len(filter_out_PCs) > 0:
-            filter_btn.icon = ft.icons.FILTER_ALT
+            filter_btn.icon = "filter_alt"
             filter_btn.tooltip = "On"
         else:
-            filter_btn.icon = ft.icons.FILTER_ALT_OFF
+            filter_btn.icon = "filter_alt_off"
             filter_btn.tooltip = "Off"
         
         if show_filter_message:
@@ -1057,7 +1071,7 @@ def main(page: ft.Page):
                     ft.Text(f"{date}")
                     ], width=85, spacing=1),
                 trailing=ft.IconButton(
-                    icon=ft.icons.CLOSE,
+                    icon="close",
                     icon_size=10,
                     tooltip="Remove",
                     on_click=remove_results_card,
@@ -1305,7 +1319,7 @@ def main(page: ft.Page):
                 card = ft.ExpansionPanel(
                     header=ft.ListTile(
                             title=ft.Text(f"{comp}", weight=ft.FontWeight.BOLD),
-                            trailing=ft.Icon(name=ft.icons.COMPUTER)
+                            trailing=ft.Icon(name="computer")
                         ),
                     content=ft.Container(
                             content=ft.Column(drives_list, expand = 1),
@@ -1499,7 +1513,7 @@ def main(page: ft.Page):
                         exp_panel = ft.ExpansionPanel(
                                 header=ft.ListTile(
                                 title=ft.Text(f"{pc}", weight=ft.FontWeight.BOLD),
-                                trailing=ft.Icon(name=ft.icons.COMPUTER)
+                                trailing=ft.Icon(name="computer")
                             ),
                             content=ft.Row(wrap=True, spacing=10),
                             can_tap_header=True
@@ -1773,7 +1787,7 @@ Registry path: {program['RegPath']}"""
                                                 ft.Text(f"Status: {new_printer['Status']}")
                                             ], width=200),
                                         trailing=ft.PopupMenuButton(
-                                            icon=ft.icons.MORE_VERT,
+                                            icon="more_vert",
                                             items=[
                                                 ft.PopupMenuItem(text="Test Page", data=control_data, on_click=testpage_printer),
                                                 ft.PopupMenuItem(text="Rename", data=control_data, on_click=open_printer_name_modal),
@@ -1934,14 +1948,14 @@ Registry path: {program['RegPath']}"""
         
         time_button = ft.ElevatedButton(
             "Pick time",
-            icon=ft.icons.SCHEDULE,
+            icon="schedule",
             on_click=lambda _: page.open(time_picker),
             visible=False
         )
         
         date_button = ft.ElevatedButton(
             "Pick date",
-            icon=ft.icons.CALENDAR_MONTH,
+            icon="calendar_month",
             on_click=lambda _: page.open(date_picker),
             visible=False
         )
@@ -2105,9 +2119,9 @@ Registry path: {program['RegPath']}"""
             if os.path.exists(f"assets/results/Users/{computer}-Users.json"):
                 open_logoff_modal(computer)
     
-    ping_btn = ft.TextButton(text="Ping", icon=ft.icons.NETWORK_PING, on_click=ping)
+    ping_btn = ft.TextButton(text="Ping", icon="network_ping", on_click=ping)
     quser_btn = ft.IconButton(
-        icon=ft.icons.PERSON,
+        icon="person",
         icon_size=20,
         tooltip="QUser",
         on_click=get_user_ids
@@ -2214,39 +2228,48 @@ Registry path: {program['RegPath']}"""
             show_message(f"Removed {remove_me}")
         else:
             close_dialog()
+            
     
     list_of_script_cards = []
+    scripts_column = ft.Column(list_of_script_cards, scroll="auto")
     
     def drag_script_will_accept(e):
         pass
 
     # Reorder scripts
     def drag_script_accept(e: ft.DragTargetAcceptEvent):
-        for key, value in e.control.data.items():
+        print("drag_accept")
+        
+        # First collect info about dragged item and drop target
+        script_info = e.control.data.items()
+        for key, value in script_info:
+            print(key, value)
             if key == "index":
                 drag_target_index = value # Index of where we drop the item
 
-        src = page.get_control(e.src_id)
+        dragged_script = page.get_control(e.src_id)
         
-        # Find the index of the dragged item
-        for key, value in src.data.items():
+            # Find the index of the dragged item
+        for key, value in dragged_script.data.items():
             if key == "index":  
                 dragged_index = value
         
-        # If we dragged a dropped to the same place
+            # If we dragged a dropped to the same place
         if drag_target_index == dragged_index:
             print("Same index")
             return
         
-        # Change the indices
-        if src.data['name'] in custom_scripts:
-            custom_scripts[src.data['name']]['index'] = drag_target_index
+        # Now changed indices
+        if dragged_script.data['name'] in custom_scripts:
+            custom_scripts[dragged_script.data['name']]['index'] = drag_target_index
         if e.control.data['name'] in custom_scripts:
             custom_scripts[e.control.data['name']]['index'] = dragged_index
         update = update_scripts(e)
         if update:
+            print("generate")
             generate_scripts()
         else:
+            print("no generate")
             show_message("Failed to reorder scripts")
     
     def drag_script_leave(e):
@@ -2279,24 +2302,26 @@ Registry path: {program['RegPath']}"""
         update_scripts(e)
 
     def generate_scripts():
+        nonlocal list_of_script_cards
+        nonlocal scripts_column
         # This breaks if flet is updated to 0.24
         list_of_script_cards.clear()
         
         pinned_scripts = []
         
         def draggable_hover(e): # Store this function in the script_draggable variable
-            e.control.bgcolor = ft.colors.with_opacity(0.5, '#ffffff') if e.data == "true" else None
+            e.control.bgcolor = ft.Colors.with_opacity(0.5, '#ffffff') if e.data == "true" else None
             e.control.update()
         
         def sort_scripts_by_index(dict): # Use this to sort scripts by index before appending to controls
             return dict.data['index']
         
         for script in custom_scripts:
-            
-            script_props = custom_scripts[script]
+            print(script)
+            script_info = custom_scripts[script]
             # Check for existing script description
             try: 
-                description = script_props["description"]
+                description = script_info["description"]
             except KeyError:
                 description = ""
             
@@ -2304,7 +2329,7 @@ Registry path: {program['RegPath']}"""
                 content=ft.Container(
                     content=ft.Row([
                         ft.Icon(
-                            ft.icons.DESCRIPTION,
+                            name="description",
                         ),
                         ft.Text(f"{script}", size=12)
                     ]),
@@ -2314,7 +2339,7 @@ Registry path: {program['RegPath']}"""
                 )
             )
             
-            script_data = {"index": script_props['index'], "name": script, "description": description}
+            script_data = {"index": script_info['index'], "name": script, "description": description}
             
             script_draggable = ft.Draggable(
                 group="scripts",
@@ -2328,7 +2353,7 @@ Registry path: {program['RegPath']}"""
                 data=script_data
             )
             
-            if script_props['pinned']:
+            if script_info['pinned']:
                 # Remove draggable component since it will be pinned
                 script_draggable = ft.Container(
                     content=ft.Container(
@@ -2340,14 +2365,14 @@ Registry path: {program['RegPath']}"""
                     data=script_data
                 )
             
-            if not os.path.exists(script_props['path']):
+            if not os.path.exists(script_info['path']):
                 script_draggable.content.content = ft.Row([
                     ft.Text(f"(Missing)", color="red"),
                     ft.Text(f"{script}", weight="bold")
                 ])
             
             pin_icon = "push_pin_outlined"
-            if script_props['pinned']:
+            if script_info['pinned']:
                 pin_icon = "push_pin"
             
             pin = ft.IconButton(
@@ -2361,7 +2386,7 @@ Registry path: {program['RegPath']}"""
                 ft.Row([
                     ft.IconButton(
                         "PLAY_ARROW",
-                        data=f"{script_props['path']}",
+                        data=f"{script_info['path']}",
                         on_click=launch_script,
                         tooltip="Launch script"
                     ),
@@ -2393,7 +2418,7 @@ Registry path: {program['RegPath']}"""
                                 multiline=True,
                                 shift_enter=True,
                                 max_lines=3,
-                                data={"index": script_props['index'], "name": script, "description": description}
+                                data={"index": script_info['index'], "name": script, "description": description}
                             ),
                             padding=ft.padding.only(0, 0, 20, 0),
                             expand=True
@@ -2423,17 +2448,18 @@ Registry path: {program['RegPath']}"""
                 data=script_data
             )
             
-            if script_props['pinned']:
+            if script_info['pinned']:
                 drag_target=ft.Container(
                 content=script_card,
                 data=script_data
             )
             
-            if script_props['pinned']:
+            if script_info['pinned']:
                 pinned_scripts.append(drag_target)
             else:
                 list_of_script_cards.append(drag_target)
-                list_of_script_cards.sort(key=sort_scripts_by_index)
+                
+        list_of_script_cards.sort(key=sort_scripts_by_index)
         
         if len(pinned_scripts) > 0:
             pinned_scripts.sort(key=lambda s: s.data['name'].casefold(), reverse=True) #sort alphabetically
@@ -2456,6 +2482,7 @@ Registry path: {program['RegPath']}"""
         
         if len(list_of_script_cards) <= 0:
             list_of_script_cards.append(no_scripts)
+        scripts_column.cotrols = list_of_script_cards
         page.update()
     
     # Populate controls on initial app load
@@ -2553,7 +2580,7 @@ Registry path: {program['RegPath']}"""
                         exp_panel = ft.ExpansionPanel(
                                 header=ft.ListTile(
                                     title=ft.Text(f"{r}", weight=ft.FontWeight.BOLD),
-                                    trailing=ft.Icon(name=ft.icons.COMPUTER)
+                                    trailing=ft.Icon(name="computer")
                                 ),
                             content=ft.Row(wrap=True, spacing=10),
                             can_tap_header=True
@@ -2780,14 +2807,14 @@ Registry path: {program['RegPath']}"""
     # "Views". We swap these in and out of current_view
     # when navigating using the rail.
     computer_list_btn = ft.IconButton(
-        icon=ft.icons.LIST,
+        icon="list",
         icon_size=20,
         on_click=open_pc_list,
         tooltip="Open list of PCs"
     )
     
     recent_computers_btn = ft.IconButton(
-        icon=ft.icons.HISTORY,
+        icon="history",
         icon_size=20,
         on_click=load_recent_computers,
         tooltip="Recent computers"
@@ -2811,7 +2838,7 @@ Registry path: {program['RegPath']}"""
     ])
     
     filter_btn = ft.IconButton(
-        icon=ft.icons.FILTER_ALT_OFF,
+        icon="FILTER_ALT_OFF",
         icon_size=13,
         tooltip="Off",
         on_click=filter_results,
@@ -2888,7 +2915,7 @@ Registry path: {program['RegPath']}"""
                     error_log,
                     clear_results_label,
                     ft.IconButton(
-                        icon=ft.icons.CLOSE,
+                        icon="close",
                         icon_size=13,
                         tooltip="Clear Results",
                         on_click=remove_results_card,
@@ -2940,7 +2967,7 @@ Registry path: {program['RegPath']}"""
     winrm_results_checkbox = ft.Checkbox("Supress WinRM results", value=settings_values['supress_winrm_results'], on_change=check_for_changes)
     use_24hr_checkbox = ft.Checkbox("Use 24hr time format", value=settings_values['use_24hr'], on_change=check_for_changes)
     warn_checkbox = ft.Checkbox("Warn before clearing profiles", value=settings_values['warn_about_profile_deletion'], on_change=check_for_changes)
-    settings_save_btn = ft.FilledButton("Apply", tooltip="test", icon=ft.icons.SAVE, on_click=update_settings, disabled=True)
+    settings_save_btn = ft.FilledButton("Apply", tooltip="test", icon="save", on_click=update_settings, disabled=True)
     settings_about_app = TutorialBtn(["About IT Remote", text_values.settings_about_app_txt], on_click=open_tutorial_modal)
     
     theme_mode = ft.Switch(label="Dark Theme", value=settings_values['dark_theme'], on_change=check_for_changes)
@@ -3004,7 +3031,7 @@ Registry path: {program['RegPath']}"""
     # Actions tab Expansion List items
     check_space_btn =  ft.TextButton(
         text="Check Space", 
-        icon=ft.icons.STORAGE,
+        icon="storage",
         on_click=check_space
     )
     
@@ -3019,7 +3046,7 @@ Registry path: {program['RegPath']}"""
     clear_space_exp_panel = ft.ExpansionPanel(
         header=ft.ListTile(
             title=ft.Text("Disk Space", weight=ft.FontWeight.BOLD),
-            trailing=ft.Icon(name=ft.icons.ALBUM)
+            trailing=ft.Icon(name="album")
         ),
         content=ft.Container(
             content=ft.Column([
@@ -3042,7 +3069,7 @@ Registry path: {program['RegPath']}"""
                                 clear_space_tut
                             ]),
                             logout_users_checkbox,
-                            ft.TextButton(text="Clear Disk Space", icon=ft.icons.DELETE_FOREVER, on_click=clear_space),
+                            ft.TextButton(text="Clear Disk Space", icon="delete_forever", on_click=clear_space),
                         ]),
                         border=ft.border.only(right=ft.border.BorderSide(1, "grey")),
                         padding=ft.padding.only(0,0,10,0)
@@ -3066,27 +3093,27 @@ Registry path: {program['RegPath']}"""
     printers_exp_panel = ft.ExpansionPanel(
         header=ft.ListTile(
             title=ft.Text("Printers", weight=ft.FontWeight.BOLD),
-            trailing=ft.Icon(name=ft.icons.PRINT)
+            trailing=ft.Icon(name="print")
         ),
         content=ft.Container(
             content=ft.Row([
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.PRINT, icon_size=50, on_click=get_printers, data=""),
+                    ft.IconButton(icon="print", icon_size=50, on_click=get_printers, data=""),
                     ft.Text("Get Printers")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.MISCELLANEOUS_SERVICES, icon_size=50, on_click=restart_print_spooler),
+                    ft.IconButton(icon="miscellaneous_services", icon_size=50, on_click=restart_print_spooler),
                     ft.Text("Restart Print Spooler")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.TEXT_SNIPPET, data="Operational", icon_size=50, on_click=open_print_logs),
+                    ft.IconButton(icon="text_snippet", data="Operational", icon_size=50, on_click=open_print_logs),
                     ft.Text("Operational Logs")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.TEXT_SNIPPET, data="Admin", icon_size=50, on_click=open_print_logs),
+                    ft.IconButton(icon="text_snippet", data="Admin", icon_size=50, on_click=open_print_logs),
                     ft.Text("Admin Logs")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
             ], wrap=True),
@@ -3112,7 +3139,7 @@ Registry path: {program['RegPath']}"""
     programs_exp_panel = ft.ExpansionPanel(
         header=ft.ListTile(
             title=ft.Text("Programs", weight=ft.FontWeight.BOLD),
-            trailing=ft.Icon(name=ft.icons.WEB_ASSET)
+            trailing=ft.Icon(name="web_asset")
         ),
         content=ft.Container(
             content=ft.Column([
@@ -3142,12 +3169,12 @@ Registry path: {program['RegPath']}"""
     computer_control_exp_panel = ft.ExpansionPanel(
         header=ft.ListTile(
             title=ft.Text("Computer Control", weight=ft.FontWeight.BOLD),
-            trailing=ft.Icon(name=ft.icons.SETTINGS_POWER)
+            trailing=ft.Icon(name="settings_power")
         ),
         content=ft.Container(
             content=ft.Row([
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.RESTART_ALT, icon_size=50, on_click=open_restart_modal, data=""),
+                    ft.IconButton(icon="restart_alt", icon_size=50, on_click=open_restart_modal, data=""),
                     ft.Text("Shutdown/Restart")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
             ], wrap=True),
@@ -3159,32 +3186,32 @@ Registry path: {program['RegPath']}"""
     other_exp_panel = ft.ExpansionPanel(
         header=ft.ListTile(
             title=ft.Text("Other Tools", weight=ft.FontWeight.BOLD),
-            trailing=ft.Icon(name=ft.icons.COMPUTER)
+            trailing=ft.Icon(name="computer")
         ),
         content=ft.Container(
             content=ft.Row([
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.FOLDER, icon_size=50, on_click=open_c_share, data=""),
+                    ft.IconButton(icon="folder", icon_size=50, on_click=open_c_share, data=""),
                     ft.Text("C$ Share")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.SCHEDULE, icon_size=50, on_click=get_uptime, data=""),
+                    ft.IconButton(icon="schedule", icon_size=50, on_click=get_uptime, data=""),
                     ft.Text("Get Uptime")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.TEXT_SNIPPET, icon_size=50, on_click=open_event_log),
+                    ft.IconButton(icon="text_snippet", icon_size=50, on_click=open_event_log),
                     ft.Text("Event Viewer")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.MEMORY, icon_size=50, on_click=msinfo_32),
+                    ft.IconButton(icon="memory", icon_size=50, on_click=msinfo_32),
                     ft.Text("MSInfo32")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 ft.VerticalDivider(),
                 ft.Column([
-                    ft.IconButton(icon=ft.icons.BATTERY_3_BAR, icon_size=50, on_click=check_battery),
+                    ft.IconButton(icon="battery_3_bar", icon_size=50, on_click=check_battery),
                     ft.Text("Battery Status")
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1)
             ], wrap=True),
@@ -3231,7 +3258,7 @@ Registry path: {program['RegPath']}"""
         ft.Row([
             printer_wiz_computer_text,
             ft.IconButton(
-                icon=ft.icons.REFRESH, 
+                icon="refresh", 
                 on_click=refresh_printers,
                 tooltip="Refresh"
             ),
@@ -3273,7 +3300,7 @@ Registry path: {program['RegPath']}"""
 
     page.overlay.append(pick_script_dialog) 
     
-    scripts_list_view = ft.Column(list_of_script_cards, scroll=ft.ScrollMode.ADAPTIVE, expand=True)
+    scripts_list_view = ft.ListView([scripts_column], expand=True)
     custom_scripts_container = ft.Container(
         content=scripts_list_view,
         expand=True,
@@ -3348,7 +3375,7 @@ Registry path: {program['RegPath']}"""
             
             ft.Row([
                 ft.IconButton(
-                    icon=ft.icons.ADD,
+                    icon="add",
                     tooltip="Add a script",
                     on_click=lambda _: pick_script_dialog.pick_files(
                         allow_multiple=True,
@@ -3467,9 +3494,9 @@ Registry path: {program['RegPath']}"""
     page.overlay.append(pick_path_dialog)
     
     powershell_path_text = ft.Text()
-    powershell_checkmark = ft.Icon(name=ft.icons.CHECK, visible=False)
+    powershell_checkmark = ft.Icon(name="check", visible=False)
     pstools_path_text = ft.Text()
-    pstools_checkmark = ft.Icon(name=ft.icons.CHECK, visible=False)
+    pstools_checkmark = ft.Icon(name="check", visible=False)
     
     # This is the "main" view for when we have passed setup
     main_view = ft.Container(

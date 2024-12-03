@@ -12,7 +12,7 @@ class TutorialBtn(IconButton):
 
         super().__init__(
             tooltip=data[0],
-            icon = icons.HELP,
+            icon = "help",
             data = data,
             on_click = on_click
         )
