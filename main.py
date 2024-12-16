@@ -1,10 +1,11 @@
-import flet as ft # Must be version 0.23.2 for now
+import flet as ft
 import the_shell
 import datetime, json, re, subprocess, ctypes, os, time, socket, pathlib, csv
 from tutorial_btn import TutorialBtn
 import text_values as text_values # Long text values stored in separate file
 from dynamic_modal import DynamicModal
 from are_you_sure import YouSure
+from donate_view import donate_view
 from settings_values import *
 
 # Create settings.json if not exists and/or load saved values
@@ -16,8 +17,6 @@ if os.path.exists(recent_computers_path) == False:
         print(f"{recent_computers_path} created")
         init_data = {"computers":[]}
         json.dump(init_data, file, indent=4)
-
-computerlist_path = "assets/settings/lists/computers.txt"
 
 #Cleanup old files
 printers_path = "assets/results/Printers"
@@ -359,7 +358,7 @@ def main(page: ft.Page):
             scroll=ft.ScrollMode.ADAPTIVE
         ),
         bgcolor=settings_values['app_color'],
-        border_radius=20
+        border_radius=10
     )
     
     def show_processes_modal(e):
@@ -402,10 +401,10 @@ def main(page: ft.Page):
                 return False
         return True
     
-    def add_new_process(process_object):
+    def add_new_process(process_dict):
         nonlocal running_processes_count
         running_processes_count += 1
-        list_of_processes.append(process_object)
+        list_of_processes.append(process_dict)
         running_processes_count_text.value = f"{running_processes_count}"
         update_processes()
         page.update()
@@ -436,6 +435,9 @@ def main(page: ft.Page):
                 ])
             )
             running_processes_controls.append(new_proc_card)
+        
+        running_processes_container.content.controls = running_processes_controls
+        
         if len(list_of_processes) > 0:
             loading_ring.visible = True
         else:
@@ -468,7 +470,7 @@ def main(page: ft.Page):
     
     # -------------------- NAVIGATION --------------------
     def navigate_view(e):
-        #If called by a control set equal to control value
+        # If called by a control set equal to control value
         # Otherwise we are likely passing a specific index
         try:
             index = e.control.selected_index
@@ -738,7 +740,7 @@ def main(page: ft.Page):
         bgcolor=settings_values['app_color'],
         expand=True,
         alignment=ft.alignment.top_left,
-        border_radius=20
+        border_radius=10
     )
     
     # Holds controls we removed from result_data
@@ -928,7 +930,7 @@ def main(page: ft.Page):
                     ], expand=1)
                 ]),
             bgcolor=settings_values['app_color'],
-            border_radius=20,
+            border_radius=10,
             border=ft.border.all(1, settings_values['app_color'])
         )
         
@@ -1100,7 +1102,7 @@ def main(page: ft.Page):
     printer_wiz_list_container = ft.Container(
         bgcolor=settings_values['app_color'],
         content=printer_wiz_listview,
-        border_radius=20,
+        border_radius=10,
         expand=True,
     )
     
@@ -1594,7 +1596,7 @@ Registry path: {program['RegPath']}"""
             ft.Row([
                 ft.Text(f"{help_text}"),
             ], wrap=True, width=500),
-            border_radius=20,
+            border_radius=10,
             border=ft.border.all(1, settings_values['app_color']),
             padding=10,
         )
@@ -2130,9 +2132,11 @@ Registry path: {program['RegPath']}"""
     )
 
     def open_pc_list(e):
-        
-        powershell.open_pc_list()
-    
+        if not os.path.exists(computerlist_path):
+            with open(computerlist_path, "w") as file:
+                print("Computer list file created.")
+        os.system(f'notepad.exe {computerlist_path}')
+
     delete_users_checkbox = ft.Checkbox(label="Remove user profiles", value=False)
     logout_users_checkbox = ft.Checkbox(label="Logout users before deletion", value=False)
     use_list_checkbox = ft.Checkbox(label="Use list of PCs", value=False)
@@ -2427,7 +2431,7 @@ Registry path: {program['RegPath']}"""
                         )
                     ])
                 ]),
-                border_radius=20,
+                border_radius=10,
                 padding=10,
                 data=script_data
             )
@@ -3244,7 +3248,7 @@ Registry path: {program['RegPath']}"""
         ),
         bgcolor=settings_values['app_color'],
         expand = 1,
-        border_radius=20
+        border_radius=10
     )
     
     actions_view = ft.Column([
@@ -3311,7 +3315,7 @@ Registry path: {program['RegPath']}"""
         content=scripts_list_view,
         expand=True,
         bgcolor=settings_values['app_color'],
-        border_radius=20,
+        border_radius=10,
         padding=ft.padding.only(10,0,10,0)
     )
     
@@ -3406,68 +3410,6 @@ Registry path: {program['RegPath']}"""
         custom_scripts_container
             
     ], expand=True)
-    
-    def on_donate_hover(e):
-        e.control.bgcolor = "grey" if e.data == "true" else None
-        e.control.content.controls[1].color = "black" if e.data == "true" else "white"
-        e.control.border_radius = 20 if e.data =="true" else 0
-        e.control.update()
-    
-    def on_github_hover(e):
-        e.control.bgcolor = "white" if e.data == "true" else None
-        e.control.border_radius = 50 if e.data =="true" else 0
-        e.control.update()
-    
-    donate_view = ft.Column([
-        ft.Row([
-            ft.Column([
-                ft.Text("Created by:", size=40),
-            ]),
-            ft.Column([
-                ft.Stack([
-                    ft.Image(
-                        src="https://avatars.githubusercontent.com/u/56776962?v=4",
-                        border_radius=ft.border_radius.all(60),
-                        width=210
-                    ),
-                    ft.Container(
-                        content=ft.Image(src="images/Github.png", width=70),
-                        url="https://github.com/knightlygains/it-remote",
-                        offset=ft.transform.Offset(2, 2),
-                        on_hover=on_github_hover,
-                        tooltip="https://github.com/knightlygains"
-                    )
-                ]),
-                ft.Text("Steven Whitney (KnightlyGains)", weight=ft.FontWeight.BOLD)
-            ]),
-        ], alignment=ft.MainAxisAlignment.CENTER, spacing=30),
-        ft.Divider(),
-        ft.Row([
-            ft.Text("If you like this app and would like to support me, please consider donating:"),
-        ], spacing=15, alignment=ft.MainAxisAlignment.CENTER),
-        ft.Row([
-            ft.Container(
-                content=ft.Column([
-                    ft.Image(src="images/ko-fi.png", width=70),
-                    ft.Text("Ko-Fi", weight=ft.FontWeight.BOLD)
-                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                margin=ft.margin.only(top=20),
-                url="https://ko-fi.com/knightlygains",
-                on_hover=on_donate_hover,
-                padding=10
-            ),
-            ft.Container(
-                content=ft.Column([
-                    ft.Image(src="images/patreon.png", width=70),
-                    ft.Text("Patreon", weight=ft.FontWeight.BOLD)
-                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                margin=ft.margin.only(top=20),
-                url="https://www.patreon.com/KnightlyGains",
-                on_hover=on_donate_hover,
-                padding=10
-            )
-        ], alignment=ft.MainAxisAlignment.CENTER, spacing=30)
-    ], expand=1)
     
     # We assign different views to this in navigation
     current_view = ft.Row([home], expand=True)

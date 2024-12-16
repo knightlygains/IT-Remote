@@ -1,5 +1,4 @@
 import subprocess
-from os.path import exists
 import json
 import socket
 
@@ -15,15 +14,6 @@ class Power_Shell():
         else:
             ps = "powershell.exe"
         p = subprocess.Popen([ps, script], creationflags=subprocess.CREATE_NEW_CONSOLE)
-    
-    def open_pc_list(self):
-        file_exists = exists(self.list_path)
-        if file_exists:
-            p = subprocess.run(["notepad.exe", self.list_path])
-        else:
-            with open(self.list_path, "w") as file:
-                print("Computer list file created.")
-            p = subprocess.run(["notepad.exe", self.list_path])
     
     def enable_winrm(self, computer):
         p = subprocess.call([self.pspath, "-File", f"./assets/scripts/enable_winrm.ps1", f"{computer}"], creationflags=self.no_window)
