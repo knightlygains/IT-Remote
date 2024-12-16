@@ -5,20 +5,19 @@ from tutorial_btn import TutorialBtn
 import text_values as text_values # Long text values stored in separate file
 from dynamic_modal import DynamicModal
 from are_you_sure import YouSure
-from settings_values import settings_values, custom_scripts, load_settings, update_scripts, settings_path
+from settings_values import *
 
 # Create settings.json if not exists and/or load saved values
 load_settings(e=None, update=False)
 
 # Create recent_computers.json
-recent_computers_path = "assets/settings/recent_computers.json"
 if os.path.exists(recent_computers_path) == False:
     with open(recent_computers_path, "w") as file:
         print(f"{recent_computers_path} created")
         init_data = {"computers":[]}
         json.dump(init_data, file, indent=4)
 
-list_path = "assets/settings/lists/computers.txt"
+computerlist_path = "assets/settings/lists/computers.txt"
 
 #Cleanup old files
 printers_path = "assets/results/Printers"
@@ -50,15 +49,13 @@ if os.path.exists(uptime_path):
     for filename in os.listdir(uptime_path):
         pathlib.Path(f"{uptime_path}/{filename}").unlink()
 
-
-
 # Program
 def main(page: ft.Page):
     #Setup PowerShell
     powershell = the_shell.Power_Shell()
     
     page.fonts = {
-        "Consola": "assets/fonts/Consola.ttf"
+        "Consola": "fonts/Consola.ttf"
     }
     
     def min_max(e):
@@ -78,7 +75,7 @@ def main(page: ft.Page):
     drag_window = ft.Container(
         content=ft.Row([
             ft.Container(
-                content=ft.Image(src="assets/images/itremote.svg", width=32),
+                content=ft.Image(src="images/itremote.svg", width=32),
                 padding=ft.padding.only(left=10, top=3)
             ),
             ft.WindowDragArea(ft.Container(
@@ -614,18 +611,18 @@ def main(page: ft.Page):
     def check_list():
         
         try:
-            with open(list_path, "r") as file:
+            with open(computerlist_path, "r") as file:
                 
                 contents = file.read()
                 if contents == "":
                     show_message("List is empty.")
                     return False
         except FileNotFoundError as e:
-            with open(list_path, "x") as file:
+            with open(computerlist_path, "x") as file:
                 print("Computer list file created.")
                 
         try:
-            with open(list_path, "r") as list:
+            with open(computerlist_path, "r") as list:
                 computers = list.read()
                 if computers == "":
                     show_message("List is empty.")
@@ -637,7 +634,7 @@ def main(page: ft.Page):
                 else:
                     return True
         except FileNotFoundError as e:
-            with open(list_path, "x") as file:
+            with open(computerlist_path, "x") as file:
                 print("Computer list file created.")
         
     def find_day(date):
@@ -2172,7 +2169,7 @@ Registry path: {program['RegPath']}"""
             # an array of them.
             if computer == "list of computers":
                 list_of_pcs = []
-                list = open(list_path, "r")
+                list = open(computerlist_path, "r")
                 computers = list.readlines()
                 for pc in computers:
                     list_of_pcs.append(pc.strip("\\n"))
@@ -2850,7 +2847,7 @@ Registry path: {program['RegPath']}"""
     
     def open_errors(e):
         try:
-            with open("assets/settings/log.txt", "r") as file:
+            with open(logging_path, "r") as file:
                 errors = file.readlines()
                 list_of_errors = []
                 
@@ -3429,7 +3426,7 @@ Registry path: {program['RegPath']}"""
                         width=210
                     ),
                     ft.Container(
-                        content=ft.Image(src="assets/images/Github.png", width=70),
+                        content=ft.Image(src="images/Github.png", width=70),
                         url="https://github.com/knightlygains/it-remote",
                         offset=ft.transform.Offset(2, 2),
                         on_hover=on_github_hover,
@@ -3446,7 +3443,7 @@ Registry path: {program['RegPath']}"""
         ft.Row([
             ft.Container(
                 content=ft.Column([
-                    ft.Image(src="assets/images/ko-fi.png", width=70),
+                    ft.Image(src="images/ko-fi.png", width=70),
                     ft.Text("Ko-Fi", weight=ft.FontWeight.BOLD)
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 margin=ft.margin.only(top=20),
@@ -3456,7 +3453,7 @@ Registry path: {program['RegPath']}"""
             ),
             ft.Container(
                 content=ft.Column([
-                    ft.Image(src="assets/images/patreon.png", width=70),
+                    ft.Image(src="images/patreon.png", width=70),
                     ft.Text("Patreon", weight=ft.FontWeight.BOLD)
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 margin=ft.margin.only(top=20),

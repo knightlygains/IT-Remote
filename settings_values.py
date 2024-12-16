@@ -14,33 +14,41 @@ settings_values = {
     "home_tab": 1
 }
 
+# Dict to store custom_script info
 custom_scripts = {
     
 }
 
-custom_scripts_path = "assets/settings/custom_scripts.json"
-settings_path = "assets/settings/settings.json"
-computerlist_path = "assets/settings/lists/computers.txt"
-logging_path = "assets/settings/log.txt"
+# Flet's storage directory that persists after updates
+storage_directory = os.getenv("FLET_APP_STORAGE_DATA")
+
+# Define paths for different settings/files
+custom_scripts_path = f"{storage_directory}/custom_scripts.json"
+settings_path = f"{storage_directory}/settings.json"
+computerlist_path = f"{storage_directory}/computers.txt"
+logging_path = f"{storage_directory}/log.txt"
+recent_computers_path = f"{storage_directory}/recent_computers.json"
 
 # Make settings directory
-if not os.path.exists("assets/settings"):
+if not os.path.exists(settings_path):
     try:
-        os.mkdir("assets/settings")
+        with open(settings_path, "w") as file:
+            print(f"Created {settings_path}")
     except Exception as e:
         print(e)
         
 if not os.path.exists(logging_path):
     try:
         with open(logging_path, "w") as file:
-            print("Created log.txt")
+            print(f"Created {logging_path}")
     except Exception as e:
         print(e)
 
 # Make lists directory
-if not os.path.exists("assets/settings/lists"):
+if not os.path.exists(computerlist_path):
     try:
-        os.mkdir("assets/settings/lists")
+        with open(computerlist_path, "w") as file:
+            print(f"Created {computerlist_path}")
     except Exception as e:
         print(e)
 
@@ -80,7 +88,7 @@ def load_settings(e, update):
     if update:
         try:
             with open(settings_path, "r") as file:
-                print("settings.json exists, updating")
+                print(f"{settings_path} exists, updating")
                 data = json.load(file)
                 # Update each setting with value
                 # stored in settings_values
@@ -118,10 +126,10 @@ def load_settings(e, update):
                     settings_values[key] = value
             except json.decoder.JSONDecodeError:
                 print("No settings data found")
-    except FileNotFoundError:
-        print("No settings.json found. Creating a new one.")
+    except Exception as e:
+        print(f"No {settings_path} found. Creating a new one.")
         with open(settings_path, "w") as file:
-            print("settings.json created")
+            print(f"{settings_path} created")
             json.dump(settings_values, file, indent=4)
 
     # Create custom_scripts json
