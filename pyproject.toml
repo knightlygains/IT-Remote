@@ -4,9 +4,6 @@ version = "1.0.5"
 description = "IT Remote, remotely troubleshoot PCs on your domain."
 readme = "README.md"
 requires-python = ">=3.8"
-authors = [
-    {name = "Steven Whitney"}
-]
 dependencies = [
   "flet==0.25.2"
 ]
@@ -24,10 +21,10 @@ compile.cleanup = true # --cleanup-on-compile
 product = "IT Remote"
 
 # company name to display in about app dialogs
-company = "Steven Whitney"
+company = "KnightlyGains"
 
 # copyright text to display in about app dialogs
 copyright = "Copyright (C) 2024 by Flet"
 
 [tool.flet.app]
-path = ".\"
+path = "src"

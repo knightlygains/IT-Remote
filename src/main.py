@@ -2132,10 +2132,7 @@ Registry path: {program['RegPath']}"""
     )
 
     def open_pc_list(e):
-        if not os.path.exists(computerlist_path):
-            with open(computerlist_path, "w") as file:
-                print("Computer list file created.")
-        os.system(f'notepad.exe {computerlist_path}')
+        powershell.open_pc_list()
 
     delete_users_checkbox = ft.Checkbox(label="Remove user profiles", value=False)
     logout_users_checkbox = ft.Checkbox(label="Logout users before deletion", value=False)

@@ -1,11 +1,9 @@
-import subprocess
-import json
-import socket
+import subprocess, json, socket, os
+from settings_values import computerlist_path
 
 class Power_Shell():
     def __init__(self):
         self.pspath = "pwsh.exe"
-        self.list_path = "assets/settings/lists/computers.txt"
         self.no_window = 0x08000000
     
     def launch_script(self, script, ps_version):
@@ -14,6 +12,15 @@ class Power_Shell():
         else:
             ps = "powershell.exe"
         p = subprocess.Popen([ps, script], creationflags=subprocess.CREATE_NEW_CONSOLE)
+    
+    def open_pc_list(self):
+        file_exists = os.path.exists(computerlist_path)
+        if file_exists:
+            subprocess.run(["notepad.exe", computerlist_path])
+        else:
+            with open(computerlist_path, "w") as file:
+                print(f"{computerlist_path} file created.")
+            subprocess.run(["notepad.exe", computerlist_path])
     
     def enable_winrm(self, computer):
         p = subprocess.call([self.pspath, "-File", f"./assets/scripts/enable_winrm.ps1", f"{computer}"], creationflags=self.no_window)
