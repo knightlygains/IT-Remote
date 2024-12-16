@@ -2482,10 +2482,14 @@ Registry path: {program['RegPath']}"""
         
         if len(list_of_script_cards) <= 0:
             list_of_script_cards.append(no_scripts)
-        scripts_column.cotrols = list_of_script_cards
-        page.update()
+        scripts_column.controls = list_of_script_cards
+        try:
+            scripts_column.update()
+        except AssertionError as e:
+            # Control isn't added to page yet so ignore
+            pass
     
-    # Populate controls on initial app load
+    # Populate script controls on initial app load
     generate_scripts()
     
     def check_space(e):

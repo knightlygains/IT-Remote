@@ -15,7 +15,8 @@ clear_space_tut_txt = "By default this action will clear recycle bin data, Windo
 
 programs_tutorial_txt = 'You can use this panel to check for a specific program on a computer, or get a list of all detected software.'
 
-setup_pstools = "PowerShell 7 and PsTools are required for this program to work. \
-By default, this app looks for PsExec.exe and PsService.exe in your system32 folder and PowerShell 7 in \
-C:\Program Files\PowerShell\\7. If it does not find them, you will see this setup screen and be asked to \
-find them manually."
+setup_pstools = """PowerShell 7 and PsTools are required for this program to work. 
+By default, this app looks for PsExec.exe and PsService.exe in your system32 folder and PowerShell 7 in 
+C:\Program Files\PowerShell\\7. 
+If it does not find them, you will see this setup screen and be asked to 
+find them manually."""
