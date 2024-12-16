@@ -1,0 +1,33 @@
+[project]
+name = "IT Remote"
+version = "1.0.5"
+description = ""
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+    {name = "Steven Whitney"}
+]
+dependencies = [
+  "flet==0.25.2"
+]
+
+[tool.flet]
+# org name in reverse domain name notation, e.g. "com.mycompany".
+# Combined with project.name to build bundle ID for iOS and Android apps
+org = "KnightlyGains"
+compile.app = true # --compile-app
+compile.packages = true # --compile-packages
+compile.cleanup = true # --cleanup-on-compile
+
+# project display name that is used as an app title on Android and iOS home screens,
+# shown in window titles and about app dialogs on desktop.
+product = "IT Remote"
+
+# company name to display in about app dialogs
+company = "Steven Whitney"
+
+# copyright text to display in about app dialogs
+copyright = "Copyright (C) 2024 by Flet"
+
+[tool.flet.app]
+path = ".\"
