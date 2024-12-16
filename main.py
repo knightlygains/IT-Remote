@@ -496,24 +496,33 @@ def main(page: ft.Page):
             current_view.controls = [print_wizard_view]
         page.update()
     
-    home_icon_badge_count = 0
-    
-    def home_badge(e=None, increase=True, reset=False):
-        nonlocal home_icon_badge_count
+    def home_badge(e=None, reset=False):
         if reset:
-            home_icon_badge_count = 0
-            increase = False
-        if increase:
-            home_icon_badge_count += 1
-        
-        if home_icon_badge_count == 0:
-            home_icon.badge = None
+            # I have to fully re-assign the icon control
+            # to reset the badge to None. Simply
+            # setting it = None doesn't work.
+            home_icon.icon = ft.Icon(
+                name="home_outlined",
+                badge=None
+            )
         else:
-            home_icon.badge = str(home_icon_badge_count)
+            home_icon.icon.badge = ft.Badge(small_size=10)
+            
+        try:
+            home_icon.icon.update()
+        except AssertionError as e:
+            # Control isn't added to page yet so ignore
+            pass
     
-    home_icon = ft.Icon(
-        name="home_outlined",
-        badge = str(home_icon_badge_count)
+    home_icon = ft.NavigationRailDestination(
+        icon=ft.Icon(
+            name="home_outlined",
+            badge=None
+        ),
+        selected_icon=ft.Icon(
+            name="home"
+        ),
+        label_content=ft.Text("Results")
     )
     
     rail = ft.NavigationRail(
@@ -528,11 +537,7 @@ def main(page: ft.Page):
                 selected_icon="settings",
                 label_content=ft.Text("Settings"),
             ),
-            ft.NavigationRailDestination(
-                icon=home_icon,
-                selected_icon="home",
-                label_content=ft.Text("Results"),
-            ),
+            home_icon,
             ft.NavigationRailDestination(
                 icon="terminal_outlined",
                 selected_icon="terminal",
