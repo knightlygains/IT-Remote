@@ -17,7 +17,7 @@ IT Remote uses PowerShell 7 and PsTools (specifically PsService.exe and PsExec.e
 
 With Python's subprocess module, IT Remote launches custom powershell scripts with PowerShell 7 and feeds those scripts arguments acquired from input you provided in the app.
 
-![Alt Text](assets/images/scrolling_colors.gif)
+![Alt Text](src/assets/images/scrolling_colors.gif)
 
 # What Can It Do?
 
@@ -33,7 +33,7 @@ With Python's subprocess module, IT Remote launches custom powershell scripts wi
 * See the current uptime of a PC
 * Add, search, and launch your own scripts at the click of a button (supports native Windows PowerShell if your script doesnt work in PowerShell 7)
   
-<img src="assets/images/Screenshot2.png" alt="Another screenshot of the IT Remote application" width="500">
+<img src="src/assets/images/Screenshot2.png" alt="Another screenshot of the IT Remote application" width="500">
 
 # Install (Dev)
 
