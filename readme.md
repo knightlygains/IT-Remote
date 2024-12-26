@@ -47,7 +47,7 @@ With Python's subprocess module, IT Remote launches custom powershell scripts wi
 
 3. Activate the virtual environment `C:\Users\Username\IT-Remote-main\.venv\Scripts\activate`
 
-4. Install Flet v0.23.2 `pip install flet==0.23.2`
+4. Install Flet v0.25.2 `pip install flet==0.25.2`
 
 5. Run the app `flet run C:\Users\Username\IT-Remote-main\main.py`
 
