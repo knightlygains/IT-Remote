@@ -1,6 +1,6 @@
 # IT Remote
 
-<img src="assets/icon.png" alt="IT Remote Logo" width="100">
+<img src="src/assets/icon.png" alt="IT Remote Logo" width="100">
 
 [Download here](https://github.com/knightlygains/IT-Remote/releases)
 
