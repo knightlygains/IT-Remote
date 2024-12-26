@@ -1,6 +1,6 @@
 [project]
 name = "IT_Remote"
-version = "1.0.5"
+version = "1.0.6"
 description = "IT Remote, remotely troubleshoot PCs on your domain."
 readme = "README.md"
 requires-python = ">=3.8"
