@@ -43,7 +43,6 @@ Function Enable-RemoteRegistry {
             }
         }
         catch {
-            $ErrorMessage = $Comp + " Error: " + $_.Exception.Message
             Add-Content ".\assets\settings\log.txt" -Value "$_"
         }
     }

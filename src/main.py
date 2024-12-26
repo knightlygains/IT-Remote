@@ -2875,7 +2875,7 @@ Registry path: {program['RegPath']}"""
                 
                 data = {
                     "txt_document": True,
-                    "txt_data": "assets/settings/log.txt"
+                    "txt_data": f"{logging_path}"
                 }
                 
                 content_container = ft.Column([

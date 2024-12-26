@@ -5,7 +5,7 @@ param(
 . .\assets\scripts\functions.ps1
 
 $dontInvoke = $false
-if($Computer -eq $env:COMPUTERNAME){
+if ($Computer -eq $env:COMPUTERNAME) {
     $dontInvoke = $true
 }
 

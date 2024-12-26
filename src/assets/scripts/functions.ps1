@@ -3,7 +3,9 @@ Function Set-Error {
     param(
         [string]$Message
     )
-    Add-Content ".\assets\settings\log.txt" -Value "[$(Get-Date)]`n$Message`n"
+    $path = Get-Location
+    $path = $path.Path + "\storage\data\log.txt"
+    Add-Content "$path" -Value "[$(Get-Date)]`n$Message`n"
 }
 
 Function Enable-WinRM {
